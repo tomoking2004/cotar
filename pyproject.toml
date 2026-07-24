@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cotar"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub",
+    "num2words",
+    "pillow",
+    "schedulefree",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "transformers>=4.46",
+    "train4all @ git+https://github.com/tomoking2004/train4all.git@v0.9.0",
+    "ujson",
+]
+
+[tool.setuptools.packages.find]
+include = ["cotar*"]
+
+[tool.ruff]
+extend-exclude = ["cotar/data/_gqa_eval.py"]

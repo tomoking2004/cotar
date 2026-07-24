@@ -1,0 +1,10 @@
+*.egg-info/
+.env
+.local/
+.ruff_cache/
+.vscode/
+__pycache__/
+datasets/
+logs/
+runs/
+tmp/
