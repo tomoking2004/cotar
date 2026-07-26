@@ -37,7 +37,6 @@ class GQAPaths:
 
 @dataclass(frozen=True)
 class Config:
-    seed: int | None = 42
     work_root: Path = WORK_ROOT
 
     @property

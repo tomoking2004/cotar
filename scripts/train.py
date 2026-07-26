@@ -1,10 +1,11 @@
-"""Run the whole experiment: every arm, at `cfg.seed`, into one timestamped set.
+"""Run the whole experiment: every arm at every seed, into one timestamped set.
 
 Each run gets a fresh model, fresh loaders and a fresh trainer. That is what makes the
 comparison legitimate — a reused sampler would carry its epoch counter into the next
 arm and feed it different batches, and reused weights would not be a fresh start. Built
-this way, the arms see exactly the same data in exactly the same order, and differ only
-in `arm`.
+this way, the arms of one seed see exactly the same data in exactly the same order, and
+differ only in `arm`; the seeds differ in that order and in initialisation, which is
+what makes a difference between arms distinguishable from run-to-run noise.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import os
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import gc
+from itertools import product
 from typing import Any, get_args
 
 import torch
@@ -30,6 +32,9 @@ from cotar.utils import make_run_id, timestamp
 ARMS: tuple[str, ...] = get_args(Arm)
 
 DEBUG                 = False
+
+# experiment
+SEEDS                 = (42, 43, 44)
 
 # model
 MODEL_SIZE            = "500M"
@@ -51,7 +56,7 @@ VAL_LIMIT             = 2048 if not DEBUG else 64
 TESTDEV_LIMIT         = None if not DEBUG else 64
 
 
-def run_arm(arm: Arm, ts: str) -> None:
+def run_arm(arm: Arm, seed: int, ts: str) -> None:
     vlm, processor = build_smolvlm(MODEL_SIZE, layers=LAYERS)
     trainer = Trainer(
         vlm, processor,
@@ -66,8 +71,8 @@ def run_arm(arm: Arm, ts: str) -> None:
         monitor="accuracy",
         monitor_mode="max",
         device=cfg.device,
-        seed=cfg.seed,
-        run_dir=cfg.runs_root / make_run_id(arm, debug=DEBUG, ts=ts),
+        seed=seed,
+        run_dir=cfg.runs_root / make_run_id(f"{arm}_seed{seed}", debug=DEBUG, ts=ts),
         record_step_metrics=True,
         pbar_metric_names=["accuracy", "loss"],
         debug_mode=DEBUG,
@@ -81,7 +86,7 @@ def run_arm(arm: Arm, ts: str) -> None:
         batch_size=BATCH_SIZE,
         with_labels=True,
         num_workers=cfg.num_workers,
-        seed=cfg.seed,
+        seed=seed,
         logger=trainer.logger,
     )
     train_loader = build_gqa_dataloader(
@@ -136,11 +141,14 @@ def run_arm(arm: Arm, ts: str) -> None:
 
 if __name__ == "__main__":
     ts = timestamp()
-    for i, arm in enumerate(ARMS, start=1):
-        print(f"\n{'=' * 79}\n▶️  Run {i}/{len(ARMS)}: {arm} (seed {cfg.seed})\n{'=' * 79}")
-        run_arm(arm, ts)
+    total = len(SEEDS) * len(ARMS)
+    # Seed-major, so an interrupted experiment leaves whole arm comparisons behind
+    # rather than the same arm at every seed and nothing to compare it against.
+    for i, (seed, arm) in enumerate(product(SEEDS, ARMS), start=1):
+        print(f"\n{'=' * 79}\n▶️  Run {i}/{total}: {arm} (seed {seed})\n{'=' * 79}")
+        run_arm(arm, seed, ts)
 
         gc.collect()
         torch.cuda.empty_cache()
 
-    print(f"\n{'=' * 79}\n✅ All {len(ARMS)} runs complete.\n{'=' * 79}\n")
+    print(f"\n{'=' * 79}\n✅ All {total} runs complete.\n{'=' * 79}\n")

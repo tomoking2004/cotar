@@ -20,12 +20,12 @@ cotar/
   pairwise.py      pairwise_cosine / pairwise_equal（losses と metrics の共有土台）
   modules/         LogitScale — 学習可能な温度
   models/          SmolVLM + SmolVLMProcessor（プロンプト構築・ラベルマスク・表現のプール）
-  utils/           JSON の読み書き・run ディレクトリ名（timestamp と arm）
+  utils/           JSON の読み書き・run ディレクトリ名（timestamp と arm と seed）
   data/
     gqa.py         GQADataset / MPerSignatureSampler / task_signature / build_gqa_dataloader
     _gqa_eval.py   GQA 公式評価器（上流＋局所パッチ．読み方は冒頭のヘッダ）
 scripts/
-  train.py         3群を本走．設定は全て冒頭の定数
+  train.py         3群を全 seed で本走．設定は全て冒頭の定数
   analyze_signatures.py  署名分布を数える（学習不要）
   generate.py      モデルが喋るかだけ見る最小スクリプト
 ```
@@ -55,18 +55,18 @@ pip install -e .
 ## 走らせる
 
 ```bash
-python scripts/train.py  # 3群を回す（GPU）
+python scripts/train.py  # 3群 × 3 seed を回す（GPU）
 ```
 
-`train.py` は `cfg.seed`（既定42）で baseline → proposal → ablation を順に通す．run ごとにモデル・loader・trainer を作り直すので，**3群は同じバッチ列を見る**（サンプラの epoch カウンタを次の群に持ち越さない）．
+`train.py` は `SEEDS`（既定 42・43・44）の各 seed で baseline → proposal → ablation を順に通す．run ごとにモデル・loader・trainer を作り直すので，**同じ seed の3群は同じバッチ列を見る**（サンプラの epoch カウンタを次の群に持ち越さない）．seed が変わればその並びも初期化も変わるので，**群間の差を run ごとのばらつきと区別できる**．
 
 制約する層は `train.py` の `LAYERS`．`(16,)` なら層16の1本，`(8, 16, 24)` なら3本を同時に整合する——各層で独立に SupCon を計算して**平均**するので，層を増やしても `ALIGN_WEIGHT` の意味は変わらない（温度は全層で共有）．
 
-1 run あたり RTX 4090 で約2時間（train_balanced の94.2万問・1エポック——全94.3万問のうち，同署名の相方がいない884問はペアを作れないので落ちる）．**3群＝約6時間．**
+1 run あたり RTX 4090 で約2時間（train_balanced の94.2万問・1エポック——全94.3万問のうち，同署名の相方がいない884問はペアを作れないので落ちる）．**3群 × 3 seed ＝9 run で約18時間．**
 
 ## 結果を読む
 
-結果は `cfg.runs_root/<timestamp>_<arm>/` に落ちる．3群は同じ timestamp を共有するので，1回の実験がひとまとまりに並ぶ．
+結果は `cfg.runs_root/<timestamp>_<arm>_seed<seed>/` に落ちる．9 run は同じ timestamp を共有するので，1回の実験がひとまとまりに並ぶ．
 
 | | |
 | --- | --- |
