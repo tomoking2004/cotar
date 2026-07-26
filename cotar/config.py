@@ -46,7 +46,9 @@ class Config:
 
     @property
     def num_workers(self) -> int:
-        return 12 if torch.cuda.is_available() else 0
+        # Workers inherit the parent's parsed questions copy-on-write, so this is
+        # bounded by host RAM rather than by cores — 12 exhausted a 30GB machine.
+        return 6 if torch.cuda.is_available() else 0
 
     @property
     def datasets_root(self) -> Path:

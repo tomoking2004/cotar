@@ -119,6 +119,15 @@ def run_arm(arm: Arm, ts: str) -> None:
         Phase("train_eval", train_eval_loader),
         Phase("val", val_loader),
     )
+
+    # Free the parsed question sets before test() forks its workers: each child
+    # inherits them copy-on-write, and refcounting dirties enough pages to copy them
+    # per worker — which is what exhausted the host here. The trainer holds no
+    # reference to a phase once train() returns, so these are the last ones.
+    del train_loader, train_eval_loader, val_loader
+    gc.collect()
+    torch.cuda.empty_cache()
+
     # `testdev` is the split this study reports, and the phase name is what the metric
     # tables, the plots and `eval.json` file the final numbers under — so the name says
     # which split they came from rather than merely that they came last.
