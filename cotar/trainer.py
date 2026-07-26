@@ -191,8 +191,8 @@ class Trainer(BaseTrainer):
 
         # Carry the run's identity and headline metrics into the report so the comparison
         # reads one self-describing file per run. The *seed* belongs to that identity as
-        # squarely as the arm does — the run directory no longer names it, so this is the
-        # only place it survives. So does the phase: which split these numbers came from
+        # squarely as the arm does — `run_dir` is the caller's to name, so the report
+        # cannot lean on it. So does the phase: which split these numbers came from
         # is the caller's choice, and a report that did not name it would be a column of
         # scores with no split attached. What the trainer ran is what the report says it ran.
         path = self.get_metrics_path("eval")
