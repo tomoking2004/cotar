@@ -140,9 +140,6 @@ def run_arm(arm: Arm, seed: int, ts: str) -> None:
     del train_loader, train_eval_loader, val_loader
     empty_cuda_cache()
 
-    # `testdev` is the split this study reports, and the phase name is what the metric
-    # tables, the plots and `eval.json` file the final numbers under — so the name says
-    # which split they came from rather than merely that they came last.
     trainer.test(Phase("testdev", testdev_loader), use_best=True)
 
 
