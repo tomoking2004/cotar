@@ -8,6 +8,9 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "huggingface-hub",
+    # Reached only on the SmolVLM2-2.2B path (`Size` in cotar/models/smolvlm.py), which
+    # errors without it. Nothing here imports it, and the 500M this study runs never
+    # does — so grep says unused and it is not.
     "num2words",
     "pillow",
     "schedulefree",
