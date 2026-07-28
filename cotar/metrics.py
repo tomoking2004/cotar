@@ -353,7 +353,7 @@ class Evaluator:
         if training:
             return metrics
 
-        answers = self._decode(batch)
+        answers = decode_answers(self._vlm, self._processor, batch)
         self._predictions.update(
             (qid, normalize_answer(answer))
             for qid, answer in zip(batch["question_ids"], answers, strict=True)
@@ -429,9 +429,6 @@ class Evaluator:
         self._question_ids.clear()
 
     # ── internals ─────────────────────────────────────────────────────────────
-
-    def _decode(self, batch: Batch) -> list[str]:
-        return decode_answers(self._vlm, self._processor, batch)
 
     def _by_layer(
         self,
