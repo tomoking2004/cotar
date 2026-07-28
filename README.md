@@ -6,37 +6,7 @@
 
 GQA の各質問には functional program が付いている．その**演算子列**（例 `select > relate > query`）を**タスク署名**と呼び，署名の一致をもって**タスク類似性**とする．署名が一致するタスクどうしの中間層表現を supervised contrastive loss で引き寄せる——これが**内部表現整合**．言語モデリング損失への補助項として足すだけで，射影 head は挟まない——生の hidden state を直接掴むからこそ，仮説は反証可能なままになる．
 
-研究の問い・確定事項・未決の余白は [.claude/context.md](.claude/context.md) にある．**この README は「どう動かすか」だけを扱う．**
-
-## 構成
-
-```
-cotar/
-  config.py        cfg — デバイス・パス（datasets/ と runs/ の位置）
-  types.py         VLM / VLMProcessor のプロトコル．モデル実装との唯一の契約
-  trainer.py       Trainer — train4all の BaseTrainer を実装．3群の定義（Arm）はここ
-  losses.py        supervised_contrastive_loss
-  metrics.py       Evaluator — 報告する数値はすべてここ．公式 GQA 評価器もここから叩く
-  pairwise.py      pairwise_cosine / pairwise_equal（losses と metrics の共有土台）
-  modules/         LogitScale — 学習可能な温度
-  models/          SmolVLM + SmolVLMProcessor（プロンプト構築・ラベルマスク・表現のプール）
-  utils/           JSON の読み書き・run ディレクトリ名（timestamp と arm と seed）
-  data/
-    gqa.py         GQADataset / MPerSignatureSampler / task_signature / build_gqa_dataloader
-    _gqa_eval.py   GQA 公式評価器（上流＋局所パッチ．読み方は冒頭のヘッダ）
-scripts/
-  train.py         3群を全 seed で本走．設定は全て冒頭の定数
-  analyze_signatures.py  署名分布を数える（学習不要）
-  generate.py      モデルが喋るかだけ見る最小スクリプト
-```
-
-**学習が要るのは `train.py` だけ．** 残る2本は学習不要で，ノートPCで何度でも回せる．
-
-**指標は `metrics.py` だけを見ればいい．** デコードも採点も表現の比較も公式評価器もそこにあり，`Evaluator.measure()` が1バッチの全指標を，`Evaluator.report()` がエポック全体の全指標を返す．Trainer は何も測らない．
-
-**モデルは `models/` を足すだけで差し替わる．** `types.py` の `VLM` / `VLMProcessor` プロトコルが唯一の契約で，`VLMOutput["representation"]`——整合する層と位置でプールした `(B, L, H)`——を返せば，loader も損失も指標も Trainer もそのまま動く．
-
-**部分空間 `U` の差し込み口は `Trainer._project`**（現状 identity）．
+研究の問い・確定事項・未決の余白は [.claude/context.md](.claude/context.md) にある．**以降は「どう動かすか」だけを扱う．**
 
 ## 準備
 
@@ -86,3 +56,33 @@ python scripts/train.py  # 3群 × 3 seed を回す（GPU）
 `intra_sim`／`inter_sim`／`separation`／`separation_d` は**操作確認**——学習で直接最適化している量なので，上がっても仮説の支持証拠にはならない．複数層を制約したときは学習中は `separation_d/L16` のように層別に並び，`eval.json` では `representation_stability` が `L16`／`L24` と入れ子になる（単一層なら平のまま）．
 
 `lm_loss` は診断用で，**`loss` ではない**——`loss` は目的関数で，整合する群ではそこに補助項が乗っており，群間で同じ量ではない．学習後に `train_eval`（train を eval モードで測ったスライス）と `val` を並べて出すので，その2数字の開きが素の過学習量になる．
+
+## 構成
+
+```
+cotar/
+  config.py        cfg — デバイス・パス（datasets/ と runs/ の位置）
+  types.py         VLM / VLMProcessor のプロトコル．モデル実装との唯一の契約
+  trainer.py       Trainer — train4all の BaseTrainer を実装．3群の定義（Arm）はここ
+  losses.py        supervised_contrastive_loss
+  metrics.py       Evaluator — 報告する数値はすべてここ．公式 GQA 評価器もここから叩く
+  pairwise.py      pairwise_cosine / pairwise_equal（losses と metrics の共有土台）
+  modules/         LogitScale — 学習可能な温度
+  models/          SmolVLM + SmolVLMProcessor（プロンプト構築・ラベルマスク・表現のプール）
+  utils/           JSON の読み書き・run ディレクトリ名
+  data/
+    gqa.py         GQADataset / MPerSignatureSampler / task_signature / build_gqa_dataloader
+    _gqa_eval.py   GQA 公式評価器（上流＋局所パッチ．読み方は冒頭のヘッダ）
+scripts/
+  train.py         3群を全 seed で本走．設定は全て冒頭の定数
+  analyze_signatures.py  署名分布を数える（学習不要）
+  generate.py      モデルが喋るかだけ見る最小スクリプト
+```
+
+**学習が要るのは `train.py` だけ．** 残る2本は学習不要で，ノートPCで何度でも回せる．
+
+**指標は `metrics.py` だけを見ればいい．** デコードも採点も表現の比較も公式評価器もそこにあり，`Evaluator.measure()` が1バッチの全指標を，`Evaluator.report()` がエポック全体の全指標を返す．Trainer は何も測らない．
+
+**モデルは `models/` を足すだけで差し替わる．** `types.py` の `VLM` / `VLMProcessor` プロトコルが唯一の契約で，`VLMOutput["representation"]`——整合する層と位置でプールした `(B, L, H)`——を返せば，loader も損失も指標も Trainer もそのまま動く．
+
+**部分空間 `U` の差し込み口は `Trainer._project`**（現状 identity）．
