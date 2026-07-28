@@ -53,9 +53,9 @@ python scripts/train.py  # 3群 × 3 seed を回す（GPU）
 
 読むのは `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが testdev_balanced に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群を横に並べてベースラインと比べる．横並びの比較スクリプトも有意差検定も今は無い．
 
-`intra_sim`／`inter_sim`／`separation`／`separation_d` は**操作確認**——学習で直接最適化している量なので，上がっても仮説の支持証拠にはならない．複数層を制約したときは学習中は `separation_d/L16` のように層別に並び，`eval.json` では `representation_stability` が `L16`／`L24` と入れ子になる（単一層なら平のまま）．
+`intra_sim`／`inter_sim`／`separation`／`separation_d` は**操作確認**——学習で直接最適化している量なので，上がっても仮説の支持証拠にはならない．複数層を制約したときは，学習中は層をまたぐ平均と `separation_d/L16` のような層別が並び，`eval.json` では `representation_stability` が `L16`／`L24` と入れ子になる（単一層ならどちらも平のまま）．`eval.json` の側は**seed で決まる4,000件の抜き取り**の上で計算される——類似度行列が件数の2乗で膨らむので上限を置いてある（`MAX_STABILITY_SAMPLES`）．
 
-`lm_loss` は診断用で，**`loss` ではない**——`loss` は目的関数で，整合する群ではそこに補助項が乗っており，群間で同じ量ではない．学習後に `train_eval`（train を eval モードで測ったスライス）と `val` を並べて出すので，その2数字の開きが素の過学習量になる．
+`lm_loss` は**3群で同じ量＝損失のうち群間比較に使える唯一のもの**で，**`loss` ではない**——`loss` は目的関数で，整合する群ではそこに補助項が乗っているから群間で同じ量ではない（決定指標はどちらでもなく accuracy）．学習後に `train_eval`（train を eval モードで測ったスライス）と `val` を並べて出すので，その2数字の開きが素の過学習量になる．
 
 ## 構成
 
@@ -65,7 +65,7 @@ cotar/
   types.py         VLM / VLMProcessor のプロトコル．モデル実装との唯一の契約
   trainer.py       Trainer — train4all の BaseTrainer を実装．3群の定義（Arm）はここ
   losses.py        supervised_contrastive_loss
-  metrics.py       Evaluator — 報告する数値はすべてここ．公式 GQA 評価器もここから叩く
+  metrics.py       Evaluator — モデルを測る数値はすべてここ．公式 GQA 評価器もここから叩く
   pairwise.py      pairwise_cosine / pairwise_equal（losses と metrics の共有土台）
   modules/         LogitScale — 学習可能な温度
   models/          SmolVLM + SmolVLMProcessor（プロンプト構築・ラベルマスク・表現のプール）
@@ -81,7 +81,7 @@ scripts/
 
 **学習が要るのは `train.py` だけ．** 残る2本は学習不要で，ノートPCで何度でも回せる．
 
-**指標は `metrics.py` だけを見ればいい．** デコードも採点も表現の比較も公式評価器もそこにあり，`Evaluator.measure()` が1バッチの全指標を，`Evaluator.report()` がエポック全体の全指標を返す．Trainer は何も測らない．
+**モデルを測る数値は `metrics.py` だけを見ればいい．** デコードも採点も表現の比較も公式評価器もそこにあり，`Evaluator.measure()` が1バッチの，`Evaluator.report()` がエポック全体の測定値を返す．Trainer が足すのは自分が組んだ目的関数の内訳（`lm_loss`・`align_loss`・`temperature`）だけで，モデルを測ることはしない．
 
 **モデルは `models/` を足すだけで差し替わる．** `types.py` の `VLM` / `VLMProcessor` プロトコルが唯一の契約で，`VLMOutput["representation"]`——整合する層と位置でプールした `(B, L, H)`——を返せば，loader も損失も指標も Trainer もそのまま動く．
 

@@ -42,7 +42,10 @@ class Trainer(BaseTrainer):
     ``align_weight`` is the magnitude of that auxiliary term; ``"baseline"`` pins it to
     zero whatever is passed, so the three arms differ by ``arm`` and nothing else.
 
-    Every metric comes from :class:`~cotar.metrics.Evaluator`; nothing is measured here.
+    Every measured metric comes from :class:`~cotar.metrics.Evaluator`. What this class
+    adds are the terms of the objective it assembled — ``lm_loss``, ``align_loss`` and
+    the learned ``temperature`` — which no other object is in a position to report;
+    nothing about the model is measured here.
 
     The trainer holds no schedule: every pass a run makes — training, the held-in
     overfitting check, validation, and the final evaluation — is a

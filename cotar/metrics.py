@@ -1,9 +1,11 @@
 """Every number this study reports.
 
 Answers are decoded here, scored here, and representations compared here; the
-official GQA evaluator is run here. Nothing outside this module computes a reported
-metric, and `Evaluator` is the single door in: `measure` returns all of a batch's
-metrics, `report` all of an accumulated epoch's.
+official GQA evaluator is run here. Nothing outside this module measures the model —
+the trainer adds only its own objective's terms (`lm_loss`, `align_loss` and the
+learned `temperature`), which it forms and so alone can report. `Evaluator` is the
+single door in: `measure` returns all of a batch's measurements, `report` all of an
+accumulated epoch's.
 """
 
 from __future__ import annotations
