@@ -197,6 +197,13 @@ class SmolVLM(nn.Module):
         super().__init__()
         self.layers = _as_layers(layers)
 
+        # Both are recorded with the run, so both are resolved once here and kept
+        # rather than re-derived at the point of recording: `_attn_implementation`
+        # probes the machine, and asking it a second time could name a kernel other
+        # than the one these weights actually ran under.
+        self.checkpoint = _CHECKPOINTS[size]
+        self.attn_implementation = _attn_implementation()
+
         # Weights stay fp32 — they are what the optimizer updates, and an update of
         # relative size ~1e-3 (lr 1e-5 on weights of order 1e-2) is *below* bf16's
         # rounding step, so bf16 master weights would silently discard every step
@@ -211,9 +218,9 @@ class SmolVLM(nn.Module):
         # be resolved from the config, not hard-coded: SmolVLM-256M/500M load as
         # Idefics3ForConditionalGeneration and only SmolVLM2-2.2B as SmolVLM*.
         self._model = AutoModelForImageTextToText.from_pretrained(
-            _CHECKPOINTS[size],
+            self.checkpoint,
             torch_dtype=torch.float32,
-            attn_implementation=_attn_implementation(),
+            attn_implementation=self.attn_implementation,
         )
 
         self._check_layers()

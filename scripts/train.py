@@ -114,9 +114,14 @@ def run_arm(arm: Arm, seed: int, ts: str) -> None:
         **loader_kwargs,
     )
 
+    # What reproducing this run needs and no trainer argument carries — what this VLM is,
+    # and the loaders' settings, neither of which the trainer is constructed with.
     trainer.update_checkpoint_extras({
-        "vlm": f"{type(vlm).__name__} ({MODEL_SIZE})",
-        "layers": list(LAYERS),
+        "checkpoint": vlm.checkpoint,
+        "layers": vlm.layers,
+        "attn_implementation": vlm.attn_implementation,
+        "samples_per_signature": SAMPLES_PER_SIGNATURE,
+        "limits": {"train": TRAIN_LIMIT, "val": VAL_LIMIT, "testdev": TESTDEV_LIMIT},
     })
 
     trainer.train(

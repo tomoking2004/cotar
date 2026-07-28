@@ -70,11 +70,16 @@ python scripts/train.py  # 3群 × 3 seed を回す（GPU）
 
 | | |
 | --- | --- |
+| `config.json` | trainer に渡した引数だけ．cotar 由来のもの（arm・align_weight・init_scale）は常に，train4all 由来のもの（seed・batch_size…）は既定から変えたときだけ載る |
 | `metrics/eval.json` | 群の identity（arm・seed・align_weight・align_pairing・phase）＋testdev の全指標 |
 | `metrics/predictions.json` | 公式形式の予測．公式評価器で再採点できる |
 | `metrics/representations.pt` | **testdev の表現そのもの**（`(N, L, H)` float32）＋層番号＋署名＋質問ID |
-| `checkpoints/best.pth` | val accuracy が最良のエポックの重み |
-| `dashboard.html` | 学習中のライブ表示 |
+| `metrics/epoch_metrics.json`・`metrics/step_metrics.json`・`plots/` | 学習中に記録した指標の推移．JSON と，同じものを描いた PNG |
+| `checkpoints/best.pth` | val accuracy が最良のエポックの重み．extras にモデルの checkpoint・層・attention 実装・loader の設定 |
+| `log.txt` | 実行の記録．冒頭が環境バナーで，マシンに続けて結果を決めるライブラリの版が載る（`transformers`・`train4all`・`schedulefree`，そして入っていれば `flash-attn`） |
+| `dashboard.html` | 学習中のライブ表示．Environment パネルはバナーと同じものを読む |
+
+再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回る．バナーが引き受けるのは**この checkout の外が決めるもの**で，`flash-attn` はそこに載るかどうか自体が答えになる——無ければ attention は SDPA に落ち，その結果が extras の `attn_implementation` に残る．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
 読むのは `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが testdev_balanced に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群を横に並べてベースラインと比べる．横並びの比較スクリプトも有意差検定も今は無い．
 

@@ -8,6 +8,7 @@ from typing import Any, Literal, get_args
 import torch
 from schedulefree import RAdamScheduleFree
 from train4all import BaseTrainer, Phase
+from train4all.utils import package_versions
 
 from .data import Batch
 from .losses import supervised_contrastive_loss
@@ -88,14 +89,30 @@ class Trainer(BaseTrainer):
             seed=self.seed or 0,
         )
 
-        # `seed` is not repeated here: `BaseTrainer` already records it in `config.json`
-        # whenever it differs from the constructor default, which every run does.
+        # This constructor's own *experimental* arguments — the ones that decide what is
+        # learned — which `BaseTrainer` does not see and so does not record. Only
+        # arguments: `config.json` stays a constructor call, and what is derived from one
+        # (`align_pairing`) or belongs to another object (`vlm`'s layers) is not one.
+        # `seed` is absent because `BaseTrainer` already records it whenever it differs
+        # from the constructor default, which every run does. The evaluation arguments
+        # above are absent for the opposite reason: they say where the answer key is and
+        # how much of it to read, and no choice among them changes the run.
         self.update_config({
             "arm": self.arm,
             "align_weight": self.align_weight,
-            "align_pairing": self.align_pairing,
             "init_scale": init_scale,
         })
+
+        # Which library versions decide what this model does. `BaseTrainer` reports as
+        # far as a training framework can know on its own — the machine and the PyTorch
+        # stack — and the rest is the project's to declare: the model and its prompt
+        # construction (`transformers`), the loop and its metric averaging
+        # (`train4all`), and the optimizer (`schedulefree`). `flash-attn` is asked for
+        # precisely because it is usually *absent*, and that absence is what sends
+        # attention down the SDPA path the checkpoint's extras then record.
+        self.update_env_summary(
+            package_versions("transformers", "train4all", "schedulefree", "flash-attn")
+        )
 
     # ── train4all interface ───────────────────────────────────────────────────
 
