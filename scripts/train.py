@@ -15,12 +15,11 @@ import os
 # Must be set before the CUDA allocator is first used (i.e. before .to("cuda")).
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
-import gc
 from itertools import product
 from typing import Any, get_args
 
-import torch
 from train4all import Phase
+from train4all.utils import empty_cuda_cache
 
 from cotar.config import cfg
 from cotar.data import build_gqa_dataloader
@@ -134,13 +133,12 @@ def run_arm(arm: Arm, seed: int, ts: str) -> None:
         Phase("val", val_loader),
     )
 
-    # Free the parsed question sets before test() forks its workers: each child
-    # inherits them copy-on-write, and refcounting dirties enough pages to copy them
-    # per worker — which is what exhausted the host here. The trainer holds no
-    # reference to a phase once train() returns, so these are the last ones.
+    # Free the parsed question sets before test() forks its workers: each child inherits
+    # them copy-on-write, and refcounting alone dirties enough pages to copy them per
+    # worker — which is what exhausted the host here. The trainer holds no reference to a
+    # phase once train() returns, so these are the last ones.
     del train_loader, train_eval_loader, val_loader
-    gc.collect()
-    torch.cuda.empty_cache()
+    empty_cuda_cache()
 
     # `testdev` is the split this study reports, and the phase name is what the metric
     # tables, the plots and `eval.json` file the final numbers under — so the name says
@@ -151,13 +149,16 @@ def run_arm(arm: Arm, seed: int, ts: str) -> None:
 if __name__ == "__main__":
     ts = timestamp()
     total = len(SEEDS) * len(ARMS)
+
     # Seed-major, so an interrupted experiment leaves whole arm comparisons behind
     # rather than the same arm at every seed and nothing to compare it against.
     for i, (seed, arm) in enumerate(product(SEEDS, ARMS), start=1):
         print(f"\n{'=' * 79}\n▶️  Run {i}/{total}: {arm} (seed {seed})\n{'=' * 79}")
         run_arm(arm, seed, ts)
 
-        gc.collect()
-        torch.cuda.empty_cache()
+        # Here rather than at the end of `run_arm`: the model, its optimizer state and
+        # the trainer holding both are still live locals until that call returns, so a
+        # collection inside it cannot reach them however late it is placed.
+        empty_cuda_cache()
 
     print(f"\n{'=' * 79}\n✅ All {total} runs complete.\n{'=' * 79}\n")
