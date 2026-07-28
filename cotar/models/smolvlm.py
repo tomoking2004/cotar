@@ -147,7 +147,9 @@ class SmolVLMProcessor:
             self._processor.tokenizer(dummy_prompt, add_special_tokens=True).input_ids
         )
         dummy_image = PIL.Image.new("RGB", (32, 32))
-        expanded = self._processor(text=[dummy_prompt], images=[[dummy_image]], return_tensors="pt")
+        expanded = self._processor(
+            text=[dummy_prompt], images=[[dummy_image]], return_tensors="pt"
+        )
         return int(expanded["attention_mask"].sum()) - placeholder_len
 
     def _prompt_lens(self, texts: list[str], full_prompts: list[str]) -> list[int]:
