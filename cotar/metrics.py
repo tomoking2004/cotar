@@ -263,12 +263,19 @@ def _parse_scores(output: str) -> dict[str, float]:
 
 def _parse_subset(output: str) -> dict[str, float]:
     """The ``Evaluating N of M questions (K skipped ...)`` line the script prints, so
-    the subset a run was actually scored on is visible in the result. Returns ``{}``
-    if the line is absent (e.g. an older copy of the script)."""
+    the subset a run was actually scored on is visible in the result.
+
+    The script is this package's own copy at a fixed path and prints that line
+    unconditionally, so it cannot merely be missing: its absence means the copy has
+    been edited out of contract. Said out loud here rather than left to surface as a
+    pair of keys quietly gone from every ``eval.json``.
+    """
     for line in output.splitlines():
         if m := _SUBSET_LINE.match(line):
             return {"scored": float(m.group(1)), "skipped": float(m.group(2))}
-    return {}
+    raise RuntimeError(
+        f"No 'Evaluating N of M questions' line in GQA evaluation output:\n{output.strip()}"
+    )
 
 
 def _parse_groups(output: str) -> dict[str, dict[str, float]]:
