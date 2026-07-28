@@ -13,7 +13,7 @@ from train4all.utils import package_versions
 from .data import Batch
 from .losses import supervised_contrastive_loss
 from .metrics import MAX_STABILITY_SAMPLES, Evaluator
-from .modules import LogitScale
+from .modules import INIT_SCALE, LogitScale
 from .types import IGNORE_INDEX, VLM, VLMProcessor
 from .utils import save_json
 
@@ -58,7 +58,7 @@ class Trainer(BaseTrainer):
         *,
         arm: Arm = "baseline",
         align_weight: float = 0.1,
-        init_scale: float = 1 / 0.07,
+        init_scale: float = INIT_SCALE,
         # evaluation
         gqa_questions_path: Path | str | None = None,
         gqa_choices_path: Path | str | None = None,

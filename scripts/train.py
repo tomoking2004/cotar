@@ -25,15 +25,17 @@ from train4all import Phase
 from cotar.config import cfg
 from cotar.data import build_gqa_dataloader
 from cotar.models import build_smolvlm
+from cotar.modules import INIT_SCALE
 from cotar.trainer import Arm, Trainer
 from cotar.utils import make_run_id, timestamp
 
 
-ARMS: tuple[str, ...] = get_args(Arm)
-
-DEBUG                 = False
+# Derived, not a setting: the arms and their order are `Arm`'s to define, and this is
+# the study's independent variable — it may not drift from the type the trainer checks.
+ARMS: tuple[Arm, ...] = get_args(Arm)
 
 # experiment
+DEBUG                 = False
 SEEDS                 = (42, 43, 44)
 
 # model
@@ -41,8 +43,10 @@ MODEL_SIZE            = "500M"
 LAYERS                = (16,)
 
 # trainer
+# The contrastive term's starting temperature is absent from this block on purpose:
+# `cotar.modules` holds that number as `INIT_SCALE` (imported above, passed below), and
+# restating it here would give one number a second home to drift from.
 ALIGN_WEIGHT          = 0.1
-INIT_SCALE            = 1 / 0.07
 EPOCHS                = 1
 BATCH_SIZE            = 32 if not DEBUG else 8
 LR                    = 1e-5
