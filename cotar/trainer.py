@@ -82,8 +82,7 @@ class Trainer(BaseTrainer):
         self.align_pairing  = "shuffled" if arm == "ablation" else "signature"
         self.logit_scale    = LogitScale(init_scale=init_scale)
 
-        self._is_training = True
-        self._evaluator   = Evaluator(
+        self._evaluator = Evaluator(
             vlm,
             processor,
             gqa_questions_path=gqa_questions_path,
@@ -121,9 +120,9 @@ class Trainer(BaseTrainer):
 
     def setup(self) -> None:
         self.set_models({"vlm": self.vlm, "logit_scale": self.logit_scale})
-        self.set_optimizer(
-            RAdamScheduleFree(params=self.get_trainable_params(), lr=self.learning_rate)
-        )
+        # The class, not an instance: the parameters and the rate are both things
+        # `BaseTrainer` already holds, and it supplies them itself.
+        self.set_optimizer(RAdamScheduleFree)
 
     def compute_loss(self, batch: Batch) -> torch.Tensor:
         output = self.vlm(**batch)
@@ -160,7 +159,7 @@ class Trainer(BaseTrainer):
         # and exports are read in, so the terms it decomposes into follow it directly:
         # `lm_loss` exists to be told apart from `loss`, and cannot be from a distance.
         metrics = self._evaluator.measure(
-            batch, self.get_cache("representation"), training=self._is_training
+            batch, self.get_cache("representation"), training=self.training
         )
         return self._losses() | self._temperature() | metrics
 
@@ -173,7 +172,6 @@ class Trainer(BaseTrainer):
     # ── lifecycle hooks ───────────────────────────────────────────────────────
 
     def on_set_training_mode(self, training: bool) -> None:
-        self._is_training = training
         # RAdamScheduleFree keeps separate train/eval parameter views; evaluation
         # must read the averaged weights, so the two switch in lockstep.
         if isinstance(self._optimizer, RAdamScheduleFree):
