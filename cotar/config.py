@@ -58,6 +58,12 @@ class Config:
         return self.work_root / "runs"
 
     @property
+    def snapshots_root(self) -> Path:
+        # Beside runs_root and laid out identically — one directory per run, under that
+        # run's own name, so which run a snapshot holds is readable from the path alone.
+        return self.work_root / "snapshots"
+
+    @property
     def gqa(self) -> GQAPaths:
         return GQAPaths(self.datasets_root / "gqa")
 

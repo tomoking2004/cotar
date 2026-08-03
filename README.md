@@ -49,6 +49,8 @@ python scripts/train.py  # 3群 × 3 seed を回す（GPU）
 | `log.txt` | 実行の記録．冒頭が環境バナーで，マシンに続けて結果を決めるライブラリの版が載る（`transformers`・`train4all`・`schedulefree`，そして入っていれば `flash-attn`） |
 | `dashboard.html` | 学習中のライブ表示．Environment パネルはバナーと同じものを読む |
 
+**同じものの写しが，`checkpoints/` だけを抜いて `cfg.snapshots_root/` の同じ run 名の下にも落ちる．** エポックごとと最終評価の直後に更新され，変わったファイルだけを原子的に置き換えて消すのは最後に回すので，走っている最中に掴んでも写しは丸ごと揃っている．重みを落とせば1 run は数十MB——**上の表のうち `checkpoints/best.pth` 以外は全部こちらに在る**ので，マシンから持ち出すならこのディレクトリでいい．
+
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回る．バナーが引き受けるのは**この checkout の外が決めるもの**で，`flash-attn` はそこに載るかどうか自体が答えになる——無ければ attention は SDPA に落ち，その結果が extras の `attn_implementation` に残る．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
 読むのは `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが testdev_balanced に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群を横に並べてベースラインと比べる．横並びの比較スクリプトも有意差検定も今は無い．
@@ -61,7 +63,7 @@ python scripts/train.py  # 3群 × 3 seed を回す（GPU）
 
 ```
 cotar/
-  config.py        cfg — デバイス・パス（datasets/ と runs/ の位置）
+  config.py        cfg — デバイス・パス（datasets/・runs/・snapshots/ の位置）
   types.py         VLM / VLMProcessor のプロトコル．モデル実装との唯一の契約
   trainer.py       Trainer — train4all の BaseTrainer を実装．3群の定義（Arm）はここ
   losses.py        supervised_contrastive_loss

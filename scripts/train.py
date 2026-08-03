@@ -60,6 +60,7 @@ TESTDEV_LIMIT         = None if not DEBUG else 64
 
 
 def run_arm(arm: Arm, seed: int, ts: str) -> None:
+    run_id = make_run_id(f"{arm}_seed{seed}", debug=DEBUG, ts=ts)
     vlm, processor = build_smolvlm(MODEL_SIZE, layers=LAYERS)
     trainer = Trainer(
         vlm, processor,
@@ -75,7 +76,14 @@ def run_arm(arm: Arm, seed: int, ts: str) -> None:
         monitor_mode="max",
         device=cfg.device,
         seed=seed,
-        run_dir=cfg.runs_root / make_run_id(f"{arm}_seed{seed}", debug=DEBUG, ts=ts),
+        run_dir=cfg.runs_root / run_id,
+        # Everything the run produced except the weights, mirrored after every epoch and
+        # again after the final evaluation. The checkpoints are nearly all of a run
+        # directory's bytes, and the part every later question is asked of — the metrics,
+        # the predictions, the representations, the log — is a rounding error beside them.
+        # Dropping them is what leaves a copy small enough to keep for every run at once.
+        run_snapshot_dir=cfg.snapshots_root / run_id,
+        run_snapshot_exclude=["checkpoints"],
         record_step_metrics=True,
         pbar_metric_names=["accuracy", "loss"],
         debug_mode=DEBUG,

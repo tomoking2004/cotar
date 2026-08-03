@@ -230,6 +230,12 @@ class Trainer(BaseTrainer):
         )
         self.print(f"📄 Test report saved: {path.name}")
 
+        # The one pass `train()`'s per-epoch mirror never sees: `test()` runs outside
+        # the loop, so a snapshot left to that mirror would hold every epoch's metrics
+        # and none of the files just written above — which are what the run exists to
+        # produce.
+        self.snapshot_run()
+
     # ── internals ─────────────────────────────────────────────────────────────
 
     def _alignment_loss(self, representation: torch.Tensor, batch: Batch) -> torch.Tensor:
