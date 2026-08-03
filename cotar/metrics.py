@@ -167,7 +167,8 @@ def representation_stability(
 
     `separation` is the gap between the two mean cosine similarities and `separation_d`
     its Cohen's d, which is scale-free and so the one the arms are compared on. All four
-    are NaN unless the sample holds a pair of each kind."""
+    are NaN unless the sample holds a pair of each kind.
+    """
     if representations.size(0) != len(signatures):
         raise ValueError(
             f"{representations.size(0)} representations but {len(signatures)} signatures."
@@ -284,7 +285,8 @@ def _parse_groups(output: str) -> dict[str, dict[str, float]]:
     """The per-type accuracy tables the script prints after the scores: an
     ``Accuracy / <group>:`` heading followed by indented ``<bucket>: <pct>%
     (<n> questions)`` rows. Buckets carrying no questions never appear, so an empty
-    group simply comes back empty."""
+    group simply comes back empty.
+    """
     groups: dict[str, dict[str, float]] = {}
     current: dict[str, float] | None = None
     for line in output.splitlines():
@@ -376,7 +378,8 @@ class Evaluator:
 
     def report(self) -> dict[str, Any]:
         """Everything scored over a whole accumulated evaluation epoch: the official
-        GQA scores, and stability over far more samples than a single batch holds."""
+        GQA scores, and stability over far more samples than a single batch holds.
+        """
         report: dict[str, Any] = {}
         if self._questions_path is not None:
             report["official_gqa"] = evaluate_gqa(
@@ -399,7 +402,8 @@ class Evaluator:
 
     def save_predictions(self, path: Path | str) -> None:
         """Write the predictions in the official GQA format, so any run can be
-        re-scored and compared offline whether or not it could be scored now."""
+        re-scored and compared offline whether or not it could be scored now.
+        """
         save_json(_official_format(self._predictions), path)
 
     def save_representations(self, path: Path | str) -> None:
@@ -448,7 +452,8 @@ class Evaluator:
 
         Every representation metric is defined over a set of vectors, and the layers are
         separate sets — so each is scored on its own, whatever the caller then does with
-        the results."""
+        the results.
+        """
         return {
             name: score(hidden)
             for name, hidden in zip(
@@ -460,7 +465,8 @@ class Evaluator:
 
     def _subsample(self) -> tuple[torch.Tensor, list[str]]:
         """A seeded subsample of the accumulated representations, capped at
-        ``max_stability_samples``."""
+        ``max_stability_samples``.
+        """
         representations = torch.cat(self._representations)
         signatures = self._signatures
         if len(signatures) > self._max_samples:

@@ -269,7 +269,8 @@ class Trainer(BaseTrainer):
         stays falsifiable. Whether to confine the contrastive gradient to a fixed
         subspace — a random orthogonal ``U``, or the model's verbalisable "workspace"
         directions — is deliberately left open until the representation is measured;
-        that projection would slot in here."""
+        that projection would slot in here.
+        """
         return representation
 
     def _pair_labels(self, signatures: list[str], question_ids: list[str]) -> list[str]:
@@ -278,7 +279,8 @@ class Trainer(BaseTrainer):
         The ablation permutes the batch's signatures rather than inventing labels, so
         the class histogram (and with it the positive-pair count) is preserved exactly
         while the pairing is decorrelated from the program. Seeding the permutation on
-        the question ids keeps it deterministic per batch, and therefore reproducible."""
+        the question ids keeps it deterministic per batch, and therefore reproducible.
+        """
         if self.align_pairing == "signature":
             return signatures
         seed = zlib.crc32("".join(question_ids).encode()) ^ (self.seed or 0)

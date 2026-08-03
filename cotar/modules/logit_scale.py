@@ -16,7 +16,8 @@ INIT_SCALE: Final = 1 / 0.07
 
 class LogitScale(nn.Module):
     """A learnable temperature, held as a log scale and clamped so a runaway scale
-    cannot saturate the softmax."""
+    cannot saturate the softmax.
+    """
 
     def __init__(self, init_scale: float = INIT_SCALE, max_scale: float = 100.0) -> None:
         super().__init__()

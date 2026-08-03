@@ -37,7 +37,8 @@ class VLMOutput(TypedDict):
     was configured to read, in the order of `VLM.layers`. The layer axis is present
     even when a single layer was asked for, so nothing downstream branches on the
     count. It is `None` when the model was built without a layer, or when the batch
-    carries no prompt lengths to pool at."""
+    carries no prompt lengths to pool at.
+    """
 
     loss: torch.Tensor | None
     representation: torch.Tensor | None
@@ -73,7 +74,8 @@ class VLM(Protocol):
     def layers(self) -> tuple[int, ...] | None:
         """The layers `representation` is read at, in its layer-axis order — `None`
         when the model produces none. Part of the contract because the metrics name
-        themselves after these, and only the model knows them."""
+        themselves after these, and only the model knows them.
+        """
         ...
 
     def __call__(

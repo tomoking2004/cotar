@@ -30,7 +30,8 @@ def task_signature(program: list[dict[str, Any]]) -> str:
 
     Arguments are dropped on purpose: matching on them makes a positive pair almost
     the same question, which is trivially alike and says nothing about shared
-    procedure."""
+    procedure.
+    """
     return " > ".join(step["operation"] for step in program) or "none"
 
 
@@ -190,7 +191,8 @@ class MPerSignatureSampler(Sampler[list[int]]):
     """Batches of M samples drawn from each of a few randomly chosen signatures.
 
     A contrastive batch is built out of classes: too few distinct signatures and it
-    has too few negatives, too few samples per signature and it has no positives."""
+    has too few negatives, too few samples per signature and it has no positives.
+    """
 
     def __init__(
         self,
