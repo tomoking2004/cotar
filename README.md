@@ -53,7 +53,7 @@ python scripts/train.py  # 3群 × 3 seed を回す（GPU）
 
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回る．バナーが引き受けるのは**この checkout の外が決めるもの**で，`flash-attn` はそこに載るかどうか自体が答えになる——無ければ attention は SDPA に落ち，その結果が extras の `attn_implementation` に残る．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
-読むのは `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが testdev_balanced に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群を横に並べてベースラインと比べる．横並びの比較スクリプトも有意差検定も今は無い．
+読むのは `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが testdev_balanced に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群を横に並べて baseline と比べる．横並びの比較スクリプトも有意差検定も今は無い．
 
 `intra_sim`／`inter_sim`／`separation`／`separation_d` は**操作確認**——学習で直接最適化している量なので，上がっても仮説の支持証拠にはならない．複数層を制約したときは，学習中は層をまたぐ平均と `separation_d/L16` のような層別が並び，`eval.json` では `representation_stability` が `L16`／`L24` と入れ子になる（単一層ならどちらも平のまま）．`eval.json` の側は**seed で決まる4,000件の抜き取り**の上で計算される——類似度行列が件数の2乗で膨らむので上限を置いてある（`MAX_STABILITY_SAMPLES`）．
 
