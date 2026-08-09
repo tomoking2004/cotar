@@ -6,7 +6,7 @@
 
 GQA の各質問には functional program が付いている．その**演算子列**（例 `select > relate > query`）を**タスク署名**と呼び，署名の一致をもって**タスク類似性**とする．署名が一致するタスクどうしの中間層表現を supervised contrastive loss で引き寄せる——これが**内部表現整合**．言語モデリング損失への補助項として足すだけで，射影 head は挟まない——生の hidden state を直接掴むからこそ，仮説は反証可能なままになる．
 
-研究の問い・確定事項・未決の余白は [.claude/context.md](.claude/context.md) に，依拠する論文の要約は [references/](references/) に一本ずつある．**以降は「どう動かすか」だけを扱う．**
+研究の問い・確定事項・未決の余白は [.claude/context.md](.claude/context.md) に，依拠する論文の要約は [references/](references/) に一本ずつ，対外発表の成果物は [presentations/](presentations/) にある．**以降は「どう動かすか」だけを扱う．**
 
 ## 準備
 
