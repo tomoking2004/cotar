@@ -7,5 +7,4 @@ __pycache__/
 datasets/
 logs/
 runs/
-snapshots/
 tmp/
