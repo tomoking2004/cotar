@@ -30,7 +30,7 @@
 
 ## 結果
 
-- **層23（全32層）で，介入前後の変化の分散の 92% が補償で説明される．**
+- **第23層（全32層）で，介入前後の変化の分散の 92% が補償で説明される．**
 - **中間層では，Hydra 効果と MLP 効果の減少が合わさって，トークン logit の低下のおよそ 70% を回復する．**
 - **補償は不完全**——"fitting a linear regression between direct effect and compensatory response gives a slope of less than one at all layers past layer 13"．
 
@@ -39,10 +39,10 @@
 | 層域 | 挙動 |
 | --- | --- |
 | 前段 | "early layer ablations have large total effects but almost no direct effect" |
-| 中段〜後段 | 直接効果と補償応答が強く相関．**層23が補償のピーク** |
+| 中段〜後段 | 直接効果と補償応答が強く相関．**第23層が補償のピーク** |
 | 最終盤 | "very late layers only have non-negligible direct effect (which makes sense as there are few downstream layers)" |
 
-**後段 MLP の消去機能**："when the attention layer has a high positive impact they have a high negative impact and when the attention layer's Δunembed is reduced theirs is similarly attenuated"．層22では MLP 側の応答の方が予測力が高くなり，**層23ではほぼすべての応答が消去 MLP に生じる**．
+**後段 MLP の消去機能**："when the attention layer has a high positive impact they have a high negative impact and when the attention layer's Δunembed is reduced theirs is similarly attenuated"．第22層では MLP 側の応答の方が予測力が高くなり，**第23層ではほぼすべての応答が消去 MLP に生じる**．
 
 ## 著者が述べる含意
 
