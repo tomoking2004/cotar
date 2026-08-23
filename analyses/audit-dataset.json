@@ -1,0 +1,320 @@
+{
+    "splits": {
+        "train": {
+            "questions": 943000,
+            "images": 72140
+        },
+        "val": {
+            "questions": 132062,
+            "images": 10234
+        },
+        "testdev": {
+            "questions": 12578,
+            "images": 398
+        }
+    },
+    "disjointness": [
+        {
+            "left": "train",
+            "right": "val",
+            "kind": "question",
+            "overlap": 0
+        },
+        {
+            "left": "train",
+            "right": "val",
+            "kind": "image",
+            "overlap": 0
+        },
+        {
+            "left": "train",
+            "right": "testdev",
+            "kind": "question",
+            "overlap": 0
+        },
+        {
+            "left": "train",
+            "right": "testdev",
+            "kind": "image",
+            "overlap": 0
+        },
+        {
+            "left": "val",
+            "right": "testdev",
+            "kind": "question",
+            "overlap": 0
+        },
+        {
+            "left": "val",
+            "right": "testdev",
+            "kind": "image",
+            "overlap": 0
+        }
+    ],
+    "entailment_vs_signature": {
+        "unordered": {
+            "pairs": 20867,
+            "mismatched": 10882,
+            "mismatch_rate": 0.5214932668807207
+        },
+        "ordered": {
+            "pairs": 36073,
+            "mismatched": 16108,
+            "mismatch_rate": 0.44653896265905246
+        },
+        "listed_from_both_sides": 30412,
+        "answer_kind": {
+            "mismatched": {
+                "pairs": 10882,
+                "mixes_yes_no_with_open": 4805,
+                "rate": 0.4415548612387429
+            },
+            "matched": {
+                "pairs": 9985,
+                "mixes_yes_no_with_open": 0,
+                "rate": 0.0
+            }
+        },
+        "most_common_mismatches": [
+            {
+                "signatures": [
+                    "select > relate > query",
+                    "select > relate > relate > query"
+                ],
+                "pairs": 2207
+            },
+            {
+                "signatures": [
+                    "select > filter color > relate > query",
+                    "select > relate > query"
+                ],
+                "pairs": 698
+            },
+            {
+                "signatures": [
+                    "select > relate > exist",
+                    "select > relate > query"
+                ],
+                "pairs": 451
+            },
+            {
+                "signatures": [
+                    "select > exist",
+                    "select > relate > query"
+                ],
+                "pairs": 341
+            },
+            {
+                "signatures": [
+                    "select > filter material > relate > query",
+                    "select > relate > query"
+                ],
+                "pairs": 255
+            },
+            {
+                "signatures": [
+                    "select > filter vposition > relate > query",
+                    "select > relate > query"
+                ],
+                "pairs": 210
+            },
+            {
+                "signatures": [
+                    "select > filter hposition > relate > query",
+                    "select > relate > query"
+                ],
+                "pairs": 173
+            },
+            {
+                "signatures": [
+                    "select > filter > relate > query",
+                    "select > relate > query"
+                ],
+                "pairs": 142
+            },
+            {
+                "signatures": [
+                    "select > relate > query",
+                    "select > relate > relate > exist"
+                ],
+                "pairs": 128
+            },
+            {
+                "signatures": [
+                    "select > filter size > relate > query",
+                    "select > relate > query"
+                ],
+                "pairs": 117
+            }
+        ]
+    },
+    "signature_profiles": {
+        "train": {
+            "questions": 943000,
+            "answer_vocabulary": 1833,
+            "signatures": 2459,
+            "unpairable_questions": 884,
+            "top1_share": 0.251254506892895,
+            "top10_share": 0.5997115588547189,
+            "most_common": [
+                {
+                    "signature": "select > relate > query",
+                    "count": 236933
+                },
+                {
+                    "signature": "select > query",
+                    "count": 106938
+                },
+                {
+                    "signature": "select > exist > select > exist > or",
+                    "count": 42916
+                },
+                {
+                    "signature": "select > relate > relate > query",
+                    "count": 41218
+                },
+                {
+                    "signature": "select > verify rel",
+                    "count": 34457
+                },
+                {
+                    "signature": "select > filter color > query",
+                    "count": 28241
+                },
+                {
+                    "signature": "select > exist > select > exist > and",
+                    "count": 21436
+                },
+                {
+                    "signature": "select > relate > exist",
+                    "count": 19022
+                },
+                {
+                    "signature": "select > filter color > exist > select > filter color > exist > or",
+                    "count": 18214
+                },
+                {
+                    "signature": "select > relate > relate > exist",
+                    "count": 16153
+                }
+            ]
+        },
+        "testdev": {
+            "questions": 12578,
+            "answer_vocabulary": 722,
+            "signatures": 904,
+            "unpairable_questions": 442,
+            "top1_share": 0.25671807918588013,
+            "top10_share": 0.5120845921450151,
+            "most_common": [
+                {
+                    "signature": "select > relate > query",
+                    "count": 3229
+                },
+                {
+                    "signature": "select > query",
+                    "count": 1084
+                },
+                {
+                    "signature": "select > verify rel",
+                    "count": 409
+                },
+                {
+                    "signature": "select > relate > relate > query",
+                    "count": 403
+                },
+                {
+                    "signature": "select > filter > query",
+                    "count": 318
+                },
+                {
+                    "signature": "select > filter color > query",
+                    "count": 298
+                },
+                {
+                    "signature": "select > exist > select > exist > or",
+                    "count": 208
+                },
+                {
+                    "signature": "select > verify color",
+                    "count": 171
+                },
+                {
+                    "signature": "select > filter material > query",
+                    "count": 168
+                },
+                {
+                    "signature": "select > select > same material",
+                    "count": 153
+                }
+            ]
+        }
+    },
+    "operator_names_in_questions": {
+        "split": "testdev",
+        "operators": 118,
+        "named_operators": 10,
+        "by_operator": [
+            {
+                "operator": "and",
+                "questions": 1339,
+                "named": 1339,
+                "rate": 1.0
+            },
+            {
+                "operator": "or",
+                "questions": 464,
+                "named": 464,
+                "rate": 1.0
+            },
+            {
+                "operator": "common",
+                "questions": 96,
+                "named": 96,
+                "rate": 1.0
+            },
+            {
+                "operator": "different",
+                "questions": 5,
+                "named": 5,
+                "rate": 1.0
+            },
+            {
+                "operator": "same material",
+                "questions": 153,
+                "named": 144,
+                "rate": 0.9411764705882353
+            },
+            {
+                "operator": "same color",
+                "questions": 144,
+                "named": 121,
+                "rate": 0.8402777777777778
+            },
+            {
+                "operator": "same",
+                "questions": 21,
+                "named": 16,
+                "rate": 0.7619047619047619
+            },
+            {
+                "operator": "same shape",
+                "questions": 9,
+                "named": 6,
+                "rate": 0.6666666666666666
+            },
+            {
+                "operator": "different color",
+                "questions": 133,
+                "named": 36,
+                "rate": 0.2706766917293233
+            },
+            {
+                "operator": "different shape",
+                "questions": 5,
+                "named": 1,
+                "rate": 0.2
+            }
+        ]
+    }
+}
