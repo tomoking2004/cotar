@@ -27,3 +27,9 @@ include = ["cotar*"]
 
 [tool.ruff]
 extend-exclude = ["cotar/data/_gqa_eval.py"]
+line-length = 100
+
+[tool.ruff.lint]
+# The width the code is already written to. Selected explicitly because ruff's default
+# rule set leaves E501 out, which left the convention with nothing enforcing it.
+extend-select = ["E501"]
