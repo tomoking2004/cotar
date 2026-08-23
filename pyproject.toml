@@ -15,6 +15,9 @@ dependencies = [
     "pillow",
     "schedulefree",
     "torch",
+    # Imported unconditionally by transformers' Idefics3 image processor, which is the
+    # one SmolVLM loads. Nothing here imports it either — same story as num2words, and
+    # the reason the README installs it from torch's own wheel index alongside torch.
     "torchvision",
     "tqdm",
     "transformers>=4.46",
