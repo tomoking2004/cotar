@@ -4,7 +4,7 @@ from collections.abc import Hashable, Sequence
 
 import torch
 
-from .pairwise import pairwise_cosine, pairwise_equal
+from ..pairwise import pairwise_cosine, pairwise_equal
 
 __all__ = ["supervised_contrastive_loss"]
 

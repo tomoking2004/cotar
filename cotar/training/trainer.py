@@ -10,16 +10,21 @@ from schedulefree import RAdamScheduleFree
 from train4all import BaseTrainer, Phase
 from train4all.utils import package_versions
 
-from .data import Batch
+from ..data import Batch
+from ..types import IGNORE_INDEX, VLM, VLMProcessor
+from ..utils import save_json
+from .logit_scale import INIT_SCALE, LogitScale
 from .losses import supervised_contrastive_loss
 from .metrics import MAX_STABILITY_SAMPLES, Evaluator
-from .modules import INIT_SCALE, LogitScale
-from .types import IGNORE_INDEX, VLM, VLMProcessor
-from .utils import save_json
 
-__all__ = ["Arm", "Trainer"]
+__all__ = ["ARMS", "Arm", "Trainer"]
 
 Arm = Literal["baseline", "proposal", "ablation"]
+
+# The study's independent variable, in the order it is run and reported. Derived from the
+# type rather than restated, so the arms cannot differ between the trainer that checks
+# them, the script that runs them and the analyses that read them back.
+ARMS: tuple[Arm, ...] = get_args(Arm)
 
 
 class Trainer(BaseTrainer):
@@ -42,7 +47,7 @@ class Trainer(BaseTrainer):
     ``align_weight`` is the magnitude of that auxiliary term; ``"baseline"`` pins it to
     zero whatever is passed, so the three arms differ by ``arm`` and nothing else.
 
-    Every measured metric comes from :class:`~cotar.metrics.Evaluator`. What this class
+    Every measured metric comes from :class:`~cotar.training.Evaluator`. What this class
     adds are the terms of the objective it assembled — ``lm_loss``, ``align_loss`` and
     the learned ``temperature`` — which no other object is in a position to report;
     nothing about the model is measured here.
@@ -50,8 +55,8 @@ class Trainer(BaseTrainer):
     The trainer holds no schedule: every pass a run makes — training, the held-in
     overfitting check, validation, and the final evaluation — is a
     :class:`~train4all.Phase` handed to ``train()`` or ``test()`` by the caller (see
-    `scripts/train.py`). The final report is written for whichever pass ``test()`` ran,
-    under whatever name the caller gave it.
+    :func:`~cotar.training.run_training`). The final report is written for whichever
+    pass ``test()`` ran, under whatever name the caller gave it.
     """
 
     def __init__(

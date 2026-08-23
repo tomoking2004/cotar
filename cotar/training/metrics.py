@@ -23,10 +23,10 @@ from typing import Any, Final
 
 import torch
 
-from .data import Batch
-from .pairwise import pairwise_cosine, pairwise_equal
-from .types import VLM, VLMProcessor
-from .utils import save_json
+from ..data import Batch
+from ..pairwise import pairwise_cosine, pairwise_equal
+from ..types import VLM, VLMProcessor
+from ..utils import save_json
 
 __all__ = [
     "MAX_STABILITY_SAMPLES",
@@ -194,7 +194,7 @@ def representation_stability(
 
 # ── Official GQA ──────────────────────────────────────────────────────────────
 
-_EVAL_SCRIPT = Path(__file__).parent / "data" / "_gqa_eval.py"
+_EVAL_SCRIPT = Path(__file__).parent.parent / "data" / "_gqa_eval.py"
 _SCORE_LINE = re.compile(r"^(\w+): ([\d.]+)")
 _SUBSET_LINE = re.compile(r"^Evaluating (\d+) of \d+ questions \((\d+) skipped")
 _GROUP_TITLE = re.compile(r"^Accuracy / (.+):$")
