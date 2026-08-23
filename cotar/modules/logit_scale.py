@@ -4,7 +4,7 @@ import math
 from typing import Final
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 __all__ = ["INIT_SCALE", "LogitScale"]
 

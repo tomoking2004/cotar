@@ -7,14 +7,14 @@ from typing import Any, Literal, cast
 import huggingface_hub
 import PIL.Image
 import torch
-import torch.nn as nn
 from PIL.Image import Image
+from torch import nn
 from transformers import AutoModelForImageTextToText, AutoProcessor, PreTrainedModel
 from transformers import logging as transformers_logging
 
 from ..types import IGNORE_INDEX, Encoding, PaddingSide, VLMOutput
 
-__all__ = ["Size", "SmolVLMProcessor", "SmolVLM", "build_smolvlm"]
+__all__ = ["Size", "SmolVLM", "SmolVLMProcessor", "build_smolvlm"]
 
 Size = Literal["256M", "500M", "2.2B"]
 

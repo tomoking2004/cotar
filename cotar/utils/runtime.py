@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-__all__ = ["timestamp", "make_run_id"]
+__all__ = ["make_run_id", "timestamp"]
 
 
 def timestamp() -> str:

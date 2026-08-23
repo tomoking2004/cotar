@@ -16,12 +16,12 @@ from ..types import Encoding, VLMProcessor
 from ..utils import load_json
 
 __all__ = [
-    "task_signature",
-    "GQASample",
-    "GQADataset",
-    "MPerSignatureSampler",
     "Batch",
+    "GQADataset",
+    "GQASample",
+    "MPerSignatureSampler",
     "build_gqa_dataloader",
+    "task_signature",
 ]
 
 

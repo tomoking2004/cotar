@@ -2,18 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Any, Final, Literal, NotRequired, Protocol, TypedDict, runtime_checkable
+from typing import (
+    Any,
+    Final,
+    Literal,
+    NotRequired,
+    Protocol,
+    TypedDict,
+    runtime_checkable,
+)
 
 import torch
 from PIL.Image import Image
 
 __all__ = [
     "IGNORE_INDEX",
-    "PaddingSide",
+    "VLM",
     "Encoding",
+    "PaddingSide",
     "VLMOutput",
     "VLMProcessor",
-    "VLM",
 ]
 
 # The label value cross-entropy skips: prompt tokens, image tokens, and padding.

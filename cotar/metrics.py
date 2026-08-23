@@ -30,15 +30,15 @@ from .utils import save_json
 
 __all__ = [
     "MAX_STABILITY_SAMPLES",
-    "normalize_answer",
-    "exact_match_accuracy",
-    "decode_answers",
-    "cohens_d",
-    "layer_names",
-    "flatten_layers",
-    "representation_stability",
-    "evaluate_gqa",
     "Evaluator",
+    "cohens_d",
+    "decode_answers",
+    "evaluate_gqa",
+    "exact_match_accuracy",
+    "flatten_layers",
+    "layer_names",
+    "normalize_answer",
+    "representation_stability",
 ]
 
 # The similarity matrix behind the stability metrics is quadratic in the sample count,
