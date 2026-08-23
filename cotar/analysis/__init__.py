@@ -1,0 +1,84 @@
+"""Reading a finished experiment: which runs it is, and what can be measured on them.
+
+Nothing here trains the model or needs a GPU. The nine runs left their representations
+and predictions behind, and every question the study asks of them afterwards is asked
+from a laptop, through this package.
+"""
+
+from .experiment import (
+    ARMS,
+    SEEDS,
+    TIMESTAMP,
+    analysis_path,
+    eval_report,
+    predictions,
+    reported_accuracy,
+    representations,
+    run_config,
+    run_id,
+    training_batches,
+    training_duration,
+)
+from .probing import (
+    FORMAT_FEATURES,
+    MIN_COUNT,
+    SPLIT_SEED,
+    TRAIN_FRAC,
+    classify,
+    fit_linear,
+    format_matrix,
+    keep_frequent,
+    majority_floor,
+    probe_accuracy,
+    residualize,
+    scorable,
+    split_mask,
+    splitter,
+    surface_matrices,
+    surface_vocabularies,
+)
+from .statistics import (
+    CONFIDENCE,
+    PairedDifference,
+    Summary,
+    paired_difference,
+    summarize,
+    t_critical,
+)
+
+__all__ = [
+    "ARMS",
+    "CONFIDENCE",
+    "FORMAT_FEATURES",
+    "MIN_COUNT",
+    "SEEDS",
+    "SPLIT_SEED",
+    "TIMESTAMP",
+    "TRAIN_FRAC",
+    "PairedDifference",
+    "Summary",
+    "analysis_path",
+    "classify",
+    "eval_report",
+    "fit_linear",
+    "format_matrix",
+    "keep_frequent",
+    "majority_floor",
+    "paired_difference",
+    "predictions",
+    "probe_accuracy",
+    "reported_accuracy",
+    "representations",
+    "residualize",
+    "run_config",
+    "run_id",
+    "scorable",
+    "split_mask",
+    "splitter",
+    "summarize",
+    "surface_matrices",
+    "surface_vocabularies",
+    "t_critical",
+    "training_batches",
+    "training_duration",
+]

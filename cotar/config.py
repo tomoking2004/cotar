@@ -7,6 +7,16 @@ import torch
 
 __all__ = ["cfg"]
 
+# Two roots, because the project's files divide cleanly in two.
+#
+# This checkout holds what travels: the code, the documents, and the snapshots and
+# analyses they cite. Finding those relative to the package means a clone reads its own
+# results wherever it sits, and no script has to rediscover where the repository is.
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# The working area holds what must not travel: the dataset, and the run directories with
+# their weights. Kept outside the checkout because it is synced, and tens of gigabytes do
+# not belong in a synced folder.
 WORK_ROOT = Path.home() / "TMU" / "Master" / "study" / "cotar"
 
 
@@ -37,6 +47,7 @@ class GQAPaths:
 
 @dataclass(frozen=True)
 class Config:
+    repo_root: Path = REPO_ROOT
     work_root: Path = WORK_ROOT
 
     @property
@@ -59,9 +70,14 @@ class Config:
 
     @property
     def snapshots_root(self) -> Path:
-        # Beside runs_root and laid out identically — one directory per run, under that
-        # run's own name, so which run a snapshot holds is readable from the path alone.
-        return self.work_root / "snapshots"
+        # In the checkout, not beside `runs_root`: a snapshot is a run without its
+        # weights, small enough to commit, and committing it is the point — the results
+        # then travel with the code that produced them.
+        return self.repo_root / "snapshots"
+
+    @property
+    def analyses_root(self) -> Path:
+        return self.repo_root / "analyses"
 
     @property
     def gqa(self) -> GQAPaths:
