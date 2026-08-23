@@ -6,7 +6,13 @@ __all__ = ["make_run_id", "timestamp"]
 
 
 def timestamp() -> str:
-    return datetime.now().strftime("%Y%m%d-%H%M%S")
+    """The local wall-clock time, as a run directory reads it.
+
+    Deliberately naive: this names a directory the person at the machine has to
+    recognise, so it must agree with the clock they are looking at. Nothing compares
+    two of these across machines.
+    """
+    return datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
 
 
 def make_run_id(
