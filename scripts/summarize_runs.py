@@ -28,6 +28,7 @@ from cotar.analysis import (
     SEEDS,
     TIMESTAMP,
     analysis_path,
+    constrained_layer,
     eval_report,
     paired_difference,
     reported_accuracy,
@@ -63,6 +64,26 @@ def batch_size(arm: str, seed: int) -> int:
             f"from the trainer default, which this run's did not."
         )
     return int(config["batch_size"])
+
+
+def constrained_site() -> tuple[int, int]:
+    """The layer the nine runs constrained, and the width of its vector.
+
+    Read back from the runs rather than restated from the trainer's default, for the
+    same reason the batch size is: the document names the layer in every claim it makes,
+    and a default is what the code would do today, not what these runs did. Runs that
+    disagree are refused — nine runs constraining different layers are not one
+    experiment, and averaging them would hide that.
+    """
+    sites = {(arm, seed): constrained_layer(arm, seed) for arm in ARMS for seed in SEEDS}
+    distinct = set(sites.values())
+    if len(distinct) != 1:
+        raise SystemExit(
+            "the runs did not constrain the same site, so they are not one experiment: "
+            + ", ".join(f"{run_id(arm, seed)} at layer {layer} ({width}-d)"
+                        for (arm, seed), (layer, width) in sorted(sites.items()))
+        )
+    return distinct.pop()
 
 
 def collapse_value(size: int) -> float:
@@ -168,6 +189,9 @@ if __name__ == "__main__":
             print(f"  {pair:>19}  {metric:>9}  {d['mean']:+7.3f}"
                   f"  [{d['ci_low']:+7.3f}, {d['ci_high']:+7.3f}]  {mark}")
 
+    layer, width = constrained_site()
+    print(f"\nall {len(runs)} runs constrained layer {layer}, {width} dimensions wide")
+
     steps = sorted(set(batches.values()))
     print(f"\none epoch = {steps[0]:,} batches" if len(steps) == 1
           else f"\nepoch length differs across runs: {steps}")
@@ -177,6 +201,8 @@ if __name__ == "__main__":
         "timestamp": TIMESTAMP,
         "seeds": list(SEEDS),
         "batch_size": size,
+        "constrained_layer": layer,
+        "representation_width": width,
         "collapse_align_loss": collapse,
         "arms": summaries,
         "paired_differences": comparisons,

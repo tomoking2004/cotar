@@ -27,6 +27,7 @@ __all__ = [
     "SEEDS",
     "TIMESTAMP",
     "analysis_path",
+    "constrained_layer",
     "eval_report",
     "predictions",
     "reported_accuracy",
@@ -96,6 +97,31 @@ def representations(
             f"from the first run read, so its rows do not line up with the others'."
         )
     return features, signatures, question_ids
+
+
+def constrained_layer(
+    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+) -> tuple[int, int]:
+    """Which layer a run constrained, and how wide that layer's vector is.
+
+    `representations` drops the layer axis, because the study constrains one layer and
+    every analysis reads it. Its *identity* is what this returns instead: the document
+    names the layer in every claim it makes, and a reader with the checkout has nowhere
+    else to confirm it — the trainer wrote it into the checkpoint, and the checkpoints
+    do not travel. Runs that constrained more than one are refused rather than reported
+    by their first, since nothing downstream would know which layer it had been handed.
+    """
+    saved = torch.load(
+        _snapshot(arm, seed, variant, timestamp) / "metrics" / "representations.pt",
+        weights_only=False,
+    )
+    layers = list(saved["layers"])
+    if len(layers) != 1:
+        raise SystemExit(
+            f"{run_id(arm, seed, variant, timestamp)}: constrained {len(layers)} layers "
+            f"({layers}), but the study's analyses all read a single one."
+        )
+    return int(layers[0]), int(saved["representations"].size(-1))
 
 
 def predictions(
