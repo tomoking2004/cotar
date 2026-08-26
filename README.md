@@ -43,10 +43,11 @@ python scripts/summarize_sweep.py          # 読み取り精度と正解率を�
 python scripts/probe_signature.py          # 署名が線形に読めるか
 python scripts/probe_operators.py          # プローブが見ていない演算子の組み合わせが読めるか
 python scripts/stratify_by_frequency.py    # 正解率を署名の頻度で層別し直す
-python scripts/probe_bypass.py             # 整合した構造が出力の読む方向に載っているか
+python scripts/probe_bypass.py             # 整合した構造が出力の読む方向に載っているか（§7.1 第1段）
+python scripts/probe_bypass_pullback.py    # その方向を第16層へ引き戻して問い直す（§7.1 第2段）
 ```
 
-**モデルを動かすのは上の3本だけ**で，残る7本は保存済みのファイルを読み直すだけなので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py` だけは学習済みの重みを要求する（後述）．
+**モデルを動かすのは4本**——上の3本と `probe_bypass_pullback.py`（ヤコビ積を取るのでモデルを走らせる）である．残る7本は保存済みのファイルを読み直すだけなので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py` と `probe_bypass_pullback.py` の2本は学習済みの重みを要求する（後述）．
 
 `train.py` と `sweep.py` は run の建て方を共有する——`cotar/training/run.py` の `Settings` と `run_training` である．既定値が報告した実験の値なので，**sweep は変える設定だけを書き，残りが同じであることが目で見える．** どちらも冒頭の `DEBUG = True` で全分割を切り詰めた短い試走になり，数分で配線を確かめられる．
 
@@ -64,8 +65,10 @@ python scripts/probe_bypass.py             # 整合した構造が出力の読�
 # 0. 重みが在るか（§7.1 と §7.2 はこれを要求する．無ければ即座に落ちて場所を告げる）
 ls "$(python -c 'from cotar.config import cfg; print(cfg.runs_root)')"/20260727-002344_*/checkpoints/best.pth
 
-# 1. §7.1 迂回の判定 — 追加の学習なし．これが済むまで下は走らせない
+# 1. §7.1 第1段 迂回の判定 — 追加の学習なし．これが済むまで下は走らせない
 python scripts/probe_bypass.py
+#    引き戻さない部分空間で決着しなかったら第2段へ（モデルを走らせるが学習はしない）
+python scripts/probe_bypass_pullback.py
 
 # 2. §7.5 整合の強さを振る — まず DEBUG = True で数分の試走．配線を確かめてから本走
 python scripts/sweep.py
@@ -73,7 +76,7 @@ python scripts/sweep.py
 python scripts/summarize_sweep.py
 ```
 
-**手順1が最優先である理由は研究文書 §7.1 にある**——結果がどちらに転んでも結論の文が書けるので，走らせないことだけが結論を得られない道になる．
+**手順1が最優先である理由は研究文書 §7.1 にある**——結果がどちらに転んでも結論の文が書けるので，走らせないことだけが結論を得られない道になる．第2段は第1段が決着しなかったときだけ走らせる．判定の形は同じなので，やり直しにはならない．
 
 **手順2は重みを要さない．** `sweep.py` は $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本で回す（既に測ってある $\lambda = 0$ と $0.1$ は走らせ直さない）ので約9時間．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる——sweep を走らせる前でも，既存の2点だけを表に出して配線を確かめられる．
 
@@ -96,11 +99,13 @@ python scripts/summarize_sweep.py
 
 **同じものの写しが，`checkpoints/` だけを抜いて `snapshots/` の同じ run 名の下にも落ちる．** 重みを落とせば1 run は数十MB——上の表のうち `checkpoints/best.pth` 以外は全部こちらに在るので，git がそのまま追跡でき，push すれば結果は GitHub からも読める．エポックごとと最終評価の直後に，変わったファイルだけを原子的に置き換えて更新するので，走っている最中に掴んでも写しは丸ごと揃っている．
 
-**逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．
+**逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py` と `probe_bypass_pullback.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．
 
 `snapshots/` には2つのバッチが在る．研究文書が報告するのは `20260727-002344` の9 run（3群 × 3 seed）だけで，分析スクリプトもこれしか読まない．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) のポスターの裏付けとして残してある——**別の実験なので，数値が研究文書と一致しなくて当然である．**
 
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回り，**この checkout の外が決めるもの**はバナーが引き受ける．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
+
+**上の表と，この3箇所が語るのは，この checkout がこれから走らせる run が残すものである．** 報告する9 run は 2026-07-27 に，いまのコードより前の版で走っており，記録が三点だけ違う——`config.json` には当時 `align_pairing` も載っていた（`arm` から導かれるので，いまは載せない．この1キーがあるぶん，9 run の `config.json` は `Trainer(vlm, processor, **config)` にそのままは通らない），`best.pth` の extras は `vlm` と `layers` の2つだけで，モデルの checkpoint・attention 実装・loader の設定は入っていない，`log.txt` の環境バナーにライブラリの版が無い（版を記録するようにしたのが run の後である）．どれも測定値ではないので，研究文書の数値には一つも効かない．
 
 決定指標は `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが `testdev_balanced` に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群の横並びは `summarize_runs.py`（全 testdev の平均・spread・対にした差と区間）と `stratify_by_frequency.py`（署名の頻度で層別したもの）が出す．**区間は研究文書 §3.3 の式そのままで，実装は `analysis/statistics.py` にしか無い．**
 
@@ -119,11 +124,12 @@ cotar/
     run.py             Settings / run_training — 1 run の建て方．train.py と sweep.py が共有
     trainer.py         Trainer — train4all の BaseTrainer を実装．3群の定義（Arm）はここ
     losses.py          supervised_contrastive_loss
-    metrics.py         Evaluator — モデルを測る数値はすべてここ．公式 GQA 評価器もここから
+    metrics.py         Evaluator — run が測る数値はすべてここ．公式 GQA 評価器もここから
     logit_scale.py     LogitScale — 学習可能な温度
   analysis/          ── 済んだ実験を読む（GPU も学習も要らない）
-    experiment.py      報告する実験はどれで，その成果物をどう読むか
+    experiment.py      報告する実験はどれで，その成果物をどう読むか（重みの読み口もここ）
     probing.py         線形プローブと，質問文だけを入力にした対照（コードでは surface）
+    subspaces.py       部分空間の中と外で読み，同じ幅のランダムな対照と突き合わせる
     statistics.py      平均±標準偏差・対にした差・信頼区間——3 seed のまとめ方の唯一の定義
   models/            SmolVLM + SmolVLMProcessor（プロンプト構築・ラベルマスク・表現のプール）
   data/
@@ -141,6 +147,7 @@ scripts/
   probe_operators.py        プローブが見ていない演算子の組み合わせが読めるかを測る
   stratify_by_frequency.py  済んだ実験を署名の頻度で層別し直す
   probe_bypass.py           整合した構造が出力の読む方向に載っているかを測る（要 checkpoints）
+  probe_bypass_pullback.py  その方向を第16層へ引き戻して同じ判定を掛け直す（要 checkpoints・GPU）
 ```
 
 **`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py` は `training/` を，分析の7本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` は GPU も学習済みモデルも要求しないので，ノートPCで完結する．
@@ -153,7 +160,7 @@ scripts/
 
 **置くのは，学習・検証と，環境が整っているかの最小の確認に要るコードだけ．** ほかのスクリプトの出力に含まれる情報を再計算するだけのものは持たない．ルート直下のディレクトリ名は小文字の複数形の名詞にする．
 
-**モデルを測る数値は `metrics.py` だけを見ればいい．** デコードも採点も表現の比較も公式評価器もそこにあり，`Evaluator.measure()` が1バッチの，`Evaluator.report()` がエポック全体の測定値を返す．Trainer が足すのは自分が組んだ目的関数の内訳（`lm_loss`・`align_loss`・`temperature`）だけで，モデルを測ることはしない．
+**run が測る数値は `metrics.py` だけを見ればいい．** デコードも採点も表現の比較も公式評価器もそこにあり，`Evaluator.measure()` が1バッチの，`Evaluator.report()` がエポック全体の測定値を返す．Trainer が足すのは自分が組んだ目的関数の内訳（`lm_loss`・`align_loss`・`temperature`）だけで，モデルを測ることはしない．**`analysis/` が測るのはこれの例外ではない**——問うのは run が残したもの（表現・予測・重み）であって，走っているモデルではない．
 
 **モデルは `models/` を足すだけで差し替わる．** `types.py` の `VLM` / `VLMProcessor` プロトコルが唯一の契約で，`VLMOutput["representation"]`——整合する層と位置でプールした `(B, L, H)`——を返せば，loader も損失も指標も Trainer もそのまま動く．
 
@@ -180,7 +187,8 @@ scripts/
 | $\bar{x}$・$s$・$\bar{d}$・信頼区間（§3.3） | `analysis/statistics.py`——$t_{2,\,0.975}$ は文書と同じ閉じた式で求める（表を引かない）．区間が $0$ を跨ぐか否かも保存する |
 | 頻度層別と層ごとの区間（§5.4） | `stratify_by_frequency.py` |
 | 整合の強さと交換率（§7.5） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.3 の数値を再現することが，両者が同じものを測っている証拠になる |
-| 迂回の判定・第1段（§7.1） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，同次元のランダム直交基底と比べる |
+| 迂回の判定・第1段（§7.1） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
+| 迂回の判定・第2段（§7.1） | `probe_bypass_pullback.py`——$U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる |
 | 分割の排他性・署名の分布・対を組めない問・含意対との一致・答えの語彙・演算子が自分の名を質問文に置く率（§2.1・§3.1・§6.3・§7.1） | `audit_dataset.py`——学習も GPU も要らず，質問ファイルだけから全部を一度に出す．含意対は**対の数**（`unordered`）で数える．GQA は同じ関係を両側から並べるので，訪問回数（`ordered`）で数えると往復を二度数えて率が数ポイント動く．研究文書が引くのは前者．**食い違いの中身**（yes/no 型と自由回答型を組にした割合，最も多い署名の組）も同じ関数が出す——率だけでは「署名が誤っている」としか読めないので |
 
 **研究文書の数値には，例外なくそれを出すスクリプトがある．** 手で数えて本文にだけ書いた数値は，書いた時点から誰にも検算できない．出どころは主張の種類で決まっていて，新しく何かを主張するならまずその場所に関数を足す．
