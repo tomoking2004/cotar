@@ -13,7 +13,7 @@ separate them:
 - a **prefix-disjoint** split, where no first-few-words prefix is shared between the two
   halves, so a probe that keys on the wording has to generalise past the wordings it saw.
 
-A representation that beats the text probe, and holds up when the wordings are new, is
+A representation that beats the surface probe, and holds up when the wordings are new, is
 carrying the procedure in a form the surface does not hand it for free.
 
 The arms are probed through the same splits with the same settings, so the only difference
@@ -52,7 +52,7 @@ from cotar.config import cfg
 from cotar.utils import load_json, save_json
 
 PREFIX_LEN = 4
-OUT_PATH = analysis_path(__file__)
+OUT_PATH   = analysis_path(__file__)
 
 
 if __name__ == "__main__":
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Neither surface form is the ceiling on its own; the ceiling the representation has
     # to beat is whichever scores higher, so both are measured (see `cotar.analysis.probing`).
-    text = surface_matrices(words)
+    surface = surface_matrices(words)
     distinct = surface_vocabularies(words)
 
     # Both splits are drawn from one source, in this order.
@@ -87,15 +87,15 @@ if __name__ == "__main__":
     print("surface vocabularies: " + ", ".join(
         f"{form} {matrix.size(1):,} of {distinct[form]:,}"
         f"{' (capped)' if distinct[form] > matrix.size(1) else ''}"
-        for form, matrix in text.items()) + "\n")
+        for form, matrix in surface.items()) + "\n")
 
     results: dict[str, dict[str, object]] = {}
     for name, train in splits.items():
         rows, sub_labels, sub_train, n_classes = scorable(labels, train)
 
-        surface = {
+        surface_accuracy = {
             form: probe_accuracy(matrix[rows], sub_labels, sub_train, n_classes)
-            for form, matrix in text.items()
+            for form, matrix in surface.items()
         }
         # What the format features reach on their own — the counterpart of the source
         # accuracy Sahoo et al. ask to be reported beside any cross-dataset probe.
@@ -105,13 +105,13 @@ if __name__ == "__main__":
             "questions": int(rows.sum()),
             "classes": n_classes,
             "floor": majority_floor(sub_labels, sub_train),
-            "surface": surface,
-            "surface_ceiling": max(surface.values()),
+            "surface": surface_accuracy,
+            "surface_ceiling": max(surface_accuracy.values()),
             "format_only": format_only,
         }
         print(f"[{name} split] {entry['questions']:,} questions, {entry['classes']} signatures")
         print(f"{'floor (majority)':>22}  {entry['floor']:6.1%}")
-        for form, accuracy in surface.items():
+        for form, accuracy in surface_accuracy.items():
             print(f"{form:>22}  {accuracy:6.1%}")
         print(f"{'format only':>22}  {format_only:6.1%}"
               f"   ({', '.join(FORMAT_FEATURES)})")
@@ -199,7 +199,7 @@ if __name__ == "__main__":
         # the probe was given, `distinct` is how much there was to give.
         "vocabulary": {
             form: {"columns": matrix.size(1), "distinct": distinct[form]}
-            for form, matrix in text.items()
+            for form, matrix in surface.items()
         },
         "splits": results,
         "by_correctness": by_correctness,

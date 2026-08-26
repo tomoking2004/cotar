@@ -37,10 +37,6 @@ class GQAPaths:
         return self.root / "questions" / "val_balanced_questions.json"
 
     @property
-    def val_choices(self) -> Path:
-        return self.root / "eval" / "val_choices.json"
-
-    @property
     def testdev_questions(self) -> Path:
         return self.root / "questions" / "testdev_balanced_questions.json"
 

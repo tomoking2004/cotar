@@ -43,14 +43,14 @@ from cotar.utils import save_json
 # Filled in from what `sweep.py` prints. Empty until a sweep has been run, in which case
 # only the two points the reported experiment already measured are shown.
 SWEEP_TIMESTAMP = ""
-SWEEP_SEEDS = (42,)
+SWEEP_SEEDS     = (42,)
 
 # The variants to read, as (variant name, arm). The empty variant is the reported
 # experiment: its baseline is the alignment weight 0 point and its proposal the 0.1 one.
 # The weight itself is never written here — it is read from each run's own config, so a
 # point cannot be filed under a weight it was not trained with.
 REPORTED = (("", "baseline"), ("", "proposal"))
-SWEPT = (("lambda0.03", "proposal"), ("lambda0.3", "proposal"), ("lambda1.0", "proposal"))
+SWEPT    = (("lambda0.03", "proposal"), ("lambda0.3", "proposal"), ("lambda1.0", "proposal"))
 
 OUT_PATH = analysis_path(__file__)
 

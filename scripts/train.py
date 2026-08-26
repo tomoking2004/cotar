@@ -22,8 +22,8 @@ from train4all.utils import empty_cuda_cache
 from cotar.training import ARMS, Settings, run_training
 from cotar.utils import timestamp
 
-DEBUG = False
-SEEDS = (42, 43, 44)
+DEBUG    = False
+SEEDS    = (42, 43, 44)
 SETTINGS = Settings()
 
 

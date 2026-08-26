@@ -20,7 +20,7 @@ from train4all.utils import empty_cuda_cache
 
 from ..config import cfg
 from ..data import build_gqa_dataloader
-from ..models import build_smolvlm
+from ..models import Size, build_smolvlm
 from ..utils import make_run_id
 from .logit_scale import INIT_SCALE
 from .trainer import Arm, Trainer
@@ -37,7 +37,7 @@ class Settings:
     marks the run directory so a smoke test can never be mistaken for a measurement.
     """
 
-    model_size: str = "500M"
+    model_size: Size = "500M"
     layers: tuple[int, ...] = (16,)
     align_weight: float = 0.1
     epochs: int = 1

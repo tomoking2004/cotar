@@ -44,7 +44,7 @@ from cotar.utils import save_json
 # deliberately absent: it is the objective, and the aligned arms carry an extra term in
 # it, so it is not the same quantity in all three.
 GEOMETRY = ("separation_d", "intra_sim", "inter_sim", "separation")
-LOSSES = ("lm_loss", "align_loss")
+LOSSES   = ("lm_loss", "align_loss")
 
 OUT_PATH = analysis_path(__file__)
 

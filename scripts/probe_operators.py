@@ -41,7 +41,7 @@ from cotar.config import cfg
 from cotar.utils import load_json, save_json
 
 MIN_POSITIVE = 50      # an operator needs enough questions on both sides to be scored
-OUT_PATH = analysis_path(__file__)
+OUT_PATH     = analysis_path(__file__)
 
 
 def auc(scores: torch.Tensor, positive: torch.Tensor) -> float:
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     operators_scored = int(((unseen > 0).any(dim=0) & (unseen == 0).any(dim=0)).sum())
 
     # Both surface forms, on the same terms as the signature probe (see `cotar.analysis.probing`).
-    text = surface_matrices([testdev[qid]["question"].lower().split() for qid in question_ids])
+    surface = surface_matrices([testdev[qid]["question"].lower().split() for qid in question_ids])
 
     print(f"{len(signatures):,} testdev questions, {len(unique)} signatures"
           f" ({int(train.sum()):,} questions from {sum(side.values())} signatures for training,"
@@ -128,7 +128,7 @@ if __name__ == "__main__":
           f" {operators_scored} of them scorable on the unseen half\n")
 
     results: dict[str, dict[str, float]] = {}
-    for form, matrix in text.items():
+    for form, matrix in surface.items():
         results[form] = evaluate(matrix, targets, train)
         print(f"{form:>22}  AUC {results[form]['macro_auc']:6.3f}"
               f"   exact set {results[form]['exact_set_match']:6.1%}")

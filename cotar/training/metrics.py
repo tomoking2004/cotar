@@ -1,11 +1,16 @@
-"""Every number this study reports.
+"""Every number a run reports.
 
 Answers are decoded here, scored here, and representations compared here; the
-official GQA evaluator is run here. Nothing outside this module measures the model —
-the trainer adds only its own objective's terms (`lm_loss`, `align_loss` and the
-learned `temperature`), which it forms and so alone can report. `Evaluator` is the
-single door in: `measure` returns all of a batch's measurements, `report` all of an
-accumulated epoch's.
+official GQA evaluator is run here. Nothing else in a run measures the model — the
+trainer adds only its own objective's terms (`lm_loss`, `align_loss` and the learned
+`temperature`), which it forms and so alone can report. `Evaluator` is the single door
+in: `measure` returns all of a batch's measurements, `report` all of an accumulated
+epoch's.
+
+What `cotar.analysis` measures afterwards is not an exception to that. It asks its
+questions of what a run left behind — the saved representations, the predictions, the
+weights — never of a model as it runs, and it needs neither a GPU nor a training loop
+to do so.
 """
 
 from __future__ import annotations
@@ -45,9 +50,9 @@ __all__ = [
 # so the epoch-level estimate is capped here rather than at each caller.
 MAX_STABILITY_SAMPLES: Final = 4_000
 
-_PUNCTUATION = str.maketrans("", "", string.punctuation)
+_PUNCTUATION       = str.maketrans("", "", string.punctuation)
 _MAX_ANSWER_TOKENS = 16
-_STABILITY_KEYS = ("intra_sim", "inter_sim", "separation", "separation_d")
+_STABILITY_KEYS    = ("intra_sim", "inter_sim", "separation", "separation_d")
 
 
 # ── Answers ───────────────────────────────────────────────────────────────────
@@ -195,10 +200,10 @@ def representation_stability(
 # ── Official GQA ──────────────────────────────────────────────────────────────
 
 _EVAL_SCRIPT = Path(__file__).parent.parent / "data" / "_gqa_eval.py"
-_SCORE_LINE = re.compile(r"^(\w+): ([\d.]+)")
+_SCORE_LINE  = re.compile(r"^(\w+): ([\d.]+)")
 _SUBSET_LINE = re.compile(r"^Evaluating (\d+) of \d+ questions \((\d+) skipped")
 _GROUP_TITLE = re.compile(r"^Accuracy / (.+):$")
-_GROUP_ROW = re.compile(r"^ {2}(.+): ([\d.]+)% \((\d+) questions\)$")
+_GROUP_ROW   = re.compile(r"^ {2}(.+): ([\d.]+)% \((\d+) questions\)$")
 
 
 def evaluate_gqa(
