@@ -33,6 +33,12 @@ extend-exclude = ["cotar/data/_gqa_eval.py"]
 line-length = 100
 
 [tool.ruff.lint]
-# The width the code is already written to. Selected explicitly because ruff's default
-# rule set leaves E501 out, which left the convention with nothing enforcing it.
-extend-select = ["E501"]
+# Conventions this code already keeps, selected explicitly because ruff's default rule
+# set leaves each of them out — which left every one of them with nothing enforcing it.
+#
+#   E501    the line width the code is written to
+#   I       the order its imports are written in
+#   RUF022  the order `__all__` is written in: constants, then classes, then functions
+#   DTZ     timezone-naive datetime, which `utils.runtime` uses deliberately and says so
+#           with a `noqa` — a directive that names a rule nobody runs suppresses nothing
+extend-select = ["DTZ", "E501", "I", "RUF022"]
