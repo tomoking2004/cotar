@@ -27,7 +27,7 @@ reports — a mismatch means the checkpoint and the saved representations are no
 same run. And the width `m` is swept, because a conclusion that survives only at one width
 is a property of that width.
 
-This is the first of the two stages in context.md §7.1. It answers "is the signature in the
+This is the first of the two stages in context.md §4.5. It answers "is the signature in the
 directions the output layer reads", not "did this arm come to depend on the site less than
 that one" — the latter needs the propagation from the site to the final layer, and is only
 worth its cost if this stage comes back undecided.
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     # random span of the same width. If the alignment's gain is larger inside U than inside
     # a random subspace, the structure it built is where the answer is read; if it is larger
     # outside U than outside a random one, the structure sits where the output does not read.
-    # If neither difference appears, this stage has not decided and §7.1's second stage runs.
+    # If neither difference appears, this stage has not decided and §4.5's second stage runs.
     summary = summarize_places(results, DIMS, ARMS, SEEDS)
     print(f"{'':>10}" + "".join(f"{f'm={m}':>44}" for m in DIMS))
     print(f"{'':>10}" + "".join(

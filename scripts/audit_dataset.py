@@ -55,7 +55,7 @@ def split_profile(questions_path: Path) -> dict[str, Any]:
     total = sum(sizes)
     return {
         "questions": total,
-        # Closed enough to enumerate — which is what lets §7.1 read the answer directions
+        # Closed enough to enumerate — which is what lets §4.5 read the answer directions
         # straight off the output embedding instead of running the model.
         "answer_vocabulary": len({record["answer"] for record in dataset.samples}),
         "signatures": len(sizes),
