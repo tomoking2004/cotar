@@ -32,6 +32,7 @@ from .probing import probe_accuracy
 __all__ = [
     "WHERE",
     "answer_token_rows",
+    "delta",
     "gain",
     "inside",
     "output_basis",
@@ -39,6 +40,7 @@ __all__ = [
     "random_basis",
     "reported_gain",
     "scores",
+    "seed_deltas",
     "summarize_places",
 ]
 
@@ -131,6 +133,38 @@ def scores(
 def gain(summary: dict[str, dict[str, float]], key: str) -> float:
     """Proposal minus baseline at one place, in percentage points."""
     return 100 * (summary["proposal"][key] - summary["baseline"][key])
+
+
+def delta(summary: dict[str, dict[str, float]], m: int, side: str) -> float:
+    """The statistic the verdict rests on, at one width and one side, in percentage points.
+
+    What alignment gained in `U` at this side, less what it gained in a random subspace of
+    the same width. Neither the level nor the gain decides anything on its own — both
+    survive whatever the subspace is built from (see the module docstring) — so this
+    difference is what the two stages of context.md §7.1 are read on.
+    """
+    return gain(summary, f"{side}_output_span_{m}") - gain(summary, f"{side}_random_span_{m}")
+
+
+def seed_deltas(
+    runs: dict[str, dict[str, Any]], m: int, side: str, seeds: Sequence[int]
+) -> list[float]:
+    """The same statistic before the seeds are averaged.
+
+    Their mean is `delta`, which is all the mean can say. What it cannot say is whether the
+    three runs agree about the sign — and a Δ whose seeds disagree is a Δ the experiment
+    has not established the direction of.
+    """
+    def place(arm: str, seed: int, kind: str) -> float:
+        return runs[arm][str(seed)]["by_dim"][str(m)][f"{side}_{kind}_span"]
+
+    return [
+        100 * (
+            (place("proposal", seed, "output") - place("baseline", seed, "output"))
+            - (place("proposal", seed, "random") - place("baseline", seed, "random"))
+        )
+        for seed in seeds
+    ]
 
 
 def summarize_places(

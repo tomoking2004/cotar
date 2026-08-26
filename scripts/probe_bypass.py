@@ -51,6 +51,7 @@ from cotar.analysis import (
     Arm,
     analysis_path,
     answer_token_rows,
+    delta,
     gain,
     keep_frequent,
     majority_floor,
@@ -62,6 +63,7 @@ from cotar.analysis import (
     require_checkpoints,
     scorable,
     scores,
+    seed_deltas,
     split_mask,
     splitter,
     summarize_places,
@@ -166,11 +168,12 @@ if __name__ == "__main__":
 
     print("\ngain over baseline (proposal − baseline), against the random span of each width")
     for m in DIMS:
-        cells = []
         for side in ("in", "outside"):
             u, r = (gain(summary, f"{side}_{kind}_span_{m}") for kind in ("output", "random"))
-            cells.append(f"{side:>7}  U {u:+5.1f}pt  random {r:+5.1f}pt  Δ {u - r:+5.2f}pt")
-        print(f"  m = {m:>3}:  " + "   ".join(cells))
+            seeds = seed_deltas(results, m, side, SEEDS)
+            print(f"  m = {m:>3} {side:>7}  U {u:+5.1f}pt  random {r:+5.1f}pt"
+                  f"   Δ {delta(summary, m, side):+5.2f}pt"
+                  f"   seeds " + " ".join(f"{value:+5.2f}" for value in seeds))
     reported = reported_gain()
     against = (
         f"← §5.1 reports {reported:+.1f}pt" if reported is not None else "← compare with §5.1"

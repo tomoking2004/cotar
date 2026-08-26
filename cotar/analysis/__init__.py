@@ -56,6 +56,7 @@ from .statistics import (
 from .subspaces import (
     WHERE,
     answer_token_rows,
+    delta,
     gain,
     inside,
     output_basis,
@@ -63,6 +64,7 @@ from .subspaces import (
     random_basis,
     reported_gain,
     scores,
+    seed_deltas,
     summarize_places,
 )
 
@@ -87,6 +89,7 @@ __all__ = [
     "checkpoint_path",
     "classify",
     "constrained_layer",
+    "delta",
     "eval_report",
     "fit_linear",
     "format_matrix",
@@ -109,6 +112,7 @@ __all__ = [
     "run_id",
     "scorable",
     "scores",
+    "seed_deltas",
     "split_mask",
     "splitter",
     "summarize",
