@@ -1,0 +1,299 @@
+{
+    "timestamp": "20260727-002344",
+    "checkpoint": "best.pth",
+    "stage": "pullback",
+    "site_layer": 16,
+    "dims": [
+        8,
+        32,
+        128
+    ],
+    "answer_rows": 1085,
+    "jacobian_prompts": 64,
+    "questions": 10990,
+    "classes": 145,
+    "floor": 0.287865046254308,
+    "runs": {
+        "baseline": {
+            "42": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.22619374096393585,
+                "full": 0.8333030939102173,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.4795936942100525,
+                        "in_random_span": 0.45710140466690063,
+                        "outside_output_span": 0.8338472843170166,
+                        "outside_random_span": 0.8331217169761658
+                    },
+                    "32": {
+                        "in_output_span": 0.6584436893463135,
+                        "in_random_span": 0.6444767117500305,
+                        "outside_output_span": 0.834754228591919,
+                        "outside_random_span": 0.8274986147880554
+                    },
+                    "128": {
+                        "in_output_span": 0.7857790589332581,
+                        "in_random_span": 0.7792490720748901,
+                        "outside_output_span": 0.8349356055259705,
+                        "outside_random_span": 0.8296753168106079
+                    }
+                }
+            },
+            "43": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.2356797754764557,
+                "full": 0.8352983593940735,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.46381279826164246,
+                        "in_random_span": 0.44186466932296753,
+                        "outside_output_span": 0.8349356055259705,
+                        "outside_random_span": 0.8360239267349243
+                    },
+                    "32": {
+                        "in_output_span": 0.6551786661148071,
+                        "in_random_span": 0.6617087125778198,
+                        "outside_output_span": 0.8322147727012634,
+                        "outside_random_span": 0.8336659073829651
+                    },
+                    "128": {
+                        "in_output_span": 0.7926718592643738,
+                        "in_random_span": 0.7810629606246948,
+                        "outside_output_span": 0.8336659073829651,
+                        "outside_random_span": 0.8360239267349243
+                    }
+                }
+            },
+            "44": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.2253674566745758,
+                "full": 0.8251405954360962,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.4732450544834137,
+                        "in_random_span": 0.4331579804420471,
+                        "outside_output_span": 0.82622891664505,
+                        "outside_random_span": 0.8274986147880554
+                    },
+                    "32": {
+                        "in_output_span": 0.6540903449058533,
+                        "in_random_span": 0.6448394656181335,
+                        "outside_output_span": 0.8298566937446594,
+                        "outside_random_span": 0.8305822610855103
+                    },
+                    "128": {
+                        "in_output_span": 0.7758026719093323,
+                        "in_random_span": 0.7725376486778259,
+                        "outside_output_span": 0.8291311264038086,
+                        "outside_random_span": 0.8265916705131531
+                    }
+                }
+            }
+        },
+        "proposal": {
+            "42": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.25201672315597534,
+                "full": 0.9573734998703003,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.7056049108505249,
+                        "in_random_span": 0.7239252924919128,
+                        "outside_output_span": 0.9573734998703003,
+                        "outside_random_span": 0.956466555595398
+                    },
+                    "32": {
+                        "in_output_span": 0.9200072288513184,
+                        "in_random_span": 0.9076727628707886,
+                        "outside_output_span": 0.9575548768043518,
+                        "outside_random_span": 0.9566479325294495
+                    },
+                    "128": {
+                        "in_output_span": 0.9444948434829712,
+                        "in_random_span": 0.940504252910614,
+                        "outside_output_span": 0.9562851190567017,
+                        "outside_random_span": 0.957192063331604
+                    }
+                }
+            },
+            "43": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.251404732465744,
+                "full": 0.959550142288208,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.7213858366012573,
+                        "in_random_span": 0.7201160788536072,
+                        "outside_output_span": 0.9586431980133057,
+                        "outside_random_span": 0.9606384634971619
+                    },
+                    "32": {
+                        "in_output_span": 0.9172863960266113,
+                        "in_random_span": 0.9118447303771973,
+                        "outside_output_span": 0.9604570865631104,
+                        "outside_random_span": 0.9600943326950073
+                    },
+                    "128": {
+                        "in_output_span": 0.9472156763076782,
+                        "in_random_span": 0.9483039975166321,
+                        "outside_output_span": 0.9566479325294495,
+                        "outside_random_span": 0.9561037421226501
+                    }
+                }
+            },
+            "44": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.2364269495010376,
+                "full": 0.9597315192222595,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.7342644929885864,
+                        "in_random_span": 0.723199725151062,
+                        "outside_output_span": 0.959187388420105,
+                        "outside_random_span": 0.9606384634971619
+                    },
+                    "32": {
+                        "in_output_span": 0.9201886653900146,
+                        "in_random_span": 0.911300539970398,
+                        "outside_output_span": 0.9604570865631104,
+                        "outside_random_span": 0.9600943326950073
+                    },
+                    "128": {
+                        "in_output_span": 0.9519317746162415,
+                        "in_random_span": 0.9502992630004883,
+                        "outside_output_span": 0.9586431980133057,
+                        "outside_random_span": 0.9588245749473572
+                    }
+                }
+            }
+        },
+        "ablation": {
+            "42": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.22358815371990204,
+                "full": 0.8068202137947083,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.42535823583602905,
+                        "in_random_span": 0.2878650426864624,
+                        "outside_output_span": 0.8026483058929443,
+                        "outside_random_span": 0.8113549947738647
+                    },
+                    "32": {
+                        "in_output_span": 0.5760928988456726,
+                        "in_random_span": 0.5708325505256653,
+                        "outside_output_span": 0.8039180040359497,
+                        "outside_random_span": 0.8057318925857544
+                    },
+                    "128": {
+                        "in_output_span": 0.7320877909660339,
+                        "in_random_span": 0.7349900007247925,
+                        "outside_output_span": 0.8088155388832092,
+                        "outside_random_span": 0.8028296828269958
+                    }
+                }
+            },
+            "43": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.2287159413099289,
+                "full": 0.8304008841514587,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.430981308221817,
+                        "in_random_span": 0.2878650426864624,
+                        "outside_output_span": 0.8333030939102173,
+                        "outside_random_span": 0.8300380706787109
+                    },
+                    "32": {
+                        "in_output_span": 0.6196263432502747,
+                        "in_random_span": 0.6072918772697449,
+                        "outside_output_span": 0.8291311264038086,
+                        "outside_random_span": 0.8322147727012634
+                    },
+                    "128": {
+                        "in_output_span": 0.7725376486778259,
+                        "in_random_span": 0.7698168158531189,
+                        "outside_output_span": 0.8331217169761658,
+                        "outside_random_span": 0.8343914151191711
+                    }
+                }
+            },
+            "44": {
+                "output_layer": "lm_head (vlm._model.lm_head.weight)",
+                "direction_rotation": 0.20250928401947021,
+                "full": 0.8100852370262146,
+                "by_dim": {
+                    "8": {
+                        "in_output_span": 0.3925267457962036,
+                        "in_random_span": 0.2878650426864624,
+                        "outside_output_span": 0.8108108043670654,
+                        "outside_random_span": 0.8118991255760193
+                    },
+                    "32": {
+                        "in_output_span": 0.5742789506912231,
+                        "in_random_span": 0.5748231410980225,
+                        "outside_output_span": 0.8086341619491577,
+                        "outside_random_span": 0.8082713484764099
+                    },
+                    "128": {
+                        "in_output_span": 0.7384364008903503,
+                        "in_random_span": 0.7382550239562988,
+                        "outside_output_span": 0.8060947060585022,
+                        "outside_random_span": 0.8108108043670654
+                    }
+                }
+            }
+        }
+    },
+    "means": {
+        "baseline": {
+            "in_output_span_8": 0.47221718231836957,
+            "in_random_span_8": 0.4440413514773051,
+            "outside_output_span_8": 0.8316706021626791,
+            "outside_random_span_8": 0.8322147528330485,
+            "in_output_span_32": 0.655904233455658,
+            "in_random_span_32": 0.6503416299819946,
+            "outside_output_span_32": 0.8322752316792806,
+            "outside_random_span_32": 0.8305822610855103,
+            "in_output_span_128": 0.7847511967023214,
+            "in_random_span_128": 0.777616560459137,
+            "outside_output_span_128": 0.8325775464375814,
+            "outside_random_span_128": 0.8307636380195618,
+            "full": 0.831247349580129,
+            "direction_rotation": 0.2290803243716558
+        },
+        "proposal": {
+            "in_output_span_8": 0.7204184134801229,
+            "in_random_span_8": 0.722413698832194,
+            "outside_output_span_8": 0.9584013621012369,
+            "outside_random_span_8": 0.9592478275299072,
+            "in_output_span_32": 0.9191607634226481,
+            "in_random_span_32": 0.9102726777394613,
+            "outside_output_span_32": 0.9594896833101908,
+            "outside_random_span_32": 0.9589455326398214,
+            "in_output_span_128": 0.947880764802297,
+            "in_random_span_128": 0.9463691711425781,
+            "outside_output_span_128": 0.957192083199819,
+            "outside_random_span_128": 0.9573734601338705,
+            "full": 0.9588850537935892,
+            "direction_rotation": 0.24661613504091898
+        },
+        "ablation": {
+            "in_output_span_8": 0.4162887632846832,
+            "in_random_span_8": 0.2878650426864624,
+            "outside_output_span_8": 0.8155874013900757,
+            "outside_random_span_8": 0.8177640636761984,
+            "in_output_span_32": 0.5899993975957235,
+            "in_random_span_32": 0.5843158562978109,
+            "outside_output_span_32": 0.8138944307963053,
+            "outside_random_span_32": 0.8154060045878092,
+            "in_output_span_128": 0.7476872801780701,
+            "in_random_span_128": 0.7476872801780701,
+            "outside_output_span_128": 0.8160106539726257,
+            "outside_random_span_128": 0.8160106341044108,
+            "full": 0.8157687783241272,
+            "direction_rotation": 0.21827112634976706
+        }
+    }
+}
