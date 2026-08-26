@@ -12,6 +12,7 @@ happen on every read instead of being remembered by each caller.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -24,22 +25,36 @@ from ..utils import load_json
 
 __all__ = [
     "ARMS",
+    "CHECKPOINT_NAME",
+    "MODEL",
     "SEEDS",
     "TIMESTAMP",
+    "Arm",
+    "Weights",
     "analysis_path",
+    "checkpoint_path",
     "constrained_layer",
     "eval_report",
     "predictions",
     "reported_accuracy",
     "representations",
+    "require_checkpoints",
     "run_config",
     "run_id",
     "training_batches",
     "training_duration",
+    "weights",
 ]
 
-TIMESTAMP = "20260727-002344"
-SEEDS = (42, 43, 44)
+TIMESTAMP       = "20260727-002344"
+SEEDS           = (42, 43, 44)
+# The base checkpoint the reported runs were trained from. Asserted here rather than read
+# back, because those runs predate the trainer recording it — `weights` checks it against
+# whatever a checkpoint *does* record, and stays silent where nothing was recorded.
+MODEL           = "HuggingFaceTB/SmolVLM-500M-Instruct"
+# `trainer.test(..., use_best=True)` scored the runs with this checkpoint, so this is the
+# one whose weights belong beside the reported numbers.
+CHECKPOINT_NAME = "best.pth"
 
 
 def run_id(arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP) -> str:
@@ -191,6 +206,150 @@ def training_duration(
         )
     hours, minutes, seconds = (int(g) for g in m.groups())
     return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+
+
+# The output layer under either of the two names a small language model files it under.
+# Which one a checkpoint uses is recorded rather than assumed: tied to the input embedding
+# the two are the same matrix, untied they are not, and reading the wrong one is silent.
+_OUTPUT_LAYER = (("lm_head.weight", "lm_head"), ("embed_tokens.weight", "tied embedding"))
+
+
+@dataclass(frozen=True)
+class Weights:
+    """What a run's checkpoint holds that an analysis asks of it.
+
+    Both products of one read: a 6GB blob is not opened twice to answer two questions
+    about the same run.
+    """
+
+    parameters: dict[str, torch.Tensor]
+    """The VLM's own state dict, keyed as `SmolVLM` names its parameters."""
+    output_weight: torch.Tensor
+    """The output layer's matrix, `(V, H)`, in float32."""
+    output_layer: str
+    """Which key it was read from, and what kind of layer that key is."""
+
+
+def checkpoint_path(
+    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+) -> Path:
+    """Where a run's weights sit — under `runs_root`, not in the checkout.
+
+    The one reader here that does not go to a snapshot. Snapshots exclude the checkpoints
+    because those are nearly all of a run's bytes, so the weights exist only on the
+    machine that trained the run.
+    """
+    return (
+        cfg.runs_root
+        / run_id(arm, seed, variant, timestamp)
+        / "checkpoints"
+        / CHECKPOINT_NAME
+    )
+
+
+def require_checkpoints(variant: str = "", timestamp: str = TIMESTAMP) -> None:
+    """Fail before the first measurement rather than after the last one.
+
+    Every run is needed for the comparison to mean anything, and what follows a missing
+    checkpoint takes long enough that finding out at the end would cost the whole pass.
+    """
+    missing = [
+        checkpoint_path(arm, seed, variant, timestamp)
+        for arm in ARMS
+        for seed in SEEDS
+        if not checkpoint_path(arm, seed, variant, timestamp).exists()
+    ]
+    if missing:
+        raise SystemExit(
+            f"{len(missing)} of {len(ARMS) * len(SEEDS)} checkpoints are missing:\n"
+            + "\n".join(f"  {path}" for path in missing)
+            + "\n\nThese are excluded from the snapshots by design, so they exist only on "
+              "the machine that ran the training. Nothing here can be measured without them."
+        )
+
+
+def weights(
+    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP, *, model: str | None = None
+) -> Weights:
+    """A run's trained parameters, and the output layer picked out of them.
+
+    train4all files one state dict per registered model, keyed under `models` by the name
+    it was registered with — and the study's trainer registers two, the VLM and the learned
+    temperature. Which of them is the language model is settled by looking for the output
+    layer rather than by naming it: a name spelled here as well as in the trainer is a name
+    that can be renamed in one place only. A checkpoint that *is* a bare state dict is
+    accepted too — this reads weights that already exist, and a checkpoint older than the
+    code reading it is the ordinary case.
+
+    `model` is the base checkpoint the caller assumes these weights were trained from. When
+    the run recorded one, the two are checked against each other; the reported runs were
+    trained before the trainer recorded it, so for them nothing is checked and nothing is
+    guessed.
+    """
+    path = checkpoint_path(arm, seed, variant, timestamp)
+    if not path.exists():
+        raise SystemExit(
+            f"{path} does not exist. Checkpoints are excluded from the snapshots by "
+            f"design, so they are only on the machine that ran the training."
+        )
+    blob = torch.load(path, map_location="cpu", weights_only=False)
+    if not isinstance(blob, dict):
+        raise SystemExit(f"{path}: expected a dict, found {type(blob).__name__}.")
+
+    recorded = _recorded_model(blob)
+    if model is not None and recorded is not None and recorded != model:
+        raise SystemExit(f"{path}: trained on {recorded}, but the caller assumes {model}.")
+
+    states = _state_dicts(blob, path)
+    for suffix, kind in _OUTPUT_LAYER:
+        hits = [(name, key) for name, state in states.items() for key in state
+                if key.endswith(suffix)]
+        if len(hits) > 1:  # the text tower's, not the vision tower's
+            hits = [hit for hit in hits if "text" in hit[1]] or hits
+        if len(hits) == 1:
+            name, key = hits[0]
+            return Weights(
+                parameters=states[name],
+                output_weight=states[name][key].detach().float(),
+                output_layer=f"{kind} ({name}.{key})" if name else f"{kind} ({key})",
+            )
+    raise SystemExit(
+        f"{path}: found neither an lm_head nor an embedding to use as the output layer.\n"
+        f"  models: {sorted(states)}"
+    )
+
+
+def _state_dicts(blob: dict[str, Any], path: Path) -> dict[str, dict[str, torch.Tensor]]:
+    """Every parameter mapping in a checkpoint, by the name it is filed under.
+
+    A bare `state_dict()` has no name of its own and comes back under the empty one.
+    """
+    def holds_tensors(value: Any) -> bool:
+        return isinstance(value, dict) and any(
+            isinstance(v, torch.Tensor) for v in value.values()
+        )
+
+    models = blob.get("models")
+    if isinstance(models, dict):
+        found = {name: state for name, state in models.items() if holds_tensors(state)}
+        if found:
+            return found
+    for key in ("model", "model_state_dict", "state_dict"):
+        if holds_tensors(blob.get(key)):
+            return {"": blob[key]}
+    if holds_tensors(blob):
+        return {"": blob}
+    raise SystemExit(f"{path}: no parameters found. Top-level keys: {sorted(blob)[:20]}")
+
+
+def _recorded_model(blob: dict[str, Any]) -> str | None:
+    """The base checkpoint a run was trained from, if the trainer filed it under `extras`.
+
+    The nine reported runs were trained before it did, so for them this is `None`.
+    """
+    extras = blob.get("extras")
+    recorded = extras.get("checkpoint") if isinstance(extras, dict) else None
+    return recorded if isinstance(recorded, str) else None
 
 
 def analysis_path(script: str) -> Path:

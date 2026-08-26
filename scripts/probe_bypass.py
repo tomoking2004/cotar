@@ -35,27 +35,37 @@ worth its cost if this stage comes back undecided.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import torch
 import torch.nn.functional as F
-from transformers import AutoTokenizer
 
 from cotar.analysis import (
     ARMS,
+    CHECKPOINT_NAME,
     MIN_COUNT,
+    MODEL,
     SEEDS,
     TIMESTAMP,
+    WHERE,
+    Arm,
     analysis_path,
+    answer_token_rows,
+    gain,
     keep_frequent,
     majority_floor,
+    output_basis,
     probe_accuracy,
+    random_basis,
+    reported_gain,
     representations,
-    run_id,
+    require_checkpoints,
     scorable,
+    scores,
     split_mask,
     splitter,
+    summarize_places,
+    weights,
 )
 from cotar.config import cfg
 from cotar.utils import load_json, save_json
@@ -64,169 +74,30 @@ from cotar.utils import load_json, save_json
 # than the number of distinct first tokens, so 128 stays comfortably inside it.
 DIMS = (8, 32, 128)
 
-# `trainer.test(..., use_best=True)` scored the run with this checkpoint, so this is the
-# one whose output layer belongs beside the reported numbers.
-CHECKPOINT_NAME = "best.pth"
-
 BASIS_SEED = 0
-
-# The tokenizer has to be the one these weights were trained with, and the run records
-# which that was: `run_training` files it into the checkpoint's extras. Stated here so
-# the tokenizer can be built before the first checkpoint is opened, and checked against
-# the record on every run so the two can never quietly disagree.
-MODEL = "HuggingFaceTB/SmolVLM-500M-Instruct"
 
 OUT_PATH = analysis_path(__file__)
 
 
-# ── the output layer ─────────────────────────────────────────────────────────
+def answer_span(
+    arm: Arm, seed: int, answer_rows: torch.Tensor, m: int
+) -> tuple[torch.Tensor, str]:
+    """One run's answer directions, and the layer they were read from.
 
+    The checkpoint is opened and let go inside this call. It carries the whole trained
+    model, and the fits that follow take minutes — nothing should hold two gigabytes of
+    parameters alive through them when a single matrix is what was wanted.
 
-def _state_dict(blob: Any, path: Path) -> dict[str, torch.Tensor]:
-    """The parameter mapping inside a checkpoint, whichever key the trainer filed it under."""
-    if isinstance(blob, dict):
-        for key in ("model", "model_state_dict", "state_dict"):
-            inner = blob.get(key)
-            if isinstance(inner, dict) and any(isinstance(v, torch.Tensor) for v in inner.values()):
-                return inner
-        if any(isinstance(v, torch.Tensor) for v in blob.values()):
-            return blob
-        raise SystemExit(
-            f"{path}: no parameter mapping found. Top-level keys: {sorted(blob)[:20]}"
-        )
-    raise SystemExit(f"{path}: expected a dict, found {type(blob).__name__}.")
-
-
-def _recorded_model(blob: dict[str, Any]) -> str | None:
-    """The base checkpoint this run was trained from, if the trainer filed it."""
-    for value in blob.values():
-        if isinstance(value, dict) and isinstance(value.get("checkpoint"), str):
-            return value["checkpoint"]
-    return None
-
-
-def checkpoint_path(run: str) -> Path:
-    return cfg.runs_root / run / "checkpoints" / CHECKPOINT_NAME
-
-
-def require_checkpoints(runs: list[str]) -> None:
-    """Fail before the first fit rather than after the last one.
-
-    Every run is needed for the comparison to mean anything, and the fits ahead take long
-    enough that discovering a missing checkpoint at the end would cost the whole pass.
+    Taken once at the widest `m` and sliced for the narrower ones: the decomposition does
+    not depend on how many of its directions are asked for, so the leading `m` columns are
+    the same however they are obtained.
     """
-    if missing := [run for run in runs if not checkpoint_path(run).exists()]:
-        raise SystemExit(
-            f"{len(missing)} of {len(runs)} checkpoints are missing under {cfg.runs_root}:\n"
-            + "\n".join(f"  {checkpoint_path(run)}" for run in missing)
-            + "\n\nThese are excluded from the snapshots by design, so they exist only on the "
-              "machine that ran the training. Nothing here can be measured without them."
-        )
-
-
-def output_weight(run: str) -> tuple[torch.Tensor, str]:
-    """The output layer's weight matrix `(V, H)`, read straight out of the checkpoint.
-
-    The model is never built: only this one matrix is wanted, and instantiating the VLM to
-    reach it would pull the whole checkpoint onto a device for nothing.
-
-    Small language models often tie the output layer to the input embedding, in which case
-    the checkpoint carries no `lm_head` at all and the embedding *is* the output layer.
-    Both are accepted, and which one was used is recorded — the two are the same matrix
-    when tied, and reading the wrong one when they are not would be silent.
-    """
-    path = checkpoint_path(run)
-    blob = torch.load(path, map_location="cpu", weights_only=False)
-    if isinstance(blob, dict):
-        recorded = _recorded_model(blob)
-        if recorded is not None and recorded != MODEL:
-            raise SystemExit(f"{path}: trained on {recorded}, but this script assumes {MODEL}.")
-    state = _state_dict(blob, path)
-
-    for suffix, name in (("lm_head.weight", "lm_head"), ("embed_tokens.weight", "tied embedding")):
-        hits = [k for k in state if k.endswith(suffix)]
-        if len(hits) > 1:  # the text tower's, not the vision tower's
-            hits = [k for k in hits if "text" in k] or hits
-        if len(hits) == 1:
-            return state[hits[0]].detach().float(), f"{name} ({hits[0]})"
-    raise SystemExit(
-        f"{path}: found neither an lm_head nor an embedding to use as the output layer.\n"
-        f"  keys ending in '.weight': {[k for k in state if k.endswith('.weight')][:20]}"
-    )
-
-
-def answer_token_rows(answers: set[str]) -> torch.Tensor:
-    """The output-layer rows the answer vocabulary can be decided on.
-
-    The first token of an answer is where the answer is committed to: by the time a later
-    token is emitted the earlier ones are in the context and the choice is already made.
-    Answers are encoded both bare and with a leading space, because whether the template
-    puts a space before the answer decides which token id comes first and getting it wrong
-    would silently select a different set of rows.
-    """
-    tokenizer = AutoTokenizer.from_pretrained(MODEL)
-    ids: set[int] = set()
-    for answer in answers:
-        for text in (answer, f" {answer}"):
-            encoded = tokenizer(text, add_special_tokens=False).input_ids
-            if encoded:
-                ids.add(int(encoded[0]))
-    return torch.tensor(sorted(ids))
-
-
-def output_basis(weight: torch.Tensor, token_rows: torch.Tensor, m: int) -> torch.Tensor:
-    """An orthonormal `(H, m)` basis for the answer rows' leading directions, centred."""
-    answers = weight[token_rows]
-    centred = answers - answers.mean(dim=0, keepdim=True)
-    _, _, vh = torch.linalg.svd(centred, full_matrices=False)
-    return vh[:m].T.contiguous()
-
-
-def random_basis(hidden: int, m: int, seed: int) -> torch.Tensor:
-    """An orthonormal `(H, m)` basis with no relation to the output layer."""
-    generator = torch.Generator().manual_seed(seed)
-    gaussian = torch.randn(hidden, m, generator=generator)
-    q, _ = torch.linalg.qr(gaussian)
-    return q[:, :m].contiguous()
-
-
-# ── the measurement ──────────────────────────────────────────────────────────
-
-
-def inside(x: torch.Tensor, basis: torch.Tensor) -> torch.Tensor:
-    """Coordinates within the subspace — `m` numbers per row."""
-    return x @ basis
-
-
-def outside(x: torch.Tensor, basis: torch.Tensor) -> torch.Tensor:
-    """What the subspace does not hold — still `H` numbers per row, with that part removed."""
-    return x - (x @ basis) @ basis.T
-
-
-WHERE = ("in_output_span", "in_random_span", "outside_output_span")
-
-
-def gain(summary: dict[str, Any], key: str) -> float:
-    """Proposal minus baseline at one place, in percentage points."""
-    return 100 * (summary["proposal"][key] - summary["baseline"][key])
-
-
-def reported_gain() -> float | None:
-    """The full-space gain §5.1 reports, read from the file that measured it.
-
-    Restating the number here would give it a second home to drift from, so it is taken
-    from `probe_signature.py`'s own output. That analysis may not have been run, in which
-    case the pointer to the section stands on its own.
-    """
-    path = analysis_path("probe_signature.py")
-    if not path.exists():
-        return None
-    split = load_json(path)["splits"]["random"]
-    return 100 * (split["proposal"]["mean"] - split["baseline"]["mean"])
+    trained = weights(arm, seed, model=MODEL)
+    return output_basis(trained.output_weight, answer_rows, m), trained.output_layer
 
 
 if __name__ == "__main__":
-    require_checkpoints([run_id(arm, seed) for arm in ARMS for seed in SEEDS])
+    require_checkpoints()
 
     # The row order and the kept rows are the ones §5.1 probes, so its numbers are the
     # yardstick the full-space fit below is checked against.
@@ -235,7 +106,7 @@ if __name__ == "__main__":
     rows, sub_labels, sub_train, n_classes = scorable(labels, split_mask(len(keep), splitter()))
 
     testdev = load_json(cfg.gqa.testdev_questions)
-    answer_rows = answer_token_rows({entry["answer"] for entry in testdev.values()})
+    answer_rows = answer_token_rows({entry["answer"] for entry in testdev.values()}, MODEL)
 
     print(f"{int(rows.sum()):,} questions, {n_classes} signatures, "
           f"floor {majority_floor(sub_labels, sub_train):.1%}")
@@ -245,7 +116,7 @@ if __name__ == "__main__":
     for arm in ARMS:
         results[arm] = {}
         for seed in SEEDS:
-            weight, source = output_weight(run_id(arm, seed))
+            span, source = answer_span(arm, seed, answer_rows, max(DIMS))
             features, _, _ = representations(arm, seed)
             # Normalised once, exactly as §5.1 does, and not again after projecting: a
             # re-normalised residual would be rescaled to unit length however little of
@@ -262,49 +133,44 @@ if __name__ == "__main__":
                   f"   ← compare with §5.1")
 
             for m in DIMS:
-                u = output_basis(weight, answer_rows, m)
-                r = random_basis(x.size(1), m, BASIS_SEED)
-                scores = dict(zip(WHERE, (
-                    probe_accuracy(inside(x, u), sub_labels, sub_train, n_classes),
-                    probe_accuracy(inside(x, r), sub_labels, sub_train, n_classes),
-                    probe_accuracy(outside(x, u), sub_labels, sub_train, n_classes),
-                ), strict=True))
-                entry["by_dim"][str(m)] = scores
+                place = scores(
+                    x,
+                    span[:, :m],
+                    random_basis(x.size(1), m, BASIS_SEED),
+                    sub_labels, sub_train, n_classes,
+                )
+                entry["by_dim"][str(m)] = place
                 print(f"{f'm = {m}':>26}  "
-                      f"in {scores['in_output_span']:6.1%}   "
-                      f"random {scores['in_random_span']:6.1%}   "
-                      f"outside {scores['outside_output_span']:6.1%}")
+                      f"in {place['in_output_span']:6.1%} / {place['in_random_span']:6.1%}"
+                      f"   outside {place['outside_output_span']:6.1%}"
+                      f" / {place['outside_random_span']:6.1%}"
+                      f"   (output / random)")
             results[arm][str(seed)] = entry
             print()
 
     # ── the comparison the verdict rests on ──────────────────────────────────
-    # Not the level inside the span, which any wide-enough subspace reaches, but how much
-    # of the alignment's gain survives there. If the gain over baseline is present inside
-    # the output layer's span, the structure alignment built is where the answer is read.
-    summary: dict[str, Any] = {}
-    print(f"{'':>10}" + "".join(f"{f'm={m}':>34}" for m in DIMS))
-    print(f"{'':>10}" + "".join(f"{'in-span':>12}{'random':>11}{'outside':>11}" for _ in DIMS))
+    # Not the level anywhere, and not the gain anywhere either: both survive whatever the
+    # subspace is. What decides is the *difference* between the output layer's span and a
+    # random span of the same width. If the alignment's gain is larger inside U than inside
+    # a random subspace, the structure it built is where the answer is read; if it is larger
+    # outside U than outside a random one, the structure sits where the output does not read.
+    # If neither difference appears, this stage has not decided and §7.1's second stage runs.
+    summary = summarize_places(results, DIMS, ARMS, SEEDS)
+    print(f"{'':>10}" + "".join(f"{f'm={m}':>44}" for m in DIMS))
+    print(f"{'':>10}" + "".join(
+        f"{'in U':>11}{'in rand':>11}{'out U':>11}{'out rand':>11}" for _ in DIMS))
     for arm in ARMS:
-        means = {
-            f"{where}_{m}": sum(
-                results[arm][str(seed)]["by_dim"][str(m)][where] for seed in SEEDS
-            ) / len(SEEDS)
-            for m in DIMS
-            for where in WHERE
-        }
-        means["full"] = sum(results[arm][str(s)]["full"] for s in SEEDS) / len(SEEDS)
-        summary[arm] = means
         print(f"{arm:>10}" + "".join(
-            f"{means[f'{where}_{m}']:>11.1%}" for m in DIMS for where in WHERE
+            f"{summary[arm][f'{where}_{m}']:>11.1%}" for m in DIMS for where in WHERE
         ))
 
-    print("\ngain over baseline (proposal − baseline), by where it is measured")
+    print("\ngain over baseline (proposal − baseline), against the random span of each width")
     for m in DIMS:
-        gains = (
-            f"{where.replace('_', ' ')} {gain(summary, f'{where}_{m}'):+5.1f}pt"
-            for where in WHERE
-        )
-        print(f"  m = {m:>3}:  " + "   ".join(gains))
+        cells = []
+        for side in ("in", "outside"):
+            u, r = (gain(summary, f"{side}_{kind}_span_{m}") for kind in ("output", "random"))
+            cells.append(f"{side:>7}  U {u:+5.1f}pt  random {r:+5.1f}pt  Δ {u - r:+5.2f}pt")
+        print(f"  m = {m:>3}:  " + "   ".join(cells))
     reported = reported_gain()
     against = (
         f"← §5.1 reports {reported:+.1f}pt" if reported is not None else "← compare with §5.1"
