@@ -6,6 +6,8 @@
         44
     ],
     "batch_size": 32,
+    "constrained_layer": 16,
+    "representation_width": 960,
     "collapse_align_loss": 3.4339872044851463,
     "arms": {
         "baseline": {
