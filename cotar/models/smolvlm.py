@@ -299,6 +299,47 @@ class SmolVLM(nn.Module):
         last = torch.tensor(prompt_lens, device=hidden_states.device) - 1
         return hidden_states[rows, last]
 
+    def readout_from_site(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        pixel_values: torch.Tensor,
+        pixel_attention_mask: torch.Tensor | None = None,
+        *,
+        prompt_lens: list[int],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """The constrained layer's hidden state, and the vector the output layer reads,
+        with the graph running from the first to the second — `(B, T, H)` and `(B, H)`.
+
+        `representation` cannot serve here. Its layer axis holds one pooled *copy* per
+        constrained layer, and those copies are siblings rather than parent and child: the
+        last layer's copy is not computed from the sixteenth's, so nothing can be
+        differentiated between them. This hands back the interior instead, and it is the
+        only thing in the class that does. It exists for one measurement — pulling the
+        output layer's directions back to the constrained site (context.md §7.1).
+
+        The site is returned unpooled because a gradient with respect to one row cannot be
+        asked for from that row alone: the differentiation target has to be the tensor
+        autograd knows, so the caller takes the row it wants out of the gradient. The
+        readout *is* pooled, at the last prompt token, because it is an output rather than
+        a target. It comes from the last hidden state, which is what the output layer is
+        applied to — after the final normalisation, not before.
+        """
+        if self.layers is None:
+            raise ValueError(
+                "No constrained layer to differentiate towards: build the model with one, "
+                "e.g. build_smolvlm('500M', layers=16)."
+            )
+        with self._autocast():
+            out = self._model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                pixel_values=pixel_values,
+                pixel_attention_mask=pixel_attention_mask,
+                output_hidden_states=True,
+            )
+        return out.hidden_states[self.layers[0]], self._pool(out.hidden_states[-1], prompt_lens)
+
     @torch.inference_mode()
     def generate(
         self,
