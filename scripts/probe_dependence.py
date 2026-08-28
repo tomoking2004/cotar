@@ -168,16 +168,21 @@ if __name__ == "__main__":
     for arm in ARMS:
         print(f"{arm:>10}" + "".join(f"{summary[arm][str(m)]:>14.4f}" for m in DIMS))
 
-    print("\nproposal relative to baseline")
-    for m in DIMS:
-        b, p = summary["baseline"][str(m)], summary["proposal"][str(m)]
-        seeds = [
-            100 * (results["proposal"][str(s)]["by_dim"][str(m)]["elasticity"]
-                   / results["baseline"][str(s)]["by_dim"][str(m)]["elasticity"] - 1)
-            for s in SEEDS
-        ]
-        print(f"  m = {m:>3}:  {100 * (p / b - 1):+6.1f}%   seeds "
-              + " ".join(f"{v:+6.1f}%" for v in seeds))
+    # Paired the way context.md §4.3 pairs everything: the ratio is taken within each
+    # seed and the three ratios averaged — the number the document's table carries. The
+    # ratio of the mean elasticities is close but not it, and printing that instead
+    # would put two conventions behind one comparison.
+    reference, *aligned = ARMS
+    for arm in aligned:
+        print(f"\n{arm} relative to {reference} (ratio per seed, then averaged)")
+        for m in DIMS:
+            seeds = [
+                100 * (results[arm][str(s)]["by_dim"][str(m)]["elasticity"]
+                       / results[reference][str(s)]["by_dim"][str(m)]["elasticity"] - 1)
+                for s in SEEDS
+            ]
+            print(f"  m = {m:>3}:  {mean(seeds):+6.1f}%   seeds "
+                  + " ".join(f"{v:+6.1f}%" for v in seeds))
 
     save_json({
         "timestamp": TIMESTAMP,
