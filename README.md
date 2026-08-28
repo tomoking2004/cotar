@@ -45,9 +45,10 @@ python scripts/probe_operators.py          # プローブが見ていない演�
 python scripts/stratify_by_frequency.py    # 正解率を署名の頻度で層別し直す
 python scripts/probe_bypass.py             # 整合した構造が出力の読む方向に載っているか（§4.5 第1段）
 python scripts/probe_bypass_pullback.py    # その方向を第16層へ引き戻して問い直す（§4.5 第2段）
+python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼っているか（§4.5 第3段）
 ```
 
-**モデルを動かすのは4本**——上の3本と `probe_bypass_pullback.py`（ヤコビ積を取るのでモデルを走らせる）である．残る7本は保存済みのファイルを読み直すだけなので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py` と `probe_bypass_pullback.py` の2本は学習済みの重みを要求する（後述）．
+**モデルを動かすのは5本**——上の3本と `probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる）である．残る7本は保存済みのファイルを読み直すだけなので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` の3本は学習済みの重みを要求する（後述）．
 
 `train.py` と `sweep.py` は run の建て方を共有する——`cotar/training/run.py` の `Settings` と `run_training` である．既定値が報告した実験の値なので，**sweep は変える設定だけを書き，残りが同じであることが目で見える．** どちらも冒頭の `DEBUG = True` で全分割を切り詰めた短い試走になり，数分で配線を確かめられる．
 
@@ -59,15 +60,15 @@ python scripts/probe_bypass_pullback.py    # その方向を第16層へ引き戻
 
 ## 次の一手を走らせる
 
-**研究文書 §7 の五つのうち，いま走らせられるのは §7.5 だけである．** 残る四つにはまだスクリプトが無い——§7.1（依存の大きさ）は `probe_bypass_pullback.py` が正規直交化のときに捨てている長さを取り出すもので，同じ逆伝播で足りる．§7.2（表現の頑健性）は重みを，§7.3（稀な署名を表現の側で）は保存済みの表現を要し，§7.4（別のラベル）は新しい学習を要する．
+**研究文書 §7 の四つのうち，いま走らせられるのは §7.4 だけである．** 残る三つにはまだスクリプトが無い——§7.1（表現の頑健性）は重みを，§7.2（稀な署名を表現の側で）は保存済みの表現を要し，§7.3（別のラベル）は新しい学習を要する．
 
-**迂回の判定（研究文書 §4.5）は2段とも済んでいる**——`probe_bypass.py` と `probe_bypass_pullback.py` が `analyses/` に結果を書いているので，走らせ直す必要はない．
+**迂回の判定（研究文書 §4.5）は3段とも済んでいる**——`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` が `analyses/` に結果を書いているので，走らせ直す必要はない．
 
 ```bash
-# 0. 重みが在るか（§7.1 と §7.2 はこれを要求する．無ければ即座に落ちて場所を告げる）
+# 0. 重みが在るか（§7.1 はこれを要求する．無ければ即座に落ちて場所を告げる）
 ls "$(python -c 'from cotar.config import cfg; print(cfg.runs_root)')"/20260727-002344_*/checkpoints/best.pth
 
-# 1. §7.5 整合の強さを振る — まず DEBUG = True で数分の試走．配線を確かめてから本走
+# 1. §7.4 整合の強さを振る — まず DEBUG = True で数分の試走．配線を確かめてから本走
 python scripts/sweep.py
 #    print された timestamp を summarize_sweep.py の SWEEP_TIMESTAMP に入れてから
 python scripts/summarize_sweep.py
@@ -94,7 +95,7 @@ python scripts/summarize_sweep.py
 
 **同じものの写しが，`checkpoints/` だけを抜いて `snapshots/` の同じ run 名の下にも落ちる．** 重みを落とせば1 run は数十MB——上の表のうち `checkpoints/best.pth` 以外は全部こちらに在るので，git がそのまま追跡でき，push すれば結果は GitHub からも読める．エポックごとと最終評価の直後に，変わったファイルだけを原子的に置き換えて更新するので，走っている最中に掴んでも写しは丸ごと揃っている．
 
-**逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py` と `probe_bypass_pullback.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．
+**逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．
 
 `snapshots/` には2つのバッチが在る．研究文書が報告するのは `20260727-002344` の9 run（3群 × 3 seed）だけで，分析スクリプトもこれしか読まない．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) のポスターの裏付けとして残してある——**別の実験なので，数値が研究文書と一致しなくて当然である．**
 
@@ -143,6 +144,7 @@ scripts/
   stratify_by_frequency.py  済んだ実験を署名の頻度で層別し直す
   probe_bypass.py           整合した構造が出力の読む方向に載っているかを測る（要 checkpoints）
   probe_bypass_pullback.py  その方向を第16層へ引き戻して同じ判定を掛け直す（要 checkpoints・GPU）
+  probe_dependence.py       答えが第16層にどれだけ頼っているかを群間で比べる（要 checkpoints・GPU）
 ```
 
 **`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py` は `training/` を，分析の7本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` は GPU も学習済みモデルも要求しないので，ノートPCで完結する．
@@ -181,8 +183,9 @@ scripts/
 | 表現の幾何・損失・正解率の要約，崩壊値 $\log(B-1)$，1エポックのバッチ数と実行時間（§3.1・§3.4・§5.3） | `summarize_runs.py`——9 run の `eval.json`・`step_metrics.json`・`log.txt` を読み直すだけ．新しく測るものは無く，文書がしている算術をここでする |
 | $\bar{x}$・$s$・$\bar{d}$・信頼区間（§3.3） | `analysis/statistics.py`——$t_{2,\,0.975}$ は文書と同じ閉じた式で求める（表を引かない）．区間が $0$ を跨ぐか否かも保存する |
 | 頻度層別と層ごとの区間（§5.4） | `stratify_by_frequency.py` |
-| 整合の強さと交換率（§7.5） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.3 の数値を再現することが，両者が同じものを測っている証拠になる |
+| 整合の強さと交換率（§7.4） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.3 の数値を再現することが，両者が同じものを測っている証拠になる |
 | 迂回の判定・第1段（§4.5） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
+| 迂回の判定・第3段（§4.5） | `probe_dependence.py`——同じベクトル–ヤコビ積の**長さ**を，第16層の表現と読み出しの大きさで割って無次元にし（弾性），3群で比べる．第2段が正規直交化のときに捨てている量である．プロンプト本数の収束も同じ逆伝播から出す |
 | 迂回の判定・第2段（§4.5） | `probe_bypass_pullback.py`——$U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
 | 分割の排他性・署名の分布・対を組めない問・含意対との一致・答えの語彙・演算子が自分の名を質問文に置く率（§2.1・§3.1・§4.5・§6.3） | `audit_dataset.py`——学習も GPU も要らず，質問ファイルだけから全部を一度に出す．含意対は**対の数**（`unordered`）で数える．GQA は同じ関係を両側から並べるので，訪問回数（`ordered`）で数えると往復を二度数えて率が数ポイント動く．研究文書が引くのは前者．**食い違いの中身**（yes/no 型と自由回答型を組にした割合，最も多い署名の組）も同じ関数が出す——率だけでは「署名が誤っている」としか読めないので |
 
