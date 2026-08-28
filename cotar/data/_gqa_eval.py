@@ -125,8 +125,8 @@ if not args.grounding:
 if not args.choices:
     print("No --choices file given; skipping validity and plausibility scores.")
     print("GQA distributes choices for the train/val tiers only.\n")
-# --- END local patch --------------------------------------------------------
 
+# --- END local patch --------------------------------------------------------
 
 ##### Files Loading
 ##########################################################################################
@@ -411,8 +411,8 @@ def chiSquare(goldDist, predictedDist):
     # avg()'s convention and report 0 instead of dividing by zero.
     if sumOverall == 0:
         return 0.0
-    # --- END local patch --------------------------------------------------------
 
+    # --- END local patch --------------------------------------------------------
     avgScore = float(sumScore) / sumOverall
 
     return avgScore
