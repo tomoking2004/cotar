@@ -233,18 +233,20 @@ class Weights:
 def checkpoint_path(
     arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
 ) -> Path:
-    """Where a run's weights sit — under `runs_root`, not in the checkout.
+    """Where a run's weights sit — the first root that actually holds them.
 
     The one reader here that does not go to a snapshot. Snapshots exclude the checkpoints
     because those are nearly all of a run's bytes, so the weights exist only on the
-    machine that trained the run.
+    machine that trained the run — or on a copy carried over from it, which is why every
+    root in `cfg.run_roots` is probed rather than the local one alone. A run found
+    nowhere resolves under `runs_root`, so the caller's error names the place a fresh
+    run would have put it.
     """
-    return (
-        cfg.runs_root
-        / run_id(arm, seed, variant, timestamp)
-        / "checkpoints"
-        / CHECKPOINT_NAME
-    )
+    relative = Path(run_id(arm, seed, variant, timestamp)) / "checkpoints" / CHECKPOINT_NAME
+    for root in cfg.run_roots:
+        if (root / relative).exists():
+            return root / relative
+    return cfg.runs_root / relative
 
 
 def require_checkpoints(variant: str = "", timestamp: str = TIMESTAMP) -> None:

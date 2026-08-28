@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,6 +19,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # their weights. Kept outside the checkout because it is synced, and tens of gigabytes do
 # not belong in a synced folder.
 WORK_ROOT = Path.home() / "TMU" / "Master" / "study" / "cotar"
+
+# runs/ alone can also live on removable media: a USB copy of the lab machine's runs/,
+# carried over for the analyses that need the weights this checkout does not hold.
+# `run_roots` (below) lists it after the local runs/, and readers probe it per run.
+# $COTAR_RUNS_ROOT names a copy explicitly for when the drive letter is not E:; the
+# datasets stay put either way.
+USB_RUNS_ROOT = Path("E:/runs")
 
 
 @dataclass(frozen=True)
@@ -62,7 +70,22 @@ class Config:
 
     @property
     def runs_root(self) -> Path:
+        # Where a new run lands: always the local working area. Reading an already
+        # trained run is a different question — it may sit on a carried copy instead —
+        # and goes through `run_roots`, never through this.
         return self.work_root / "runs"
+
+    @property
+    def run_roots(self) -> tuple[Path, ...]:
+        # Every place an already-trained run may sit, in the order they are trusted: an
+        # explicit $COTAR_RUNS_ROOT first, then the local runs/, then a USB copy mounted
+        # at E:\runs. Only roots that exist are listed, and readers probe them per run —
+        # a decision made once for the whole list would let a local runs/ holding only
+        # debug runs shadow the USB copy that holds the reported nine.
+        override = os.environ.get("COTAR_RUNS_ROOT")
+        candidates = [Path(override)] if override else []
+        candidates += [self.work_root / "runs", USB_RUNS_ROOT]
+        return tuple(root for root in candidates if root.exists())
 
     @property
     def snapshots_root(self) -> Path:
