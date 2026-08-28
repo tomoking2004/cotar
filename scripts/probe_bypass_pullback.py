@@ -34,7 +34,6 @@ from typing import Any
 
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 from train4all.utils import empty_cuda_cache
 
 from cotar.analysis import (
@@ -44,13 +43,13 @@ from cotar.analysis import (
     SEEDS,
     TIMESTAMP,
     WHERE,
-    Arm,
     analysis_path,
     answer_token_rows,
-    constrained_layer,
     delta,
     gain,
+    jacobian_batches,
     keep_frequent,
+    load_for_jacobian,
     majority_floor,
     output_basis,
     probe_accuracy,
@@ -61,15 +60,14 @@ from cotar.analysis import (
     scorable,
     scores,
     seed_deltas,
+    site,
     split_mask,
     splitter,
     summarize_places,
-    weights,
+    vjp_at_site,
 )
 from cotar.config import cfg
-from cotar.data import build_gqa_dataloader
 from cotar.models import SmolVLM, build_smolvlm
-from cotar.types import VLMProcessor
 from cotar.utils import load_json, save_json
 
 # The same widths the first stage swept, so the two are read on one axis.
@@ -85,64 +83,20 @@ BATCH      = 8
 OUT_PATH = analysis_path(__file__)
 
 
-def site() -> tuple[int, int]:
-    """The layer the nine runs constrained, and the width of its vector.
-
-    Refused if they disagree: nine runs constraining different layers are not one
-    experiment, and there would be no single site to pull anything back to.
-    """
-    sites = {constrained_layer(arm, seed) for arm in ARMS for seed in SEEDS}
-    if len(sites) != 1:
-        raise SystemExit(f"the runs constrained different sites ({sorted(sites)}).")
-    return sites.pop()
-
-
-def load(arm: Arm, seed: int, layer: int, device: str) -> tuple[SmolVLM, torch.Tensor, str]:
-    """One run's trained model, ready to differentiate, and its output layer.
-
-    Evaluation mode, because what is being linearised is the network as it answers rather
-    than as it trains — and because the model turns gradient checkpointing on for CUDA,
-    which the layers apply only while training.
-    """
-    trained = weights(arm, seed, model=MODEL)
-    vlm, _ = build_smolvlm("500M", layers=(layer,))
-    vlm.load_state_dict(trained.parameters)
-    return vlm.to(device).eval(), trained.output_weight, trained.output_layer
-
-
 def pull_back(
     vlm: SmolVLM, batches: list[dict[str, Any]], directions: torch.Tensor
 ) -> torch.Tensor:
     """Every direction carried from the output layer back to the site — `(H, m)` in, `(H, m)` out.
 
-    Each column is one backward pass per batch, accumulated over prompts and divided at the
-    end. The gradient comes back for every position; the row taken is the site's own, which
-    is the direct dependence of the readout on the vector the alignment constrained.
+    The mean over prompts of each direction's gradient at the site. What is kept is the
+    direction of that mean; §7.1 keeps its length instead, from the same backward pass.
     """
     pulled = torch.zeros_like(directions)
     counted = 0
     for batch in batches:
-        prompt_lens = batch["prompt_lens"]
-        with torch.enable_grad():
-            hidden, readout = vlm.readout_from_site(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                pixel_values=batch["pixel_values"],
-                pixel_attention_mask=batch.get("pixel_attention_mask"),
-                prompt_lens=prompt_lens,
-            )
-            rows = torch.arange(len(prompt_lens), device=hidden.device)
-            last = torch.tensor(prompt_lens, device=hidden.device) - 1
-            for j in range(directions.size(1)):
-                direction = directions[:, j].to(readout.device, readout.dtype)
-                grad, = torch.autograd.grad(
-                    readout,
-                    hidden,
-                    grad_outputs=direction.repeat(len(prompt_lens), 1),
-                    retain_graph=j + 1 < directions.size(1),
-                )
-                pulled[:, j] += grad[rows, last].float().sum(dim=0).cpu()
-        counted += len(prompt_lens)
+        grads, _, _ = vjp_at_site(vlm, batch, directions)
+        pulled += grads.sum(dim=0).T
+        counted += grads.size(0)
     return pulled / counted
 
 
@@ -171,30 +125,6 @@ def rotation(pulled: torch.Tensor, original: torch.Tensor) -> float:
     return F.cosine_similarity(pulled, original, dim=0).abs().mean().item()
 
 
-def prompts(processor: VLMProcessor) -> list[dict[str, Any]]:
-    """The testdev batches the Jacobian is averaged over, on the device, kept in memory.
-
-    Held rather than re-read per run: nine models are differentiated against exactly the
-    same inputs, which is what makes the nine pullbacks comparable.
-    """
-    loader: DataLoader[Any] = build_gqa_dataloader(
-        cfg.gqa.testdev_questions,
-        images_dir=cfg.gqa.images,
-        processor=processor,
-        batch_size=BATCH,
-        with_labels=True,
-        limit=PROMPTS,
-        num_workers=0,
-    )
-    return [
-        {
-            key: value.to(cfg.device) if torch.is_tensor(value) else value
-            for key, value in batch.items()
-        }
-        for batch in loader
-    ]
-
-
 if __name__ == "__main__":
     require_checkpoints()
     layer, hidden_width = site()
@@ -209,7 +139,7 @@ if __name__ == "__main__":
     answer_rows = answer_token_rows({entry["answer"] for entry in testdev.values()}, MODEL)
 
     _, processor = build_smolvlm("500M")
-    batches = prompts(processor)
+    batches = jacobian_batches(processor, PROMPTS, BATCH)
 
     print(f"{int(rows.sum()):,} questions, {n_classes} signatures, "
           f"floor {majority_floor(sub_labels, sub_train):.1%}")
@@ -222,7 +152,7 @@ if __name__ == "__main__":
     for arm in ARMS:
         results[arm] = {}
         for seed in SEEDS:
-            vlm, weight, source = load(arm, seed, layer, cfg.device)
+            vlm, weight, source = load_for_jacobian(arm, seed, layer, cfg.device)
             span = output_basis(weight, answer_rows, max(DIMS))
             pulled = pull_back(vlm, batches, span)
             basis, turned = orthonormal(pulled), rotation(pulled, span)

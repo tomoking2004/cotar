@@ -27,6 +27,12 @@ from .experiment import (
     training_duration,
     weights,
 )
+from .jacobian import (
+    jacobian_batches,
+    load_for_jacobian,
+    site,
+    vjp_at_site,
+)
 from .probing import (
     FORMAT_FEATURES,
     MIN_COUNT,
@@ -97,7 +103,9 @@ __all__ = [
     "format_matrix",
     "gain",
     "inside",
+    "jacobian_batches",
     "keep_frequent",
+    "load_for_jacobian",
     "majority_floor",
     "output_basis",
     "outside",
@@ -115,6 +123,7 @@ __all__ = [
     "scorable",
     "scores",
     "seed_deltas",
+    "site",
     "split_mask",
     "splitter",
     "summarize",
@@ -124,5 +133,6 @@ __all__ = [
     "t_critical",
     "training_batches",
     "training_duration",
+    "vjp_at_site",
     "weights",
 ]
