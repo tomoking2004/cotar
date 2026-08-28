@@ -316,7 +316,7 @@ class SmolVLM(nn.Module):
         last layer's copy is not computed from the sixteenth's, so nothing can be
         differentiated between them. This hands back the interior instead, and it is the
         only thing in the class that does. It exists for one measurement — pulling the
-        output layer's directions back to the constrained site (context.md §4.5).
+        output layer's directions back to the constrained site (context.md §A.4).
 
         The site is returned unpooled because a gradient with respect to one row cannot be
         asked for from that row alone: the differentiation target has to be the tensor

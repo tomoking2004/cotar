@@ -1,7 +1,7 @@
 """Reading a representation inside a subspace and outside it, and the controls that make
 either reading mean something.
 
-Both stages of context.md §4.5 ask the same question of the same rows and differ only in
+The first two stages of context.md §A.4 ask the same question of the same rows and differ only in
 where the subspace comes from: the first takes the output layer's answer directions as
 they stand, the second pulls them back to the constrained site through the network in
 between. Everything after that — the four places a probe is run, and the statistic the
@@ -169,7 +169,7 @@ def delta(summary: dict[str, dict[str, float]], m: int, side: str) -> float:
     What alignment gained in `U` at this side, less what it gained in a random subspace of
     the same width. Neither the level nor the gain decides anything on its own — both
     survive whatever the subspace is built from (see the module docstring) — so this
-    difference is what the two stages of context.md §4.5 are read on.
+    difference is what the first two stages of context.md §A.4 are read on.
     """
     return gain(summary, f"{side}_output_span_{m}") - gain(summary, f"{side}_random_span_{m}")
 

@@ -1,11 +1,11 @@
 """Ask how hard the readout leans on the site, and whether alignment changed that.
 
-context.md §5.5 answered where the aligned structure sits and could not answer whether the
-model uses it. The two readings it left open — neutral and bypassed — differ in *dependence*:
-bypass means the answer came to rely on the constrained site less, neutrality means it did
-not. §4.5's second stage already computes the quantity that separates them and throws it
-away, because orthonormalising a pulled-back direction keeps its bearing and discards its
-length.
+context.md §A.4's first two stages answered where the aligned structure sits and could not
+answer whether the model uses it. The two readings they left open — neutral and bypassed —
+differ in *dependence*: bypass means the answer came to rely on the constrained site less,
+neutrality means it did not. The second stage already computes the quantity that separates
+them and throws it away, because orthonormalising a pulled-back direction keeps its bearing
+and discards its length.
 
 The length is what this keeps. For one prompt and one answer direction `u`, the
 vector-Jacobian product gives how far the readout moves along `u` per unit of movement at
@@ -18,15 +18,16 @@ anything about the computation having changed. So it is reported as an **elastic
 — the relative movement of the readout along `u` produced by a relative movement of the
 site. A one percent nudge at the site moves the readout `e` percent along `u`.
 
-**The lengths are averaged, not the vectors.** §4.5 averages the gradient vectors over
-prompts because it wants one subspace; the mean of vectors that disagree in direction is
-short, which is a statement about agreement rather than about magnitude. Dependence is a
-magnitude, so the norms are taken first and averaged after.
+**The lengths are averaged, not the vectors.** The second stage averages the gradient
+vectors over prompts because it wants one subspace; the mean of vectors that disagree in
+direction is short, which is a statement about agreement rather than about magnitude.
+Dependence is a magnitude, so the norms are taken first and averaged after.
 
-**The prompt count is checked rather than assumed.** §4.5 averaged over 64 prompts without
-showing that 64 was enough. Both quantities are reported at prefixes of the same prompt
-set, so a reader can see whether they had settled — the elasticity by its running mean, and
-§4.5's own subspace by the cosine between the prefix's mean direction and the full one.
+**The prompt count is checked rather than assumed.** The second stage averaged over 64
+prompts without showing that 64 was enough. Both quantities are reported at prefixes of the
+same prompt set, so a reader can see whether they had settled — the elasticity by its
+running mean, and the second stage's own subspace by the cosine between the prefix's mean
+direction and the full one.
 """
 
 from __future__ import annotations
@@ -57,10 +58,12 @@ from cotar.config import cfg
 from cotar.models import build_smolvlm
 from cotar.utils import load_json, save_json
 
-# The widths §4.5 swept, so dependence is read on the same axis as where the structure sits.
+# The widths the first two stages swept, so dependence is read on the same axis as where
+# the structure sits.
 DIMS = (8, 32, 128)
 
-# The prompts and batching §4.5 used, so the two measurements describe the same linearisation.
+# The prompts and batching the second stage used, so the two measurements describe the
+# same linearisation.
 PROMPTS = 64
 BATCH = 8
 
@@ -75,7 +78,7 @@ def elasticities(
 ) -> tuple[torch.Tensor, dict[int, torch.Tensor]]:
     """Per-prompt elasticities `(P, m)`, and the mean pulled direction after each prompt.
 
-    The second return is §4.5's own quantity accumulated prompt by prompt, kept so its
+    The second return is the second stage's own quantity accumulated prompt by prompt, kept so its
     convergence can be read from the same backward passes rather than assumed.
     """
     per_prompt: list[torch.Tensor] = []
@@ -153,7 +156,7 @@ if __name__ == "__main__":
     # Shorter for proposal than for baseline means the answer came to lean on the site
     # less, which is bypass. The same means the structure spread without the site losing
     # its hold, which is neutrality. Longer would mean alignment deepened the dependence,
-    # and would have to be squared with §5.3's unmoved accuracy.
+    # and would have to be squared with §5.2's unmoved accuracy.
     summary = {
         arm: {
             str(m): mean(results[arm][str(s)]["by_dim"][str(m)]["elasticity"] for s in SEEDS)

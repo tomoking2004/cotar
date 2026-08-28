@@ -1,6 +1,6 @@
 """Ask the bypass question again, with the output layer's directions carried to the site.
 
-This is the second of the two stages in context.md §4.5, and it runs because the first did
+This is the second of the three stages in context.md §A.4, and it runs because the first did
 not decide. There, the answer directions were read off the output layer and applied to the
 sixteenth layer's vector as they stood — the two spaces have the same width, but they are
 not the same space, and the first stage assumed they were. What it found is what a bad
@@ -19,7 +19,7 @@ et al. average over both, because they are after a general layer-to-layer map. H
 site is one position: the last prompt token, the one the alignment loss touched and the
 one the first answer token is chosen from. The image and question positions carry hidden
 states the alignment never constrained, and averaging them in would blur the map with
-directions belonging to vectors that are not under study. §4.5 records this departure from
+directions belonging to vectors that are not under study. §A.4 records this departure from
 Gurnee et al., who average on both axes.
 
 Everything downstream is the first stage's, unchanged: the same rows §5.1 probes, the same
@@ -89,7 +89,8 @@ def pull_back(
     """Every direction carried from the output layer back to the site — `(H, m)` in, `(H, m)` out.
 
     The mean over prompts of each direction's gradient at the site. What is kept is the
-    direction of that mean; §7.1 keeps its length instead, from the same backward pass.
+    direction of that mean; §A.4's third stage keeps its length instead, from the same
+    backward pass.
     """
     pulled = torch.zeros_like(directions)
     counted = 0
