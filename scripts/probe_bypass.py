@@ -57,7 +57,7 @@ from cotar.analysis import (
     majority_floor,
     output_basis,
     probe_accuracy,
-    random_basis,
+    random_bases,
     reported_gain,
     representations,
     require_checkpoints,
@@ -75,8 +75,6 @@ from cotar.utils import load_json, save_json
 # Widths to sweep. Bounded above by the answer vocabulary's own rank, which is one less
 # than the number of distinct first tokens, so 128 stays comfortably inside it.
 DIMS = (8, 32, 128)
-
-BASIS_SEED = 0
 
 OUT_PATH = analysis_path(__file__)
 
@@ -138,7 +136,7 @@ if __name__ == "__main__":
                 place = scores(
                     x,
                     span[:, :m],
-                    random_basis(x.size(1), m, BASIS_SEED),
+                    random_bases(x.size(1), m),
                     sub_labels, sub_train, n_classes,
                 )
                 entry["by_dim"][str(m)] = place

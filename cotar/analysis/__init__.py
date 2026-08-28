@@ -54,6 +54,7 @@ from .statistics import (
     t_critical,
 )
 from .subspaces import (
+    CONTROL_DRAWS,
     WHERE,
     answer_token_rows,
     delta,
@@ -61,7 +62,7 @@ from .subspaces import (
     inside,
     output_basis,
     outside,
-    random_basis,
+    random_bases,
     reported_gain,
     scores,
     seed_deltas,
@@ -72,6 +73,7 @@ __all__ = [
     "ARMS",
     "CHECKPOINT_NAME",
     "CONFIDENCE",
+    "CONTROL_DRAWS",
     "FORMAT_FEATURES",
     "MIN_COUNT",
     "MODEL",
@@ -102,7 +104,7 @@ __all__ = [
     "paired_difference",
     "predictions",
     "probe_accuracy",
-    "random_basis",
+    "random_bases",
     "reported_accuracy",
     "reported_gain",
     "representations",

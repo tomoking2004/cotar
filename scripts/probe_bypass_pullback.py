@@ -54,7 +54,7 @@ from cotar.analysis import (
     majority_floor,
     output_basis,
     probe_accuracy,
-    random_basis,
+    random_bases,
     reported_gain,
     representations,
     require_checkpoints,
@@ -74,7 +74,6 @@ from cotar.utils import load_json, save_json
 
 # The same widths the first stage swept, so the two are read on one axis.
 DIMS       = (8, 32, 128)
-BASIS_SEED = 0
 
 # How much of testdev the Jacobian is averaged over, and in how many pieces. The same
 # prompts are used for every run, so a difference between two pullbacks is a difference of
@@ -248,7 +247,7 @@ if __name__ == "__main__":
                 place = scores(
                     x,
                     basis[:, :m],
-                    random_basis(x.size(1), m, BASIS_SEED),
+                    random_bases(x.size(1), m),
                     sub_labels, sub_train, n_classes,
                 )
                 entry["by_dim"][str(m)] = place

@@ -30,6 +30,7 @@ from .experiment import analysis_path
 from .probing import probe_accuracy
 
 __all__ = [
+    "CONTROL_DRAWS",
     "WHERE",
     "answer_token_rows",
     "delta",
@@ -37,12 +38,22 @@ __all__ = [
     "inside",
     "output_basis",
     "outside",
+    "random_bases",
     "random_basis",
     "reported_gain",
     "scores",
     "seed_deltas",
     "summarize_places",
 ]
+
+# How many random subspaces the control at each width is averaged over. One draw is one
+# sample, and the verdict is a difference taken against it, so a single basis reports a
+# number whose uncertainty it cannot show — on these runs the narrowest width's control
+# carries a standard error that a lone draw would have hidden entirely. Five is enough to
+# put that error on the page without tripling the fits again, and every draw is kept
+# (`in_random_draws`, `outside_random_draws`) so the spread is recomputable from the
+# saved analysis rather than taken on trust.
+CONTROL_DRAWS = 5
 
 # The four readings, in the order they are reported. Each subspace is read from both
 # sides, and each side is paired with its random twin — see the module docstring.
@@ -93,6 +104,16 @@ def random_basis(hidden: int, m: int, seed: int) -> torch.Tensor:
     return q[:, :m].contiguous()
 
 
+def random_bases(hidden: int, m: int, draws: int = CONTROL_DRAWS) -> list[torch.Tensor]:
+    """The control subspaces one width is held to, one per draw.
+
+    Seeded by the draw's index so the same controls are used for every arm and every run —
+    what the verdict compares is two arms read inside the same subspace, and a control
+    redrawn per arm would put the draw's own variation into that comparison.
+    """
+    return [random_basis(hidden, m, seed) for seed in range(draws)]
+
+
 def inside(x: torch.Tensor, basis: torch.Tensor) -> torch.Tensor:
     """Coordinates within the subspace — `m` numbers per row."""
     return x @ basis
@@ -110,24 +131,31 @@ def outside(x: torch.Tensor, basis: torch.Tensor) -> torch.Tensor:
 def scores(
     x: torch.Tensor,
     basis: torch.Tensor,
-    control: torch.Tensor,
+    controls: Sequence[torch.Tensor],
     labels: torch.Tensor,
     train: torch.Tensor,
     n_classes: int,
-) -> dict[str, float]:
-    """One run's four readings at one width, keyed by `WHERE`."""
+) -> dict[str, Any]:
+    """One run's four readings at one width, keyed by `WHERE`.
+
+    The two random readings are means over the controls. Each draw is kept beside them, so
+    a reader can tell a difference that survives the control's own spread from one that
+    does not — a Δ smaller than the spread is a Δ the draw could have produced.
+    """
+    in_draws = [probe_accuracy(inside(x, c), labels, train, n_classes) for c in controls]
+    out_draws = [probe_accuracy(outside(x, c), labels, train, n_classes) for c in controls]
     return dict(
         zip(
             WHERE,
             (
                 probe_accuracy(inside(x, basis), labels, train, n_classes),
-                probe_accuracy(inside(x, control), labels, train, n_classes),
+                mean(in_draws),
                 probe_accuracy(outside(x, basis), labels, train, n_classes),
-                probe_accuracy(outside(x, control), labels, train, n_classes),
+                mean(out_draws),
             ),
             strict=True,
         )
-    )
+    ) | {"in_random_draws": in_draws, "outside_random_draws": out_draws}
 
 
 def gain(summary: dict[str, dict[str, float]], key: str) -> float:
