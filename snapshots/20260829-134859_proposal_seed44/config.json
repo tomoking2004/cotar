@@ -1,0 +1,13 @@
+{
+    "num_epochs": 1,
+    "batch_size": 32,
+    "learning_rate": 1e-05,
+    "max_grad_norm": 1.0,
+    "monitor": "accuracy",
+    "monitor_mode": "max",
+    "seed": 44,
+    "device": "cuda",
+    "arm": "proposal",
+    "align_weight": 0.1,
+    "init_scale": 14.285714285714285
+}
