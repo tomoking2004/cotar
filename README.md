@@ -39,7 +39,7 @@ python scripts/sweep.py                    # 整合の強さ／層を振る（GP
 python scripts/generate.py                 # モデルが読み込めて受け答えするかだけを見る
 python scripts/audit_dataset.py            # データ側の数値（分割・署名分布・含意対・答えの語彙）
 python scripts/summarize_runs.py           # run 側の数値（表現の幾何・損失・正解率・対にした差と区間）
-python scripts/summarize_sweep.py          # 読み取り精度と正解率を，整合の強さごとに並べる
+python scripts/summarize_sweep.py          # 読み取り精度と正解率を，振った設定ごとに並べる
 python scripts/probe_signature.py          # 署名が線形に読めるか
 python scripts/probe_operators.py          # プローブが見ていない演算子の組み合わせが読めるか
 python scripts/stratify_by_frequency.py    # 正解率を署名の頻度で層別し直す
@@ -68,15 +68,14 @@ python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼
 # 0. 重みが在るか（§8.1 はこれを要求する．無ければ即座に落ちて場所を告げる）
 python -c "from cotar.analysis import require_checkpoints; require_checkpoints(); print('9 checkpoints found')"
 
-# 1. §8.4 整合の強さを振る — まず DEBUG = True で数分の試走．配線を確かめてから本走
+# 1. §8.4 を振る — sweep.py 末尾の VARIANTS で強さ（LAMBDA_VARIANTS）か層（LAYER_VARIANTS）を選ぶ．
+#    まず DEBUG = True で数分の試走．配線を確かめてから本走
 python scripts/sweep.py
-#    print された timestamp を summarize_sweep.py の SWEEP_TIMESTAMP に入れてから
+#    print された timestamp を summarize_sweep.py の SWEEP_TIMESTAMP に，走らせた variant を SWEPT に入れてから
 python scripts/summarize_sweep.py
 ```
 
-**手順1は重みを要さない．** `sweep.py` は $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本で回す（既に測ってある $\lambda = 0$ と 0.1 は走らせ直さない）ので約9時間．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる——sweep を走らせる前でも，既存の2点だけを表に出して配線を確かめられる．
-
-層を振るときは `sweep.py` の末尾を `VARIANTS = LAYER_VARIANTS` に変える．**強さと層を同時に振らないこと**——一つの曲線に二つの説明が混ざる．
+**手順1は重みを要さない．** 層は振ってある——`20260830-223056` の2 run（第8層・第24層，seed 42 の1本ずつ）で，`summarize_sweep.py` はいまこれを読む（研究文書 §A.5）．強さはまだで，`VARIANTS = LAMBDA_VARIANTS` に変えれば $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本ずつ回す（既に測ってある $\lambda = 0$ と 0.1 は走らせ直さない）ので約9時間．**強さと層を同時に振らないこと**——一つの曲線に二つの説明が混ざる．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる．
 
 ## 結果を読む
 
@@ -97,7 +96,7 @@ python scripts/summarize_sweep.py
 
 **逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．持ってくるなら，実行機の `runs/` の写しを USB（`E:\runs`）に置くか，置き場所を `$COTAR_RUNS_ROOT` で名指しする——重みを読む側は run ごとに，`$COTAR_RUNS_ROOT`・ローカルの `runs/`・`E:\runs` の順に探す（`cotar/config.py` の `run_roots`）．
 
-`snapshots/` には3つのバッチが在る．研究文書が報告するのは `20260829-134859` の9 run（3群 × 3 seed）だけで，分析スクリプトもこれしか読まない．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
+`snapshots/` には4つのバッチが在る．研究文書が報告するのは `20260829-134859` の9 run（3群 × 3 seed）で，分析スクリプトは `summarize_sweep.py` を除いてこれしか読まない．`20260830-223056` の2 run は層を第8層・第24層に移した試走（研究文書 §A.5）で，`summarize_sweep.py` だけが読む．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
 
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回り，**この checkout の外が決めるもの**はバナーが引き受ける．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
@@ -138,7 +137,7 @@ scripts/
   generate.py               モデルが読み込めて受け答えするかだけを見る最小の確認
   audit_dataset.py          研究文書が語るデータ側の数値を一度に出す（本走に依存しない）
   summarize_runs.py         9 run の記録から研究文書が語る run 側の数値を一度に出す
-  summarize_sweep.py        整合の強さごとに読み取り精度と正解率を並べ，整合なしとの対にした差を出す
+  summarize_sweep.py        振った設定ごとに読み取り精度と正解率を並べ，整合なしとの対にした差を出す
   probe_signature.py        保存済みの表現から署名が線形に読めるかを測る
   probe_operators.py        プローブが見ていない演算子の組み合わせが読めるかを測る
   stratify_by_frequency.py  済んだ実験を署名の頻度で層別し直す
@@ -163,7 +162,7 @@ scripts/
 
 **整合を表現の一部だけに掛けたくなったときの差し込み口は `Trainer._project`**（現状 identity——表現をそのまま返す）．入れるなら**固定の**射影にすること——学習可能にすると射影の側を動かすだけで損失を満たせてしまい，仮説が反証不能になる．
 
-**まだ使っていないレバーが二つある．** 層を選ぶ側は実装済みで（`Settings.layers`，`sweep.py` の `LAYER_VARIANTS` が待っている），振る用意はあるが一度も走らせていない．位置を増やす側は未実装で，`SmolVLM._pool` の一般化が要る（現状は最終プロンプト位置の決め打ち）．
+**レバーは二つある．** 層を選ぶ側は実装済みで（`Settings.layers`），`sweep.py` の `LAYER_VARIANTS` が第8層・第24層を seed 42 で走らせてある．位置を増やす側は未実装で，`SmolVLM._pool` の一般化が要る（現状は最終プロンプト位置の決め打ち）．
 
 ## 研究文書の記述は，コードのどこか
 
@@ -183,7 +182,7 @@ scripts/
 | 表現の幾何・損失・正解率の要約，崩壊値 $\log(B-1)$，1エポックのバッチ数と実行時間（§4.1・§4.4・§5.2） | `summarize_runs.py`——9 run の `eval.json`・`step_metrics.json`・`log.txt` を読み直すだけ．新しく測るものは無く，文書がしている算術をここでする |
 | $\bar{d}$・信頼区間（§4.3） | `analysis/statistics.py`——係数 $t_{2, 0.975}$ は文書と同じ閉じた式で求める（表を引かない）．区間が 0 を跨ぐか否かも保存する |
 | 頻度層別と層ごとの区間（§A.3） | `stratify_by_frequency.py` |
-| 整合の強さの曲線（§8.4） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.2 の数値を再現することが，両者が同じものを測っている証拠になる |
+| 整合の強さ・層を振った点（§8.4・§A.5） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.2 の数値を再現することが，両者が同じものを測っている証拠になる |
 | 「使われていない」の測定・第1段（§A.4） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
 | 「使われていない」の測定・第2段（§A.4） | `probe_bypass_pullback.py`——部分空間 $U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
 | 「使われていない」の測定・第3段（§A.4） | `probe_dependence.py`——同じベクトル–ヤコビ積の**長さ**を，第16層の表現と読み出しの大きさで割って無次元にし（弾性），3群で比べる．第2段が正規直交化のときに捨てている量である．プロンプト本数の収束も同じ逆伝播から出す |
