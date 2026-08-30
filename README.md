@@ -74,7 +74,7 @@ python scripts/sweep.py
 python scripts/summarize_sweep.py
 ```
 
-**手順1は重みを要さない．** `sweep.py` は $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本で回す（既に測ってある $\lambda = 0$ と $0.1$ は走らせ直さない）ので約9時間．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる——sweep を走らせる前でも，既存の2点だけを表に出して配線を確かめられる．
+**手順1は重みを要さない．** `sweep.py` は $`\lambda = 0.03 / 0.3 / 1.0`$ を seed 42 の1本で回す（既に測ってある $`\lambda = 0`$ と $`0.1`$ は走らせ直さない）ので約9時間．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる——sweep を走らせる前でも，既存の2点だけを表に出して配線を確かめられる．
 
 層を振るときは `sweep.py` の末尾を `VARIANTS = LAYER_VARIANTS` に変える．**強さと層を同時に振らないこと**——一つの曲線に二つの説明が混ざる．
 
@@ -171,21 +171,21 @@ scripts/
 
 | 研究文書 | 実装 |
 | --- | --- |
-| $\mathcal{L}_{\mathrm{align}}$（§3.2） | `losses.supervised_contrastive_loss`——対角を `-inf` にした `pairwise_cosine(features) * logit_scale` に `logsumexp` を取り，正例の平均を引く |
-| 温度 $\tau$（§3.2） | `LogitScale` が $1/\tau$ を log スケールで保持し 100 で clamp．初期値は `logit_scale.INIT_SCALE = 1/0.07` |
-| $\mathcal{L}_{\mathrm{LM}}$ のマスク（§3.2） | `SmolVLMProcessor._mask_labels`——プロンプト位置と `attention_mask == 0` の位置を `IGNORE_INDEX` に落とす |
+| $`\mathcal{L}_{\mathrm{align}}`$（§3.2） | `losses.supervised_contrastive_loss`——対角を `-inf` にした `pairwise_cosine(features) * logit_scale` に `logsumexp` を取り，正例の平均を引く |
+| 温度 $`\tau`$（§3.2） | `LogitScale` が $`1/\tau`$ を log スケールで保持し 100 で clamp．初期値は `logit_scale.INIT_SCALE = 1/0.07` |
+| $`\mathcal{L}_{\mathrm{LM}}`$ のマスク（§3.2） | `SmolVLMProcessor._mask_labels`——プロンプト位置と `attention_mask == 0` の位置を `IGNORE_INDEX` に落とす |
 | 掛ける位置（§3.3） | `SmolVLM._pool`——`hidden_states[row, prompt_lens[row] - 1]` |
 | プローブが読む表現（§A.1） | 損失が使うのと**同一のテンソル**．`Trainer` が `set_cache("representation", …)` した値を `Evaluator.measure` がそのまま貯め，`representations.pt` に `(N, 1, H)` で落ちる．**評価ローダも `with_labels=True`**（`training/run.py` の共有 kwargs）で右詰め——左詰めだと `prompt_lens` が作られず，`_pool` の位置が意味を失う．生成は `decode_answers` が質問だけを左詰めに詰め直した別テンソルで行うので，表現には触れない |
-| 分離度 $\delta$ の $\sigma$（§4.4） | `metrics.cohens_d`——`torch.var` は不偏なので，文書の式どおり $n-1$ で割った分散から作る |
-| $\mathcal{P}$・$\mathcal{N}$（§4.4） | `metrics.representation_stability`——対角を除いた類似度行列**全体**から取るので順序つき対になる．平均と分散は変わらない |
+| 分離度 $`\delta`$ の $`\sigma`$（§4.4） | `metrics.cohens_d`——`torch.var` は不偏なので，文書の式どおり $`n-1`$ で割った分散から作る |
+| $`\mathcal{P}`$・$`\mathcal{N}`$（§4.4） | `metrics.representation_stability`——対角を除いた類似度行列**全体**から取るので順序つき対になる．平均と分散は変わらない |
 | プローブ（§A.1） | `analysis/probing.py`——sklearn は入れていないので torch の線形層＋AdamW で解く．当てはめ方と打ち切りの根拠はモジュール冒頭．研究文書の**言い回しプローブ**が `surface_matrices`（コードでは一貫して `surface`）で，`words`／`words_and_pairs` の高いほうを採る |
 | **形式の残差化**（§A.1） | `probing.format_matrix` が形式の3特徴を標準化して並べ，`residualize` が ridge の当てはめを引く．**署名ラベルは回帰に入らない**ので，プローブの学習側・評価側を分ける前の全行で当てはめてよい．残差を再正規化しない理由は関数の docstring にある |
-| 表現の幾何・損失・正解率の要約，崩壊値 $\log(B-1)$，1エポックのバッチ数と実行時間（§4.1・§4.4・§5.2） | `summarize_runs.py`——9 run の `eval.json`・`step_metrics.json`・`log.txt` を読み直すだけ．新しく測るものは無く，文書がしている算術をここでする |
-| $\bar{d}$・信頼区間（§4.3） | `analysis/statistics.py`——$t_{2,\,0.975}$ は文書と同じ閉じた式で求める（表を引かない）．区間が $0$ を跨ぐか否かも保存する |
+| 表現の幾何・損失・正解率の要約，崩壊値 $`\log(B-1)`$，1エポックのバッチ数と実行時間（§4.1・§4.4・§5.2） | `summarize_runs.py`——9 run の `eval.json`・`step_metrics.json`・`log.txt` を読み直すだけ．新しく測るものは無く，文書がしている算術をここでする |
+| $`\bar{d}`$・信頼区間（§4.3） | `analysis/statistics.py`——$`t_{2,\,0.975}`$ は文書と同じ閉じた式で求める（表を引かない）．区間が $`0`$ を跨ぐか否かも保存する |
 | 頻度層別と層ごとの区間（§A.3） | `stratify_by_frequency.py` |
 | 整合の強さの曲線（§8.4） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.2 の数値を再現することが，両者が同じものを測っている証拠になる |
-| 「使われていない」の測定・第1段（§A.4） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
-| 「使われていない」の測定・第2段（§A.4） | `probe_bypass_pullback.py`——$U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
+| 「使われていない」の測定・第1段（§A.4） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $`m`$ 本を $`U`$ とする．表現を $`U`$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
+| 「使われていない」の測定・第2段（§A.4） | `probe_bypass_pullback.py`——$`U`$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $`U`$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
 | 「使われていない」の測定・第3段（§A.4） | `probe_dependence.py`——同じベクトル–ヤコビ積の**長さ**を，第16層の表現と読み出しの大きさで割って無次元にし（弾性），3群で比べる．第2段が正規直交化のときに捨てている量である．プロンプト本数の収束も同じ逆伝播から出す |
 | 分割の排他性・署名の分布・対を組めない問・含意対との一致・答えの語彙・演算子が自分の名を質問文に置く率（§3.1・§4.1・§7・§A.4） | `audit_dataset.py`——学習も GPU も要らず，質問ファイルだけから全部を一度に出す．含意対は**対の数**（`unordered`）で数える．GQA は同じ関係を両側から並べるので，訪問回数（`ordered`）で数えると往復を二度数えて率が数ポイント動く．研究文書が引くのは前者．**食い違いの中身**（yes/no 型と自由回答型を組にした割合，最も多い署名の組）も同じ関数が出す——率だけでは「署名が誤っている」としか読めないので |
 
