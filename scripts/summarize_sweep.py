@@ -42,7 +42,7 @@ from cotar.utils import save_json
 
 # Filled in from what `sweep.py` prints. Empty until a sweep has been run, in which case
 # only the two points the reported experiment already measured are shown.
-SWEEP_TIMESTAMP = ""
+SWEEP_TIMESTAMP = "20260830-223056"
 SWEEP_SEEDS     = (42,)
 
 # The variants to read, as (variant name, arm). The empty variant is the reported
@@ -50,9 +50,21 @@ SWEEP_SEEDS     = (42,)
 # The weight itself is never written here — it is read from each run's own config, so a
 # point cannot be filed under a weight it was not trained with.
 REPORTED = (("", "baseline"), ("", "proposal"))
-SWEPT    = (("lambda0.03", "proposal"), ("lambda0.3", "proposal"), ("lambda1.0", "proposal"))
+SWEPT    = (("layer8", "proposal"), ("layer24", "proposal"))
 
 OUT_PATH = analysis_path(__file__)
+
+
+def spread_or_value(by_seed: dict[int, float]) -> dict[str, Any]:
+    """`summarize` where there are seeds to spread over; the bare value where there is one.
+
+    A swept point runs at a single seed, and a spread over one number would be an
+    invention — the mean *is* the measurement, and `per_seed` says which seed it was.
+    """
+    if len(by_seed) > 1:
+        return summarize(by_seed)
+    return {"mean": next(iter(by_seed.values())),
+            "per_seed": {str(seed): value for seed, value in by_seed.items()}}
 
 
 def point(
@@ -90,8 +102,8 @@ def point(
         "variant": variant,
         "align_weight": weights.pop(),
         "seeds": list(seeds),
-        "probe_accuracy": summarize(probe),
-        "accuracy": summarize(accuracy),
+        "probe_accuracy": spread_or_value(probe),
+        "accuracy": spread_or_value(accuracy),
         "_probe_per_seed": probe,
         "_accuracy_per_seed": accuracy,
     }
