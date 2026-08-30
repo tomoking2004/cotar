@@ -56,7 +56,7 @@ python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼
 
 制約する層は `Settings.layers`．`(16,)` なら第16層の1本，`(8, 16, 24)` なら3本を同時に整合する——各層で独立に SupCon を計算して**平均**するので，層を増やしても `align_weight` の意味は変わらない（温度は全層で共有）．
 
-1 run あたり RTX 5090 で約2時間53分（`train_balanced` を1エポック＝29,441 バッチ——全94.3万問のうち，同署名の相方がいない884問はペアを作れないので落ち，残る 942,116 件ぶんを引き終えるまでが1エポック）．**3群 × 3 seed ＝9 run で約26時間．** どちらも `snapshots/20260727-002344_*/log.txt` の実時間．
+1 run あたり RTX 5090 で約2時間53分（`train_balanced` を1エポック＝29,441 バッチ——全94.3万問のうち，同署名の相方がいない884問はペアを作れないので落ち，残る 942,116 件ぶんを引き終えるまでが1エポック）．**3群 × 3 seed ＝9 run で約26時間．** どちらも `snapshots/20260829-134859_*/log.txt` の実時間．
 
 ## 次の一手を走らせる
 
@@ -97,11 +97,11 @@ python scripts/summarize_sweep.py
 
 **逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．持ってくるなら，実行機の `runs/` の写しを USB（`E:\runs`）に置くか，置き場所を `$COTAR_RUNS_ROOT` で名指しする——重みを読む側は run ごとに，`$COTAR_RUNS_ROOT`・ローカルの `runs/`・`E:\runs` の順に探す（`cotar/config.py` の `run_roots`）．
 
-`snapshots/` には2つのバッチが在る．研究文書が報告するのは `20260727-002344` の9 run（3群 × 3 seed）だけで，分析スクリプトもこれしか読まない．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) のポスターの裏付けとして残してある——**別の実験なので，数値が研究文書と一致しなくて当然である．**
+`snapshots/` には3つのバッチが在る．研究文書が報告するのは `20260829-134859` の9 run（3群 × 3 seed）だけで，分析スクリプトもこれしか読まない．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
 
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回り，**この checkout の外が決めるもの**はバナーが引き受ける．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
-**上の表と，この3箇所が語るのは，この checkout がこれから走らせる run が残すものである．** 報告する9 run は 2026-07-27 に，いまのコードより前の版で走っており，記録が三点だけ違う——`config.json` には当時 `align_pairing` も載っていた（`arm` から導かれるので，いまは載せない．この1キーがあるぶん，9 run の `config.json` は `Trainer(vlm, processor, **config)` にそのままは通らない），`best.pth` の extras は `vlm` と `layers` の2つだけで，モデルの checkpoint・attention 実装・loader の設定は入っていない，`log.txt` の環境バナーにライブラリの版が無い（版を記録するようにしたのが run の後である）．どれも測定値ではないので，研究文書の数値には一つも効かない．
+**報告する9 run（`20260829-134859`）は，この checkout のコードで走らせた．** だから上の表と，この3箇所の記述は，そのままこの9 run に当てはまる——`config.json` は `Trainer(vlm, processor, **config)` にそのまま通り，extras にはモデルの checkpoint・attention 実装・loader の設定が入り，環境バナーにはライブラリの版が載る．旧版のコードで走った2バッチ（`20260727-002344`・`20260714-033208`）は記録の形がここに書いたものと一部違うが，どれも測定値ではないので，各バッチが当時報告した数値には効かない．
 
 決定指標は `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが `testdev_balanced` に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群の横並びは `summarize_runs.py`（全 testdev の平均・spread・対にした差と区間）と `stratify_by_frequency.py`（署名の頻度で層別したもの）が出す．**区間は研究文書 §4.3 の式そのままで，実装は `analysis/statistics.py` にしか無い．**
 
