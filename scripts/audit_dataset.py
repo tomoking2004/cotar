@@ -81,7 +81,8 @@ def split_ids(questions_path: Path) -> dict[str, set[str]]:
 
 def disjointness(ids: dict[str, dict[str, set[str]]]) -> list[dict[str, Any]]:
     """Every split pair, by both kinds of id — an image shared across splits leaks as
-    surely as a question does, and only the question ids are disjoint by construction."""
+    surely as a question does, and only the question ids are disjoint by construction.
+    """
     return [
         {"left": left, "right": right, "kind": kind,
          "overlap": len(ids[left][kind] & ids[right][kind])}
