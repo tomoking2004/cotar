@@ -46,7 +46,7 @@ __all__ = [
     "weights",
 ]
 
-TIMESTAMP       = "20260727-002344"
+TIMESTAMP       = "20260829-134859"
 SEEDS           = (42, 43, 44)
 # The base checkpoint the reported runs were trained from. Asserted here rather than read
 # back, because those runs predate the trainer recording it — `weights` checks it against
