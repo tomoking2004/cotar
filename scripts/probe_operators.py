@@ -7,10 +7,15 @@ signature or not" — never which operators a signature is built from, and never
 signatures share any. So:
 
 - the label is the **set of operators**, not the signature, and
-- the split is **signature-disjoint**: every signature in the test half is a combination
-  the probe never saw, assembled from operators it did.
+- the split is **signature-disjoint**: every signature in the test half is one the probe
+  never saw, assembled from operators it did.
 
-Recovering the operators of an unseen combination is therefore something the loss never
+The target drops what a signature keeps — order, repetition, and the operators too rare to
+score — so a test signature can share its target vector with a training one
+(`select > verify rel` and `select > filter depth > verify rel` do). `target_unseen` counts
+the test half that does not, and the scores are over the whole test half.
+
+Recovering the operators of an unseen signature is therefore something the loss never
 asked for. If the aligned representation does it better, the gain is structure, not the
 loss reading back its own objective.
 
@@ -106,11 +111,24 @@ if __name__ == "__main__":
             if o in column:
                 targets[row, column[o]] = 1.0
 
-    # Signature-disjoint: whole signatures fall on one side, so every combination in the
+    # Signature-disjoint: whole signatures fall on one side, so every signature in the
     # test half is new even though its operators are not.
     unique = sorted(set(signatures))
     side = dict(zip(unique, split_mask(len(unique), splitter()).tolist(), strict=True))
     train = torch.tensor([side[s] for s in signatures])
+
+    # How much of the test half is new *as a target*. Two signatures with the same
+    # operators in a different order, or differing only in an operator below
+    # MIN_POSITIVE, have identical target rows — and the probe saw one of them.
+    vector = {s: tuple(targets[row].tolist()) for row, s in enumerate(signatures)}
+    seen = {vector[s] for s in unique if side[s]}
+    unseen_signatures = [s for s in unique if not side[s] and vector[s] not in seen]
+    unseen_rows = sum(vector[s] not in seen for s in signatures if not side[s])
+    target_unseen = {
+        "signatures": len(unseen_signatures),
+        "questions": unseen_rows,
+        "share_of_test_questions": unseen_rows / int((~train).sum()),
+    }
 
     # How many operators can be scored is settled by the split alone — an operator needs
     # both a positive and a negative among the unseen signatures — so it is counted once
@@ -125,7 +143,10 @@ if __name__ == "__main__":
           f" ({int(train.sum()):,} questions from {sum(side.values())} signatures for training,"
           f" the rest from {len(unique) - sum(side.values())} unseen ones)")
     print(f"{len(operators)} operators with {MIN_POSITIVE}+ questions,"
-          f" {operators_scored} of them scorable on the unseen half\n")
+          f" {operators_scored} of them scorable on the unseen half")
+    print(f"target vector unseen for {target_unseen['questions']:,} of {int((~train).sum()):,}"
+          f" test questions ({target_unseen['share_of_test_questions']:.1%}),"
+          f" {target_unseen['signatures']} of {len(unique) - sum(side.values())} signatures\n")
 
     results: dict[str, dict[str, float]] = {}
     for form, matrix in surface.items():
@@ -156,6 +177,7 @@ if __name__ == "__main__":
         "signatures": len(unique),
         "train_signatures": sum(side.values()),
         "split": "signature-disjoint",
+        "target_unseen": target_unseen,
         "results": results,
     }, OUT_PATH)
     print(f"\nwritten: {OUT_PATH}")

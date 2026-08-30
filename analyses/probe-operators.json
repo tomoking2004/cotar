@@ -6,6 +6,11 @@
     "signatures": 904,
     "train_signatures": 449,
     "split": "signature-disjoint",
+    "target_unseen": {
+        "signatures": 235,
+        "questions": 2188,
+        "share_of_test_questions": 0.4489125974558884
+    },
     "results": {
         "words": {
             "macro_auc": 0.9214202818416414,
