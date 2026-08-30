@@ -49,7 +49,7 @@ __all__ = [
 TIMESTAMP       = "20260829-134859"
 SEEDS           = (42, 43, 44)
 # The base checkpoint the reported runs were trained from. Asserted here rather than read
-# back, because those runs predate the trainer recording it — `weights` checks it against
+# back, so the analyses need no checkpoint on disk to know it — `weights` checks it against
 # whatever a checkpoint *does* record, and stays silent where nothing was recorded.
 MODEL           = "HuggingFaceTB/SmolVLM-500M-Instruct"
 # `trainer.test(..., use_best=True)` scored the runs with this checkpoint, so this is the
@@ -284,8 +284,8 @@ def weights(
     code reading it is the ordinary case.
 
     `model` is the base checkpoint the caller assumes these weights were trained from. When
-    the run recorded one, the two are checked against each other; the reported runs were
-    trained before the trainer recorded it, so for them nothing is checked and nothing is
+    the run recorded one — the reported runs did — the two are checked against each other;
+    for a run trained before the trainer recorded it, nothing is checked and nothing is
     guessed.
     """
     path = checkpoint_path(arm, seed, variant, timestamp)
