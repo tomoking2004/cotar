@@ -58,7 +58,7 @@ LAYER_VARIANTS: tuple[tuple[str, Settings], ...] = (
 
 # Which sweep this run performs. One at a time, never both at once — a curve mixing two
 # changed settings has two explanations and settles neither.
-VARIANTS = LAMBDA_VARIANTS
+VARIANTS = LAYER_VARIANTS
 
 
 if __name__ == "__main__":
