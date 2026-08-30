@@ -5,10 +5,10 @@ signature becomes far more readable while the answers cost almost nothing. Both 
 that sentence are single measurements, and a single measurement cannot say whether the
 readability is bought cheaply or the cost simply had not started yet.
 
-This puts the two quantities side by side at every weight that has been run: what the
-representation carries, measured the way §5.1 measures it, against what the official
-evaluator scores. Weight 0 and weight 0.1 come from the reported nine runs; the rest come
-from `sweep.py`, under its own timestamp.
+This puts the two quantities side by side at every setting that has been run — a weight
+or a layer: what the representation carries, measured the way §5.1 measures it, against
+what the official evaluator scores. Weight 0 and weight 0.1 come from the reported nine
+runs; the rest come from `sweep.py`, under its own timestamp.
 
 Runs at one seed carry no interval, and none is printed for them — the shape of the curve
 is what one seed is for, and an interval drawn through single points would suggest a
@@ -94,9 +94,9 @@ def point(
         probe[seed] = probe_accuracy(x, sub_labels, sub_train, n_classes)
         accuracy[seed] = reported_accuracy(arm, seed, variant, timestamp)
 
-    # The constrained layer is deliberately absent: a run records it in its checkpoint
-    # extras, and a snapshot excludes the checkpoints. For a swept run the variant name
-    # is what says which layer it was, and for the reported runs the document does.
+    # The constrained layer is not repeated here. A snapshot's `representations.pt`
+    # records it and `constrained_layer` reads it on demand; for a swept run the variant
+    # name says which layer it was, and for the reported runs the document does.
     return {
         "arm": arm,
         "variant": variant,

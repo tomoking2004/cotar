@@ -347,7 +347,8 @@ def _state_dicts(blob: dict[str, Any], path: Path) -> dict[str, dict[str, torch.
 def _recorded_model(blob: dict[str, Any]) -> str | None:
     """The base checkpoint a run was trained from, if the trainer filed it under `extras`.
 
-    The nine reported runs were trained before it did, so for them this is `None`.
+    The reported nine and the layer sweep did; the two earlier batches were trained
+    before the trainer recorded it, so for them this is `None`.
     """
     extras = blob.get("extras")
     recorded = extras.get("checkpoint") if isinstance(extras, dict) else None
