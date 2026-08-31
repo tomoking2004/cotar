@@ -1,6 +1,6 @@
-# PCSJ/IMPS 2026 講演申込——入力項目
+# PCSJ/IMPS 2026 講演申込——確定版
 
-2026-08-31 時点．講演申込の前に，題目と発表概要の確認をお願いするための一覧．確認後に中野が申込サイトから登録する．
+2026-09-01 時点．申込フォーム（実物）の入力欄を，フォームの並び順に入れる値と対で並べた．未確定は Email-2 のお知らせメール同意の1箇所のみ（【教授に確認】）．確認後に中野が登録する．
 
 ## 学会と締切
 
@@ -10,66 +10,100 @@
 | 会期・会場 | 2026-11-16（月）〜18（水），御殿場高原ホテル |
 | 発表形態 | 一般講演はすべてオンサイトのポスター発表（横 180cm × 縦 90cm） |
 | 講演申込〆切 | **2026-09-04（金）** |
-| 原稿〆切 | 2026-10-16（金）．A4 2ページ．PCSJ/IMPS サイトのテンプレートで作成し，申込後に通知される URL から提出する |
+| 原稿〆切 | 2026-10-16（金）．A4 2ページ．PCSJ/IMPS サイトのテンプレート（技術研究報告のものは不可）で作成し，申込後に通知される URL から提出する |
 | 参加申込〆切 | 2026-11-09（月） |
 | 申込フォーム | 電子情報通信学会 研究会発表申込システム <https://ken.ieice.org/ken/program/index.php?tgid=IEICE-PCSJ-IMPS> の「発表申込」 |
 
-## 申込フォームの入力項目
+## 入力欄と入れる値（フォームの並び順）
 
-フォームの順に並べた．（本人）は登録時に本人が埋める欄，【教授に確認】と【不明】は未確定の箇所．
+(*) はフォームで必須の欄，（そのまま）は初期状態から変えない欄．ここに挙げない欄——第3著者以降，著者移動と表示欄数，携帯TEL・FAX，Email-3〜5，使用機器の「その他」，幹事への備考欄——は，すべて初期状態のまま触らない．
 
-| | 項目 | 入力する内容 |
+### 研究会と講演の分類
+
+| 入力欄 | 入れる値 |
+| --- | --- |
+| 申込み研究会 (*) | 「画像符号化シンポジウム／映像メディア処理シンポジウム（PCSJ-IMPS）」（そのまま） |
+| 開催回 (*) | 「2026年11月16日(月)-11月18日(水) 御殿場高原ホテル (PCSJ-IMPS, IE, SIP, ITE-ME) [9/4締切]」（唯一の選択肢．そのまま） |
+| 発表の形態 (*) | 「現地会場におけるプレゼンテーション」（そのまま） |
+| 本文の言語 (*) | 「日本語（英文タイトルあり）」（そのまま） |
+| 書誌情報の公開 (*) | 「日本語/英語の書誌情報（タイトル/著者/所属）を入力して公開する」（そのまま） |
+| 講演の分類 (*) | 「一般講演（実験）」を選択 |
+
+### タイトル
+
+| 入力欄 | 入れる値 |
+| --- | --- |
+| 和文 (*) | タスク類似性に基づく内部表現整合学習により，視覚言語モデルはタスク構造を使うようになるか？ |
+| 英文 (*) | Does Internal Representation Alignment Based on Task Similarity Make Vision-Language Models Use Task Structure? |
+| サブタイトル（和・英） | 両方空欄（和文サブタイトルが無いので，英文の「*」も入れない） |
+
+### 著者名
+
+| 入力欄 | 第1著者 | 第2著者 |
 | --- | --- | --- |
-| 1 | 申込み研究会 | 画像符号化シンポジウム／映像メディア処理シンポジウム（PCSJ-IMPS）．開催回：2026年11月16日(月)-11月18日(水) 御殿場高原ホテル |
-| 2 | 発表の形態 | 現地会場におけるプレゼンテーション |
-| 3 | 本文の言語 | 日本語（英文タイトルあり） |
-| 4 | 書誌情報の公開 | 日本語/英語の書誌情報（タイトル/著者/所属）を入力して公開する |
-| 5 | 講演の分類 | 一般講演（実験） |
-| 6 | タイトル（和文） | 視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習に関する検討 |
-| 7 | タイトル（和文サブタイトル） | なし |
-| 8 | タイトル（英文） | A Study of Internal Representation Alignment Based on Task Similarity in Vision-Language Models |
-| 9 | タイトル（英文サブタイトル） | なし |
-| 10 | 第1著者 | 中野 友晴（ナカノ トモハル）／Tomoharu Nakano．所属は東京都立大学（略称：都立大）／Tokyo Metropolitan University（英語略称は【不明】） |
-| 11 | 第2著者以降 | 【教授に確認】指導教員を連名にするか |
-| 12 | 講演者 | 第1著者 |
-| 13 | 講演者は学生ですか | 講演者は学生である【学生】 |
-| 14 | 所属学会 | （本人）会員なら会員番号 |
-| 15 | 発表概要 | 下の短版（226 字） |
-| 16 | 連絡先名前 | 中野 友晴 |
-| 17 | 住所 | （本人） |
-| 18 | TEL／携帯TEL／FAX | （本人）携帯と FAX は任意 |
-| 19 | Email-1 | （本人）大学のアドレス |
-| 20 | Email-2〜5 | （本人）Email-2 は指導教員のアドレス，3〜5 は空欄 |
-| 21 | お知らせメール受信の同意 | （本人） |
-| 22 | 使用機器 | デフォルトのまま（PCプロジェクタにチェックが入った状態） |
-| 23 | 備考 | なし |
-| 24 | 原稿の著作権譲渡の同意 | チェックし，同意者氏名に「中野 友晴」 |
-| 25 | 連名者の同意 | チェック |
+| 氏名：日本語 | 中野 友晴 | 杉村 大輔 |
+| 所属：日本語 | 東京都立大学 | 東京都立大学 |
+| 所属の略称：日本語 | 都立大 | 都立大 |
+| 氏名：英語 | Tomoharu Nakano | Daisuke Sugimura |
+| 所属：英語 | Tokyo Metropolitan University | Tokyo Metropolitan University |
+| 所属の略称：英語 | TMU | TMU |
+| フリガナ（全角） | ナカノ トモハル | スギムラ ダイスケ |
 
-## 発表概要（和文・短版，226 字）
+### 講演者から発表概要まで
 
-視覚言語モデルの学習に，GQA の functional program の演算子列（タスク署名）が一致する質問の中間層表現を近づける補助損失を加える．すると，正解率はほとんど変わらないまま，署名を線形に読み取れる度合いが大きく上がる．しかし，モデルがその構造を答えの生成に使うようになるわけではない——答えがその層に頼る度合いは，むしろ下がる．いずれも，ラベルの意味だけを変えた対照条件では起きない．「読み取れること」と「使われること」は一致しない．
+| 入力欄 | 入れる値 |
+| --- | --- |
+| 講演者 (*) | 「第１著者」を選択 |
+| 講演者は学生ですか (*) | 「講演者は学生である　【学生】」を選択 |
+| 所属学会（13学会のチェック・会員番号・入会手続中） | すべてチェックなし・空欄 |
+| 発表概要 | 下の「発表概要（和文，250 字）」を貼り付ける |
 
-## 発表概要（和文・中版，299 字）
+### 連絡先と Email
 
-視覚言語モデルの内部表現は，出力が同じでも入力の揺らぎで大きく動きうることが報告されている．本研究は，同じ解き方で解ける質問どうしの内部表現は近いかを問い，GQA の functional program の演算子列（タスク署名）が一致する質問の中間層表現を近づける補助損失を，通常の学習に加える．すると，正解率はほとんど変わらないまま，署名を線形に読み取れる度合いが大きく上がる．しかし，モデルがその構造を答えの生成に使うようになるわけではない——答えがその層に頼る度合いは，むしろ下がる．いずれも，ラベルの意味だけを変えた対照条件では起きない．「読み取れること」と「使われること」は一致しない．
+| 入力欄 | 入れる値 |
+| --- | --- |
+| 名前 (*) | 中野 友晴 |
+| 名前の右の敬称 (*) | 「Mr.」を選択（初期値は「Dr.」なので変え忘れない） |
+| 住所 (*) | 〒191-0065 東京都日野市旭が丘6-6 東京都立大学 システムデザイン研究科 情報科学域 杉村研究室 |
+| TEL (*) | 080-9272-1900 |
+| Email-1 (*) | nakano-tomoharu@ed.tmu.ac.jp |
+| Email-1 のお知らせメール同意 | 「同意する」を選択 |
+| Email-2 | d-sugimura@tmu.ac.jp |
+| Email-2 のお知らせメール同意 | 【教授に確認】「同意する」「同意しない」「今回は回答しない」のいずれか |
 
-## 発表概要（和文・長版，658 字）
+### 最後の確認
 
-視覚言語モデル（VLM）の頑健性は通常，入力を揺らしても出力が変わらないことで測られる．しかし近年，出力が同じでも内部表現は大きく動きうることが示され，内部表現そのものの性質は出力とは別に問う必要がある．本研究はこれに隣接する問いとして，同じ解き方で解ける質問どうしの内部表現は互いに近いか，そして明示的に近づけたとき何が起きるかを扱う．GQA の各質問に付く functional program の演算子列を「タスク署名」と呼び，署名が一致する質問の中間層表現を近づける補助損失を通常の学習に加える——これを整合と呼ぶ．整合の有無とラベルの意味だけを変えた三つの条件を複数の乱数種で学習し，表現の側と出力の側の両方で評価した．その結果，質問応答の正解率をほとんど変えないまま，整合した層でタスク署名を線形に読み取れる度合いを大きく上げられる．この向上は，質問文の言い回しでも，ラベルの無作為な並べ替えでも説明されない．しかし，読み取れるようになった構造をモデルが答えの生成に使うようになるわけではない——整合した条件では，答えが整合した層に頼る度合いはむしろ下がる（複数の乱数種で一貫し，ラベルを並べ替えた条件では起きない）．表現から性質が線形に読み取れることと，モデルがその性質を答えの生成に使うことは別である．この区別は従来，既にある性質を表現から除く介入で論じられてきたが，本研究は性質を損失で足す方向からも両者が一致しないことを示す．整合が入力の揺らぎに対する表現の頑健性を高めるかは，今後の課題とする．
+| 入力欄 | 入れる値 |
+| --- | --- |
+| 使用機器 | 「PCプロジェクタ」にチェックが入った状態（そのまま） |
+| 原稿の著作権譲渡の同意 (*) | 「著作権譲渡に同意する」にチェックし，同意者氏名に「中野 友晴」 |
+| 発表についての連名者の同意 (*) | 「全ての連名著者からこの発表申込みについて同意を得ている」にチェック |
 
-## 発表概要（英文，275 語）
+「次へ」→確認画面→「登録」で完了．登録内容の確認メールが届き，後日でもメール記載の URL から修正できる．
 
-The robustness of vision-language models (VLMs) is usually measured by whether the output stays fixed under input perturbations. Recent work, however, shows that internal representations can shift substantially even when the output does not, so the representations themselves must be examined apart from the output. As an adjacent question, we ask whether questions solved in the same way have internal representations close to one another, and what happens when they are explicitly pulled together. We take the operator sequence of each GQA question's functional program as its "task signature," and add to ordinary training an auxiliary loss that pulls together the mid-layer representations of questions sharing a signature — we call this alignment. Training three conditions that differ only in whether alignment is applied and in what the labels mean, across several random seeds, we evaluate both the representations and the answers. Alignment can make the task signature markedly more linearly decodable at the aligned layer while leaving answer accuracy almost unchanged; the gain in decodability is explained neither by the wording of the questions nor by randomly shuffling the labels. Yet the model does not come to use the structure it has made decodable: under alignment the answer comes to rely less on the aligned layer, consistently across seeds and not under the shuffled-label control. Linear decodability of a property and its use in generating the answer are distinct. This distinction has so far been argued by removing existing properties from representations; we show that the two also fail to coincide when a property is added by a loss. Whether alignment improves the robustness of representations to input perturbations is left for future work.
+## 発表概要（和文，250 字）
+
+視覚言語モデル（VLM）は画像と言語を併せて理解し，画像への質問応答など広く応用されている．従来の VLM は出力だけを目標に学習し，答えが同じでも内部表現は入力の揺らぎで大きく動きうる．そこで本研究では，解き方が同じ質問の内部表現を近づける整合学習を検討する．これにより内部表現が解き方に沿って整い，答えの生成に使われると期待できる．実験の結果，正解率をほとんど変えずに解き方を内部表現から読み取りやすくできるが，モデルはそれを使うようにはならず，整合した表現への依存はむしろ下がることがわかった．
+
+## 発表概要（英文，129 語）
+
+Vision-language models (VLMs) understand images together with language and are widely applied, for example to answering questions about images. A conventional VLM is trained on its output alone, and even when the answer stays the same, its internal representations can shift substantially under perturbations of the input. We therefore study alignment training, which pulls together the internal representations of questions solved in the same way. This can be expected to organize the representations along the way of solving, so that it is used in generating the answer. Experimentally, alignment makes the way of solving far easier to read out of the representations while leaving accuracy almost unchanged; yet the model does not come to use it, and the answer comes to rely less, not more, on the aligned representation.
 
 ## 備考
 
-- 発表概要に数値は書かない．測り直しや測定の追加があっても取り消しにならない主張——三つの結果の向きと，対照条件の構成——だけを書き，数値は10月の原稿とポスターに置く．
-- 三つの結果とは，(1) 整合した層で，タスク署名を線形に読み取れる度合いが大きく上がる，(2) 正解率はほとんど変わらない，(3) 読み取れるようになった構造をモデルが答えの生成に使うようになるわけではなく，整合した層への依存はむしろ下がる，である．向きも強さも，研究文書の要約と同じ言葉で書いた．
-- 補助的な検証（研究文書の付録A）には触れない．質問されたときに答える材料として持つ．
-- 発表概要の欄の案内は「100〜200 文字程度（英文の場合は 200 語以下），最大 800 文字」．この欄は幹事がプログラム編成の参考にするだけで，公開されない．英文の版は 200 語を超えるのでフォームには入れず，10月の原稿の材料として持つ．
-- 講演の分類は，フォーム冒頭の注意書きが一般講演の中からの選択を求める．選択肢は理論／シミュレーション／実験／試作・実用化の報告／サーベイ・解説／その他／テーマ１〜３で，学習を回して測定する本研究には（実験）が最も近い．分野を選ぶ欄はない．
-- 非会員でも発表できる．使用機器の欄は PCプロジェクタが最初からチェックされている．注意書きにはポスター発表では使えないとある（会場の提供はポスターボードのみ）が，デフォルトのまま提出する．著作権譲渡の同意は形式上のチェックで，第二種研究会のため権利は著者に残る（いずれもフォーム冒頭の注意書きによる）．
-- 賞（優秀論文賞・学生論文賞・ベストポスター賞）は推薦で選ばれ，申込は要らない．学生論文賞の候補になるのは，【学生】を選んだ一般講演のみ．
-- フォームに入れる発表概要は申込時点のもの．データベース用アブストラクトは，原稿の提出後に，確認メールに記載の別フォームから登録する．
-- 入力項目と選択肢は，PCSJ/IMPS の実フォーム（2026-08-31 取得）で確認した．確認は入力画面まで（その先の確認画面は見ていない）．
+- 氏名は姓と名を半角スペースで区切る．フリガナは全角．所属に部署・学部学科名は入れない（いずれもフォームの指示）．
+- 「都立大」は電子情報通信学会の関係諸機関略称一覧にある公式略称，「TMU」は教授の指示による．略称は開催案内（Advance Program）に載る．
+- 第2著者の所属3欄は，欄の下の「第１著者と同じ」を選ぶと自動で入る．
+- 住所欄は郵便番号・住所・所属機関・部課名を書く指定．日野キャンパス（情報科学域の所在地）の住所に研究科・学域・研究室を続け，区切りはフォームの記入例（○○大学 ○○学部 ○○学科 ○○研究室）に合わせて半角スペースとした．
+- Email-1 は講演者本人のアドレスの指定．学生は指導教員のアドレスの登録が必須で，Email-2 がそれにあたる（確認メールが CC で届く）．同意欄だけは教授のアドレス宛の設定なので，意向を確認してから登録する．
+- 発表概要の欄の案内は「100〜200文字程度（英文の場合は200語以下），最大800文字」で，250 字は上限内．幹事がプログラム作成の参考にするだけで公開されない．データベース用アブストラクトは，原稿の提出後に，確認メールに記載の URL から別途登録する．
+- 発表概要は，教授の示した流れ——VLM とは何か／従来の VLM の課題／本研究の提案と，それに期待できること／実験の結果——で 250 字に収めた．技術の詳細（データセット名，整合する層，損失の形，対照条件の構成）は入れず，10月の原稿に置く．
+- 発表概要に数値は書かない．測り直しや測定の追加があっても取り消しにならない主張——三つの結果の向き——だけを書き，数値は原稿とポスターに置く．
+- 三つの結果とは，(1) 解き方を内部表現から読み取りやすくできる，(2) 正解率はほとんど変わらない，(3) モデルはそれを使うようにはならず，整合した表現への依存はむしろ下がる，である．向きも強さも研究文書の要約と同じで，(3) の「下がる」を「高まらない」に弱めない．
+- タイトルは疑問形にした．問いの答え（使うようにはならない）が本研究の主張であり，発表概要の最後の文がそのまま答えになる．「に関する検討」を今回明らかにした語で閉じる形にするなら：「視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習がもたらす読み取りやすさと利用の乖離」／“Internal Representation Alignment Based on Task Similarity in Vision-Language Models: Decodable but Not Used”．
+- 英文の発表概要はフォームには入れず（本文の言語は日本語），原稿の材料として持つ．
+- 講演の分類は一般講演の中から選ぶ指定で，理論／シミュレーション／実験／試作・実用化の報告／サーベイ・解説／その他／テーマ１〜３から，学習を回して測定する本研究には（実験）が最も近い．学生論文賞の候補になるのは【学生】を選んだ一般講演のみ（賞は推薦制で，申込は要らない）．
+- 所属学会の注意書きに「本会の個人会員であることが必須」とあるが，本シンポジウムは非会員でも発表できる（研究会からのお知らせに明記．教授にも確認済み）．
+- 使用機器の PCプロジェクタはポスター発表では使えない（提供はポスターボードのみ）が，そのまま提出してよい．電源や机が要る場合だけ「その他」に書く指定で，本発表には要らない．
+- 著作権譲渡の同意は形式上のチェックで，第二種研究会のため権利は著者に残る（フォームに明記）．
+- 入力欄と選択肢は，実フォーム（本人提供のトークン付き URL，2026-09-01 取得）の全欄を確認した．確認は入力画面まで（「次へ」の先は見ていない）．
