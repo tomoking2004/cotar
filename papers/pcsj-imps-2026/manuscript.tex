@@ -1,0 +1,127 @@
+% PCSJ/IMPS 2026 一般講演予稿（A4 2ページ）
+% 組版: platex を2回 && dvipdfmx -p a4 manuscript.dvi
+% 組版原則は ../principles.md ——公式テンプレート（pcsjimps-j.sty）の定めが優先する．
+\documentclass[10pt]{jarticle}
+\usepackage{xurl}% url 互換で，URL をどこでも改行できる（参考文献の Underfull を防ぐ）
+\usepackage{amsmath,amssymb}
+\usepackage{pcsjimps-j}
+\usepackage[dvipdfmx,bookmarks=false]{hyperref}
+
+\begin{document}
+\pagestyle{empty}
+
+\twocolumn[\centering
+% 日本語タイトル
+\JTitle{タスク類似性に基づく内部表現整合学習が\\視覚言語モデルの出力に与える影響}
+% 英語タイトル
+\ETitle{Effects of Task-Similarity-Based Internal Representation Alignment\\on the Outputs of Vision-Language Models}
+
+% 著者
+\JEAuthor{中野 友晴$^\dag$}{Tomoharu Nakano$^\dag$}{50mm}
+\JEAuthor{杉村 大輔$^\dag$}{Daisuke Sugimura$^\dag$}{50mm}\\
+% 所属
+\JEAffiliation{$^\dag$東京都立大学}{$^\dag$Tokyo Metropolitan University}{80mm}\\
+
+% 概要
+\Abstract{
+視覚言語モデル（VLM）は画像とテキストを包括的に理解するモデルであり，視覚的質問応答（VQA）をはじめ多岐にわたるタスクに応用されている．従来のVLMは出力の正答率を最適化するよう学習されるため，同一の解法（タスク構造）を要する問いであっても，入力のわずかな揺らぎによって内部表現が大きく変動するという課題がある．そこで本研究では，類似したタスク構造を持つ質問間で内部表現を近づける，タスク類似性に基づく内部表現整合学習を検討する．これにより内部表現がタスク構造に沿って整い，出力の生成に使われると期待できる．実験の結果，タスク正答率を維持したまま内部表現から解法構造を読み取りやすく改善する一方で，モデルはその整合された内部表現を出力生成に使うようにはならず，むしろ依存を弱めることが示唆された．
+}
+]
+
+\section{はじめに}
+
+視覚言語モデル（VLM）の頑健性は通例，入力を少し変えても答えが変わらないこと（出力の頑健性）で測られてきた．しかしWaniら\cite{wani}は，正解を変えない画像の加工に対し，答えが変わらないまま内部表現が大きく変化しうることを示した——出力の頑健性は，表現の頑健性を含意しない．
+
+ただしWaniらが見ているのは同じ入力の揺らぎであり，別々の質問どうしの近さは問われていない．本研究はそこから入り，解き方が同じ質問どうしの内部表現を明示的に近づける補助損失（以下，整合）を通常の学習に足したとき，内部表現と答えの生成に何が起きるかを問う．正解率の向上は目的ではない．
+
+表現からある性質が線形分類器（プローブ）で読み取れることと，モデルがそれを答えの計算に使っていることは別である\cite{belinkov}．Elazarら\cite{elazar}は既にある性質を除いて語予測への影響を測ったのに対し，本研究は性質を損失で足し，ほぼ無代償に読み取れる形へ作り込んでもなお答えの生成に使われないことを構成的に示す．
+
+\section{提案手法}
+
+\subsection{タスク署名}
+
+画像への質問応答データセットGQA\cite{gqa}の各質問には，答えに至る道筋を書き下したfunctional programが付く．例えば``Who is wearing the dress?''では，dressを選び（\texttt{select}），着ている人物へたどり（\texttt{relate}），名前を答える（\texttt{query}）．この演算子列\texttt{select > relate > query}を\textbf{タスク署名}（以下，署名）と呼び，署名が一致する質問対を「解き方が同じ」とみなして\textbf{正例対}とする．引数まで一致を求めると正例対がほとんど同じ質問になるため，引数は意図的に捨てる．質問文はprogramから自動生成されるため言い回しと署名は相関する——この交絡は4.1節で差し引く．
+
+\subsection{整合損失}
+
+バッチ$B$件の内部表現$h_1,\dots,h_B \in \mathbb{R}^{H}$と署名ラベル$y_1,\dots,y_B$について，正規化した表現$z_i = h_i / \| h_i \|_2$のコサイン類似度を$s_{ij} = z_i^{\top} z_j$，正例の集合を$P(i) = \{ j \neq i \mid y_j = y_i \}$とし，整合損失を，署名をラベルとするsupervised contrastive loss \cite{supcon}
+\begin{equation}
+\mathcal{L}_{\mathrm{align}} = \frac{1}{|\mathcal{I}|}\sum_{i \in \mathcal{I}} \Bigl[ \log \sum_{j \neq i} e^{s_{ij}/\tau} - \frac{1}{|P(i)|} \sum_{p \in P(i)} \frac{s_{ip}}{\tau} \Bigr]
+\end{equation}
+とする（$\mathcal{I} = \{ i \mid P(i) \neq \varnothing \}$）——同署名だけをバッチ内で相対的に近づける損失である．温度$\tau$は学習可能（初期値0.07），全体の目的関数は整合の強さ$\lambda = 0.1$で$\mathcal{L} = \mathcal{L}_{\mathrm{LM}} + \lambda \mathcal{L}_{\mathrm{align}}$（$\mathcal{L}_{\mathrm{LM}}$は答えのトークンにのみ掛かる交差エントロピー）とする．
+
+\subsection{どこに掛けるか}
+
+整合損失は，言語側全32層の中間の第16層で，質問を読み終えて答えを書き出す直前の位置のベクトル（$H=960$）に掛ける．causal attentionのもとで画像と質問文を読み終えているのはこの位置だけで，答えの先頭トークンもこの位置のスコアで選ばれる．また原論文\cite{supcon}と異なり射影headを挟まない——学習可能な射影は，表現を変えずに損失を下げる道を残すからである．
+
+\section{実験設定}
+
+モデルは軽量VLMのSmolVLM-500M-Instruct\cite{smolvlm}を用いる．GQAの\texttt{train\_balanced}（正例対を組めない884問を除く942,116問）で1エポック学習する．バッチは16署名から2件ずつの32件，学習率は$10^{-5}$．次の3群を乱数種42・43・44で学習した（計9回）：整合損失を掛けない\textbf{baseline}（$\lambda = 0$），ラベル$y_i$を署名とする\textbf{proposal}，そして$\lambda$も損失の形も同じままバッチ内でラベルを無作為に並べ替える\textbf{ablation}である．並べ替えはラベルの分布と正例対の数を保ち，正例対の意味だけを除く——proposalがbaselineともablationとも違って初めて，差は対照学習という形式ではなく署名ラベルに帰属する．
+
+報告は\texttt{testdev\_balanced} 12,578問（質問も画像も学習と排他）．数値は3乱数種の平均，群間の差は乱数種を対にした$t$検定の95\%信頼区間で判定する（$n=3$）．
+
+\section{結果}
+
+\subsection{署名は大きく読み取りやすくなる}
+
+整合損失が触るベクトルそのものから署名を当てる線形プローブの正解率（\textbf{読み取り精度}）は，整合で82.9\%から95.9\%へ+13.0pt上がる（表\ref{tab:main}左列）．ablationでは上がらない（81.0\%）——増分は署名ラベルに帰属する．言い回し（語と隣接2語組の有無）だけを入力にした同じ分類器は69.7\%にとどまり，質問の書き出し（先頭4語）を評価側で未見にする分割でも増分は+14.5pt——増分は質問文では説明できない．
+
+\begin{table}[tb]
+\caption{署名の読み取り精度と正解率（3乱数種の平均）}
+\label{tab:main}
+\centering
+\small
+\begin{tabular}{l|c|c}\hline
+ & 読み取り精度 & 正解率 \\\hline
+baseline & 82.9\% & $53.54 \pm 0.57$ \\
+\textbf{proposal} & \textbf{95.9\%} & $53.49 \pm 0.31$ \\
+ablation & 81.0\% & $53.57 \pm 0.25$ \\\hline
+言い回しプローブ & 69.7\% & --- \\
+床（最多署名の割合） & 28.8\% & --- \\\hline
+\end{tabular}
+\end{table}
+
+\subsection{正解率はほとんど動かない}
+
+貪欲デコードで答えを作らせ，GQA公式の評価器で採点する（表\ref{tab:main}右列）．proposalとbaselineの差は平均$-0.06$，95\%信頼区間$[-1.81, +1.70]$で0を跨ぐ（残りの群間も同様）．言えるのは上限で，低下は最大でも1.81pt——署名の可読化は正解率の面でほぼ無代償である．
+
+\subsection{読める構造は，使われていない}
+
+答えの選択を決める出力層の方向（答えの先頭トークン行の主成分$m$本）を第16層へ線形化して引き戻し\cite{workspace}，第16層を相対1\%動かしたとき読み出しがその方向へ何\%動くか（\textbf{弾性}）を測った（表\ref{tab:elasticity}）．
+
+\begin{table}[tb]
+\caption{答えを決める方向への第16層の弾性（3乱数種の平均）}
+\label{tab:elasticity}
+\centering
+\small
+\begin{tabular}{l|c|c|c}\hline
+ & $m=8$ & $m=32$ & $m=128$ \\\hline
+baseline & 0.4023 & 0.2997 & 0.2415 \\
+\textbf{proposal} & \textbf{0.2883} & \textbf{0.2341} & \textbf{0.1973} \\
+ablation & 0.3833 & 0.2972 & 0.2419 \\\hline
+\end{tabular}
+\end{table}
+
+proposalの弾性は3幅とも18--28\%下がって3乱数種で向きが揃い，ablationでは下がらない——低下は署名ラベルに固有であり，\textbf{答えは，整合が触った位置に以前より頼らなくなる}．整合前にあった，答えを決める方向で署名がより読める傾向（$m=8$で+2.82pt）も整合後は消える——読める構造は答えを決める方向に集中もしていない．したがって+13.0ptは表現の形式の組み替えであり，署名が使われるようになったことを意味しない．ただし弾性は一次近似の感度で，言えるのは「頼る度合いが下がった」までである．
+
+\section{むすび}
+
+署名で内部表現を整合させると，署名は第16層から線形にずっと読み取りやすくなり（+13.0pt），正解率はほとんど動かない（低下は最大1.81pt）が，モデルはその構造を答えの生成に使っておらず，第16層への依存はむしろ2割前後下がる——読み取り精度の向上を「タスク構造を使うようになった」と読んではならないことを，性質を足す側から構成的に示した．本結果は$\lambda=0.1$・第16層・単一モデル・単一データセットの一点のものであり，署名が解き方の正しい形式化かも未検証である．今後は，出発点だった表現の頑健性（画像加工前後の表現変化），答えの型ラベルでの整合，$\lambda$と層を振って確かめる．
+
+{\footnotesize
+\begin{thebibliography}{9}
+\bibitem{wani} F. A. Wani et al.: ``Same Answer, Different Representations: Hidden Instability in VLMs,'' arXiv:2602.06652, 2026.
+\bibitem{belinkov} Y. Belinkov: ``Probing Classifiers: Promises, Shortcomings, and Advances,'' Computational Linguistics, vol. 48, no. 1, 2022.
+\bibitem{elazar} Y. Elazar et al.: ``Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals,'' TACL, vol. 9, 2021.
+\bibitem{gqa} D. A. Hudson and C. D. Manning: ``GQA: A New Dataset for Real-World Visual Reasoning and Compositional Question Answering,'' CVPR, 2019.
+\bibitem{supcon} P. Khosla et al.: ``Supervised Contrastive Learning,'' NeurIPS, 2020.
+\bibitem{smolvlm} SmolVLM-500M-Instruct, \url{https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct}
+\bibitem{workspace} W. Gurnee et al.: ``Verbalizable Representations Form a Global Workspace in Language Models,'' Transformer Circuits Thread, 2026.
+\end{thebibliography}
+}
+
+\simplefootnotetext{
+東京都立大学 システムデザイン研究科 情報科学域 杉村研究室\\
+〒\hspace{0pt}191--0065 東京都日野市旭が丘6-6\\
+E-mail: nakano-tomoharu@ed.tmu.ac.jp}
+\end{document}
