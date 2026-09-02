@@ -1,6 +1,6 @@
 # PCSJ/IMPS 2026 講演申込——確定版
 
-2026-09-01 時点．申込フォーム（実物）の入力欄を，フォームの並び順に入れる値と対で並べた．未確定は Email-2 のお知らせメール同意の1箇所のみ（【教授に確認】）．確認後に中野が登録する．
+2026-09-02 時点で全欄確定．申込フォーム（実物）の入力欄を，フォームの並び順に入れる値と対で並べた．講演の分類と Email-2 の同意は教授の指示（2026-09-01），タイトルと発表概要は教授の案に3点の修正を載せた版で，教授の了承済み（2026-09-02）．中野が登録する．
 
 ## 学会と締切
 
@@ -27,14 +27,14 @@
 | 発表の形態 (*) | 「現地会場におけるプレゼンテーション」（そのまま） |
 | 本文の言語 (*) | 「日本語（英文タイトルあり）」（そのまま） |
 | 書誌情報の公開 (*) | 「日本語/英語の書誌情報（タイトル/著者/所属）を入力して公開する」（そのまま） |
-| 講演の分類 (*) | 「一般講演（実験）」を選択 |
+| 講演の分類 (*) | 「一般講演（シミュレーション）」を選択 |
 
 ### タイトル
 
 | 入力欄 | 入れる値 |
 | --- | --- |
-| 和文 (*) | タスク類似性に基づく内部表現整合学習により，視覚言語モデルはタスク構造を使うようになるか？ |
-| 英文 (*) | Does Internal Representation Alignment Based on Task Similarity Make Vision-Language Models Use Task Structure? |
+| 和文 (*) | タスク類似性に基づく内部表現整合学習が視覚言語モデルの出力に与える影響 |
+| 英文 (*) | Effects of Task-Similarity-Based Internal Representation Alignment on the Outputs of Vision-Language Models |
 | サブタイトル（和・英） | 両方空欄（和文サブタイトルが無いので，英文の「*」も入れない） |
 
 ### 著者名
@@ -56,7 +56,7 @@
 | 講演者 (*) | 「第１著者」を選択 |
 | 講演者は学生ですか (*) | 「講演者は学生である　【学生】」を選択 |
 | 所属学会（13学会のチェック・会員番号・入会手続中） | すべてチェックなし・空欄 |
-| 発表概要 | 下の「発表概要（和文，250 字）」を貼り付ける |
+| 発表概要 | 下の「発表概要（和文，350 字）」を貼り付ける |
 
 ### 連絡先と Email
 
@@ -69,7 +69,7 @@
 | Email-1 (*) | nakano-tomoharu@ed.tmu.ac.jp |
 | Email-1 のお知らせメール同意 | 「同意する」を選択 |
 | Email-2 | d-sugimura@tmu.ac.jp |
-| Email-2 のお知らせメール同意 | 【教授に確認】「同意する」「同意しない」「今回は回答しない」のいずれか |
+| Email-2 のお知らせメール同意 | 「同意しない」を選択（教授の指示） |
 
 ### 最後の確認
 
@@ -81,13 +81,13 @@
 
 「次へ」→確認画面→「登録」で完了．登録内容の確認メールが届き，後日でもメール記載の URL から修正できる．
 
-## 発表概要（和文，250 字）
+## 発表概要（和文，350 字）
 
-視覚言語モデル（VLM）は画像と言語を併せて理解し，画像への質問応答など広く応用されている．従来の VLM は出力だけを目標に学習し，答えが同じでも内部表現は入力の揺らぎで大きく動きうる．そこで本研究では，解き方が同じ質問の内部表現を近づける整合学習を検討する．これにより内部表現が解き方に沿って整い，答えの生成に使われると期待できる．実験の結果，正解率をほとんど変えずに解き方を内部表現から読み取りやすくできるが，モデルはそれを使うようにはならず，整合した表現への依存はむしろ下がることがわかった．
+視覚言語モデル（VLM）は画像とテキストを包括的に理解するモデルであり，視覚的質問応答（VQA）をはじめ多岐にわたるタスクに応用されている．従来のVLMは出力の正答率を最適化するよう学習されるため，同一の解法（タスク構造）を要する問いであっても，入力のわずかな揺らぎによって内部表現が大きく変動するという課題がある．そこで本研究では，類似したタスク構造を持つ質問間で内部表現を近づける，タスク類似性に基づく内部表現整合学習を検討する．これにより内部表現がタスク構造に沿って整い，出力の生成に使われると期待できる．実験の結果，タスク正答率を維持したまま内部表現から解法構造を読み取りやすく改善する一方で，モデルはその整合された内部表現を出力生成に使うようにはならず，むしろ依存を弱めることが示唆された．
 
-## 発表概要（英文，129 語）
+## 発表概要（英文，143 語）
 
-Vision-language models (VLMs) understand images together with language and are widely applied, for example to answering questions about images. A conventional VLM is trained on its output alone, and even when the answer stays the same, its internal representations can shift substantially under perturbations of the input. We therefore study alignment training, which pulls together the internal representations of questions solved in the same way. This can be expected to organize the representations along the way of solving, so that it is used in generating the answer. Experimentally, alignment makes the way of solving far easier to read out of the representations while leaving accuracy almost unchanged; yet the model does not come to use it, and the answer comes to rely less, not more, on the aligned representation.
+Vision-language models (VLMs) understand images and text comprehensively and are applied to a wide range of tasks, including visual question answering (VQA). Because a conventional VLM is trained to optimize the accuracy of its output, its internal representations can vary substantially under slight perturbations of the input, even for questions that require the same solution (task structure). We therefore study task-similarity-based internal representation alignment training, which pulls together the internal representations of questions with similar task structure. This can be expected to organize the internal representations along the task structure so that they are used in generating the output. Experiments suggest that alignment makes the solution structure substantially easier to read out of the internal representations while maintaining task accuracy, yet the model does not come to use the aligned representations in generating its output and instead comes to rely on them less.
 
 ## 備考
 
@@ -97,12 +97,13 @@ Vision-language models (VLMs) understand images together with language and are w
 - 住所欄は郵便番号・住所・所属機関・部課名を書く指定．日野キャンパス（情報科学域の所在地）の住所に研究科・学域・研究室を続け，区切りはフォームの記入例（○○大学 ○○学部 ○○学科 ○○研究室）に合わせて半角スペースとした．
 - Email-1 は講演者本人のアドレスの指定．学生は指導教員のアドレスの登録が必須で，Email-2 がそれにあたる（確認メールが CC で届く）．同意欄だけは教授のアドレス宛の設定なので，意向を確認してから登録する．
 - 発表概要の欄の案内は「100〜200文字程度（英文の場合は200語以下），最大800文字」で，250 字は上限内．幹事がプログラム作成の参考にするだけで公開されない．データベース用アブストラクトは，原稿の提出後に，確認メールに記載の URL から別途登録する．
-- 発表概要は，教授の示した流れ——VLM とは何か／従来の VLM の課題／本研究の提案と，それに期待できること／実験の結果——で 250 字に収めた．技術の詳細（データセット名，整合する層，損失の形，対照条件の構成）は入れず，10月の原稿に置く．
-- 発表概要に数値は書かない．測り直しや測定の追加があっても取り消しにならない主張——三つの結果の向き——だけを書き，数値は原稿とポスターに置く．
-- 三つの結果とは，(1) 解き方を内部表現から読み取りやすくできる，(2) 正解率はほとんど変わらない，(3) モデルはそれを使うようにはならず，整合した表現への依存はむしろ下がる，である．向きも強さも研究文書の要約と同じで，(3) の「下がる」を「高まらない」に弱めない．
-- タイトルは疑問形にした．問いの答え（使うようにはならない）が本研究の主張であり，発表概要の最後の文がそのまま答えになる．「に関する検討」を今回明らかにした語で閉じる形にするなら：「視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習がもたらす読み取りやすさと利用の乖離」／“Internal Representation Alignment Based on Task Similarity in Vision-Language Models: Decodable but Not Used”．
+- 発表概要は，教授の示した流れ——VLM とは何か／従来の VLM の課題／本研究の提案と，それに期待できること／実験の結果——で書く．技術の詳細（データセット名，整合する層，損失の形，対照条件の構成）は入れず，10月の原稿に置く．
+- 2026-09-01 に教授が発表概要を書き直した（「タスク構造」「解法」「VQA」など分野の標準語に寄せた版．「期待できる」の一文は当初落とされたが，教授自身が残す方に戻した）．これを土台に3点を提案し，教授が了承した（2026-09-02）：(1)「整列」を「整合」に統一（教授の打ち間違いとみて），(2)「期待できる」の一文を教授の用語で残す（結果の「一方で」の対比が立つため），(3) 最終文を「活用していない」（言い切り）から「使うようにはならず，むしろ依存を弱める」（原稿 4.3 節で測れている向き）に戻す．英題は和題の「出力」に合わせ “on the Outputs of” を提案．
+- 発表概要に数値は書かない．字数は 350 字で，欄の案内（100〜200 文字程度，最大 800 文字）の上限内．測り直しや測定の追加があっても取り消しにならない主張——三つの結果の向き——だけを書き，数値は原稿とポスターに置く．
+- 三つの結果とは，(1) 解き方を内部表現から読み取りやすくできる，(2) 正解率はほとんど変わらない，(3) モデルはそれを使うようにはならず，整合した表現への依存はむしろ下がる，である．向きも強さも研究文書の要約と同じで，(3) の「下がる」を「高まらない」にも「使っていない」（弾性は下がっただけで 0 ではない）にも変えない．
+- タイトルは教授の案（「…が視覚言語モデルの出力に与える影響」）を採る．中野案は疑問形「…により，視覚言語モデルはタスク構造を使うようになるか？」／“Does Internal Representation Alignment Based on Task Similarity Make Vision-Language Models Use Task Structure?” だった．別案として「に関する検討」を今回明らかにした語で閉じる形：「視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習がもたらす読み取りやすさと利用の乖離」／“Internal Representation Alignment Based on Task Similarity in Vision-Language Models: Decodable but Not Used”．
 - 英文の発表概要はフォームには入れず（本文の言語は日本語），原稿の材料として持つ．
-- 講演の分類は一般講演の中から選ぶ指定で，理論／シミュレーション／実験／試作・実用化の報告／サーベイ・解説／その他／テーマ１〜３から，学習を回して測定する本研究には（実験）が最も近い．学生論文賞の候補になるのは【学生】を選んだ一般講演のみ（賞は推薦制で，申込は要らない）．
+- 講演の分類は一般講演の中から選ぶ指定で，理論／シミュレーション／実験／試作・実用化の報告／サーベイ・解説／その他／テーマ１〜３から選ぶ．中野は（実験）を選んでいたが，教授の指示で（シミュレーション）にした——この分野では計算機上の学習・評価は「シミュレーション」，「実験」は実機・被験者を伴うものを指す．学生論文賞の候補になるのは【学生】を選んだ一般講演のみ（賞は推薦制で，申込は要らない）．
 - 所属学会の注意書きに「本会の個人会員であることが必須」とあるが，本シンポジウムは非会員でも発表できる（研究会からのお知らせに明記．教授にも確認済み）．
 - 使用機器の PCプロジェクタはポスター発表では使えない（提供はポスターボードのみ）が，そのまま提出してよい．電源や机が要る場合だけ「その他」に書く指定で，本発表には要らない．
 - 著作権譲渡の同意は形式上のチェックで，第二種研究会のため権利は著者に残る（フォームに明記）．
