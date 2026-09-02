@@ -1,0 +1,22 @@
+\chapter{実験設定}
+\label{chap:experiments}
+
+\section{モデルとデータ}
+\label{sec:model-data}
+
+\draftnote{context.md §4.1．SmolVLM-500M-Instruct \cite{smolvlm}（32層，$H=960$），GQA \texttt{train\_balanced} 1エポック（884問除外，942,116問），バッチ構成（16署名 × 2件），学習率・勾配打ち切り，9回の学習（3群 × 3乱数種，1回約2時間53分），\texttt{testdev\_balanced} 12,578問で報告する理由と3分割の排他性．}
+
+\section{三つの群}
+\label{sec:groups}
+
+\draftnote{context.md §4.2．baseline／proposal／ablation の定義．ablation は「ラベルの意味だけを除く」群であり表現を壊す群ではないこと，この対照が答えるのは「ラベルに意味が要るか」までで「署名である必要があるか」ではないこと（→\ref{sec:future}節）．}
+
+\section{乱数種3つの，まとめ方}
+\label{sec:statistics}
+
+\draftnote{context.md §4.3．対応のある $t$ 検定と95\%信頼区間（$n=3$，$t_{2,0.975}=4.303$），「区間が0を含む＝差が無い，ではない」という読み方，baseline 3本で測る乱数種由来のばらつき（幅1.14pt）．}
+
+\section{整合が働いたことの確認}
+\label{sec:sanity}
+
+\draftnote{context.md §4.4．分離度 $\delta$（Cohen's d）の定義と3群の値（0.816／2.378／0.451），proposal は「同署名を近づけた」のではなく異署名がそれ以上に離れた結果であること，ablation の表現が一方向に潰れたことと $\log 31$ への一致（ラベルに情報が無いことの裏づけ）．}

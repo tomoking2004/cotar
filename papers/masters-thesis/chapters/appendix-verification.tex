@@ -1,0 +1,30 @@
+\chapter{補助的な検証}
+\label{chap:appendix-verification}
+
+% context.md 付録A をそのまま写す．本文（第\ref{chap:results}章）はこの付録を読まなくても筋が通ること．
+% 審査で「方法の詳細は本文に」と求められたら，A.1 と A.4 は本文の対応節へ昇格させる（その判断は指導教員と）．
+
+\section{「読み取りやすさ」の測定と，二つの対照}
+\label{sec:app-probe}
+
+\draftnote{context.md §A.1．プローブの定義・当てはめと打ち切り（10問以上の署名に限る，1/2分割，early stopping）・床の定義，言い回しプローブと書き出し分離の作り方，ablation の81.0\%の読み方，残差化（Sahoo ら \cite{sahoo} への応答，形式3変量で0.35ptしか動かない）——残差化はこの付録限定とする．}
+
+\section{演算子の組成も，読み取れるようになる}
+\label{sec:app-composition}
+
+\draftnote{context.md §A.2．「学習が教えたことを読み返しているだけ」への反論の設計（署名単位の分割・演算子集合ラベル），AUC と完全一致率の表（36.3\% → 44.5\%），言い回しプローブとの比較の読み方の注意．}
+
+\section{正解率が上がらない理由——頻度層別と，正誤で分けたプローブ}
+\label{sec:app-frequency}
+
+\draftnote{context.md §A.3．署名の学習出現回数による5層の層別表（利得の現れる層は無い，1--10層の −2.50pt は区間が0を跨ぐ），正誤で分けたプローブ（誤答側でも96.4\%——誤りは署名より後の段階），proposal に掛かる留保．稀な署名の表現側の測定（§8.2）が済んだらここに足す．}
+
+\section{「使われていない」を，どう測ったか——三段の測定}
+\label{sec:app-elasticity}
+
+\draftnote{context.md §A.4．中立／不一致の二択，自己修復 \cite{hydra} ゆえに壊す方法を採らないこと，三段の設計（$U_m$・J-lens \cite{workspace} による引き戻し $J(U_m)$・弾性 $e_p(u)$）と判定量 $\Delta_m$／$\Delta'_m$，結果の表と各段の読み（第1段は決着に使わない，など），64問で足りることの確認．}
+
+\section{整合する層を変えた試走——乱数種1つ}
+\label{sec:app-layers}
+
+\draftnote{context.md §A.5．第8層・第24層（乱数種42）の表，読み取り精度は層を変えても同じ高さに着くこと，区間を作れない旨．乱数種を揃える追試（§8.4）が済んだら本文へ昇格を検討する．}

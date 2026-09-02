@@ -1,0 +1,87 @@
+% 修士論文（骨組み）
+% 組版: platex thesis.tex を2回（相互参照と目次のため）→ dvipdfmx thesis.dvi
+% 組版原則は ../principles.md ——プリアンブルへの追加・変更はそちらの規則に従う．
+%
+% 執筆の親文書は .claude/context.md である．各節の〔執筆メモ〕に対応する節番号を記した．
+% 本文の執筆は，残りの測定（特に表現の頑健性，context.md §8.1）が済んでから行う．
+\documentclass[report]{jsbook}
+\usepackage{amsmath,amssymb}% 本文の数式は context.md の形をそのまま使う（\mathbb・\varnothing に要る）
+\usepackage{xurl}% url 互換で，URL をどこでも改行できる（参考文献の Underfull を防ぐ）
+\usepackage[dvipdfmx,hidelinks,bookmarksnumbered]{hyperref}
+\usepackage{pxjahyper}
+\hypersetup{pdftitle={視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習に関する検討},
+            pdfauthor={中野友晴}}
+
+% 執筆メモ——書くべき内容と出典（context.md の節）を PDF 上に印字する．
+% 本文を書き入れた節から順に，この行を消していく．脱稿時にはすべて消えている．
+\newcommand{\draftnote}[1]{%
+  \begin{quote}\small〔執筆メモ〕#1\end{quote}}
+
+\title{視覚言語モデルにおけるタスク類似性に基づく\\内部表現整合学習に関する検討}
+% 題目は提出時に確定する．候補（杉村先生の指針：疑問形か，明らかにした語で閉じる）：
+%   疑問形——タスク類似性に基づく内部表現整合学習により，視覚言語モデルはタスク構造を使うようになるか？
+%   閉じ形——視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習がもたらす読み取りやすさと利用の乖離
+\author{中野 友晴}
+
+\begin{document}
+
+% ---------------- 表紙 ----------------
+\begin{titlepage}
+\centering
+\vspace*{20mm}
+{\Large 修士論文}\\[18mm]
+{\LARGE\bfseries 視覚言語モデルにおけるタスク類似性に基づく\\[2mm]内部表現整合学習に関する検討}\\[8mm]
+{\small ※題目は提出時に確定（プリアンブルの候補を参照）}\\[28mm]
+{\Large 中野 友晴}\\[8mm]
+{\large 東京都立大学大学院 システムデザイン研究科\\[1mm]情報科学域}\\[16mm]
+{\large 指導教員\quad 杉村 大輔}\\[24mm]
+{\large 提出日\quad ※未定}\\ % 提出期限・要提出物は研究科の募集要項で確認する
+\vfill
+\end{titlepage}
+
+\frontmatter
+
+% ---------------- 概要 ----------------
+\chapter{概要}
+
+視覚言語モデル（VLM）は画像と言語を併せて理解し，画像への質問応答など広く応用されている．従来のVLMは出力だけを目標に学習し，答えが同じでも内部表現は入力の揺らぎで大きく動きうる．そこで本研究では，解き方が同じ質問の内部表現を近づける整合学習を検討する．これにより内部表現が解き方に沿って整い，答えの生成に使われると期待できる．実験の結果，正解率をほとんど変えずに解き方を内部表現から読み取りやすくできるが，モデルはそれを使うようにはならず，整合した表現への依存はむしろ下がることがわかった．
+
+\draftnote{上の250字（講演申込と同文）を種に，読み手の知る地点から書き直して800字程度へ広げる（流れは VLM とは何か→従来の課題→提案と期待→結果）．頑健性の測定（context.md §8.1）が済んだら，その結果もここに一文で入る．}
+
+\tableofcontents
+
+\mainmatter
+
+\input{chapters/introduction}
+\input{chapters/related-work}
+\input{chapters/method}
+\input{chapters/experiments}
+\input{chapters/results}
+\input{chapters/conclusion}
+
+% ---------------- 謝辞 ----------------
+\chapter*{謝辞}
+\addcontentsline{toc}{chapter}{謝辞}
+
+\draftnote{指導教員・研究室・（あれば）計算資源等への謝辞．最後に書く．}
+
+% ---------------- 参考文献 ----------------
+% context.md の参考文献と references/ のノートに対応．並びは本文での初出順（../principles.md）．
+\begin{thebibliography}{99}
+\bibitem{wani} F. A. Wani et al.: ``Same Answer, Different Representations: Hidden Instability in VLMs,'' arXiv:2602.06652, 2026.
+\bibitem{elazar} Y. Elazar et al.: ``Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals,'' TACL, vol. 9, pp. 160--175, 2021.
+\bibitem{vlsi} B.-K. Lee et al.: ``VLsI: Verbalized Layers-to-Interactions from Large to Small Vision Language Models,'' CVPR, 2025.
+\bibitem{belinkov} Y. Belinkov: ``Probing Classifiers: Promises, Shortcomings, and Advances,'' Computational Linguistics, vol. 48, no. 1, pp. 207--219, 2022.
+\bibitem{sahoo} S. Sahoo et al.: ``Linear Probes Detect Task Format, Not Reasoning Mode in Language Model Hidden States,'' 6th Workshop on Trustworthy NLP, ACL 2026.
+\bibitem{supcon} P. Khosla et al.: ``Supervised Contrastive Learning,'' NeurIPS, 2020.
+\bibitem{gqa} D. A. Hudson and C. D. Manning: ``GQA: A New Dataset for Real-World Visual Reasoning and Compositional Question Answering,'' CVPR, 2019.
+\bibitem{smolvlm} SmolVLM-500M-Instruct, \url{https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct}
+\bibitem{hydra} T. McGrath et al.: ``The Hydra Effect: Emergent Self-repair in Language Model Computations,'' arXiv:2307.15771, 2023.
+\bibitem{workspace} W. Gurnee et al.: ``Verbalizable Representations Form a Global Workspace in Language Models,'' Transformer Circuits Thread, 2026.
+\end{thebibliography}
+
+% ---------------- 付録 ----------------
+\appendix
+\input{chapters/appendix-verification}
+
+\end{document}

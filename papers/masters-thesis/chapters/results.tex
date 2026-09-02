@@ -1,0 +1,26 @@
+\chapter{結果}
+\label{chap:results}
+
+% 主結果は三つ．順序も見出しの立て方も context.md §5 と同じにする．
+% 測定方法の詳細（プローブの当てはめ・三段の測定）は付録\ref{chap:appendix-verification}に置き，
+% 本章は付録を読まなくても筋が通るように書く——context.md の本文／付録A の分担をそのまま保つ．
+
+\section{署名の読み取りやすさは，大きく上がる}
+\label{sec:decodability}
+
+\draftnote{context.md §5.1（当てはめの詳細は付録\ref{sec:app-probe}）．読み取り精度の表（82.9\% → 95.9\%，+13.0pt；ablation 81.0\%；言い回しプローブ 69.7\%；床 28.8\%；書き出し分離で +14.5pt）．「上がったこと自体は発見ではない」——確定させるのは増分の帰属であるという書き方を保つ．整合前の baseline の読み（幾何は近くないが線形には読める）もここ．組成への波及は付録\ref{sec:app-composition}へ送る．}
+
+\section{正解率は，ほとんど動かない}
+\label{sec:accuracy}
+
+\draftnote{context.md §5.2．乱数種ごとの正解率の表，proposal−baseline の区間 $[-1.81, +1.70]$ の計算過程，「差が無い」ではなく上限を言う読み方．上がらない理由の層別は付録\ref{sec:app-frequency}へ送る．}
+
+\section{読み取れるようになった構造は，使われていない}
+\label{sec:usage}
+
+\draftnote{context.md §5.3（測定方法は付録\ref{sec:app-elasticity}）．弾性の表（3幅で −28.0／−21.6／−18.0\%，ablation は下がらない），特権の消失（+2.82pt → 差なし），一次近似であることの留保（「まったく使っていない」ではなく「頼る度合いが下がった」）．}
+
+\section{表現の頑健性——整合した表現は，入力の揺らぎに安定するか}
+\label{sec:robustness}
+
+\draftnote{【未測定——この測定が済むまで本論文は書き始めない】context.md §8.1．出発点（\ref{sec:background}節）に応える測定：3群に正解を変えない画像加工を施し，第16層の表現の変化量を無関係画像対の距離分布を基準にした比で比べる．結果が3通りのどれか（安定性を高める／形式だけ／脆くなる）で\ref{chap:conclusion}章の枠組みが変わる．9回の学習の重みは E:\textbackslash runs（USB バックアップあり）にある．}

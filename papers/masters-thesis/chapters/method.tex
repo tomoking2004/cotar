@@ -1,0 +1,17 @@
+\chapter{提案手法}
+\label{chap:method}
+
+\section{タスク署名——解き方を，比べられる形にする}
+\label{sec:signature}
+
+\draftnote{context.md §3.1．functional program の例（``Who is wearing the dress?'' の3段の表），署名の定義，引数を捨てる理由，署名と質問文の交絡（自動生成ゆえの相関，演算子名が質問文に現れる10種）．}
+
+\section{整合損失}
+\label{sec:loss}
+
+\draftnote{context.md §3.2．SupCon 式（$\mathcal{L}_{\mathrm{align}}$）と各項の読み，$\mathcal{I}$ から外れる質問が本研究のバッチ構成では生じないこと，温度 $\tau$（学習可能，初期値0.07），全体の目的関数 $\mathcal{L} = \mathcal{L}_{\mathrm{LM}} + \lambda\mathcal{L}_{\mathrm{align}}$（$\lambda=0.1$）．}
+
+\section{どこに掛けるか——射影を挟まない中間層の一点}
+\label{sec:where}
+
+\draftnote{context.md §3.3．第16層・質問を読み終えた位置（$H=960$）の選定理由（causal attention のもとで画像と質問文を読み終えている唯一の位置），射影 head を挟まない理由（反証可能性），それでも構造が使われない余地が残ること（多対一の写像）——この余地を測るのが\ref{sec:usage}節である．}

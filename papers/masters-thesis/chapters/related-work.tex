@@ -1,0 +1,30 @@
+\chapter{関連研究}
+\label{chap:related-work}
+
+% context.md に独立した関連研究章は無い．references/ の検証済みノート（1論文1ファイル）を親文書として書く．
+% 本研究との距離（何を借り，どこが違うか）を各節の最後に必ず一文で置く．
+
+\section{VLM の内部表現の不安定性}
+\label{sec:rw-instability}
+
+\draftnote{references/hidden-instability.md．Wani ら \cite{wani} の設定（言語側最終層，Qwen3-VL・LLaVA-OneVision，SEEDBench・MMMU・POPE）と指標（無関係画像対の距離分布を基準にした比）．本研究が借りるのは指標の形だけである．}
+
+\section{プローブ——読み取れることと使われることの区別}
+\label{sec:rw-probing}
+
+\draftnote{references/probing-classifiers.md・amnesic-probing.md・task-format.md．Belinkov \cite{belinkov} の総覧，Elazar ら \cite{elazar} の amnesic probing（除いて測る・Rand 対照），Sahoo ら \cite{sahoo} の「プローブは task format を検出しうる」という警告．本研究の測定設計（言い回しプローブ・書き出し分離・残差化）がどの批判に応えるものかをここで対応づける．}
+
+\section{対照学習}
+\label{sec:rw-contrastive}
+
+\draftnote{references/supcon.md．SupCon \cite{supcon} の損失と射影 head．本研究は射影を挟まず（反証可能性のため）生の表現に掛ける点が異なる——詳細は\ref{sec:where}節．}
+
+\section{内部表現に手を入れる先行例}
+\label{sec:rw-representation}
+
+\draftnote{references/vlsi.md．VLsI \cite{vlsi}（層ごとの特徴を自然言語化して蒸留，正解率向上）．外部教師の有無・表現を直接近づけるか否かの違い．}
+
+\section{GQA と functional program}
+\label{sec:rw-gqa}
+
+\draftnote{references/gqa.md．GQA \cite{gqa} の構成と functional program．program が付いていることが採用理由であること．}
