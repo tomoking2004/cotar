@@ -11,6 +11,7 @@ GQA の各質問には functional program が付いている．その**演算子
 | [.claude/context.md](.claude/context.md) | **研究文書**．問い・手法・検証方法・結果・答え・次の一手．これ1本で研究が分かる |
 | [.claude/context-philosophy.md](.claude/context-philosophy.md) | 上を**どう書くか**の原則．研究の中身には依存しない |
 | [references/](references/) | 依拠する論文の要約．1本につき1ファイル |
+| [papers/](papers/) | 論文の原稿（学会予稿・修士論文）．組版の決め事は [papers/principles.md](papers/principles.md) |
 | [presentations/](presentations/) | 対外発表の成果物．発表した時点の記録であって，最新の結果ではない |
 | [snapshots/](snapshots/) | 各 run が残した記録．重みを除いた写しなので commit できる |
 | [analyses/](analyses/) | run をまたいで測った結果．研究文書の数値の出どころ |
