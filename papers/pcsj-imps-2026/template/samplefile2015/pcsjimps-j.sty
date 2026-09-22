@@ -1,0 +1,112 @@
+% page configuration
+
+\textwidth 180truemm
+\textheight 252truemm
+\columnsep 8truemm
+\headheight 0truemm
+\headsep 0truemm
+\topmargin -2.9truemm
+\oddsidemargin -10.4truemm
+\evensidemargin -10.4truemm
+
+\makeatletter
+
+% 図表キャプションは英文表記
+% Caption of figures and tables
+%\def\fnum@figure{\normalfont Figure \thefigure}
+%\def\fnum@table{\normalfont Table \thetable}
+
+%連絡先用マクロ
+% Macro for contact information
+\def\simplefootnotetext#1{
+    \def\footnoterule{\hrule height .1pt}
+    \insert\footins{
+	\small\it
+        \interlinepenalty
+        \interfootnotelinepenalty
+        \splittopskip
+        \floatingpenalty
+        \@MM
+        \@parboxrestore
+	\vspace{2pt}
+	#1
+    }
+}
+
+\renewenvironment{description}{%
+  \list{}{
+  \setlength{\itemsep}{0em}
+  \setlength{\parsep}{0em}
+  \labelwidth\z@ \itemindent-\leftmargin
+    \let\makelabel\descriptionlabel}%
+}{%
+  \endlist
+}
+
+\renewenvironment{itemize} 
+{
+   \begin{list}{$\bullet$\ \ }
+   {
+      \setlength{\itemindent}{0pt}
+      \setlength{\leftmargin}{2em}
+       \setlength{\rightmargin}{0em}
+       \setlength{\labelsep}{0em}
+       \setlength{\labelwidth}{2em}
+       \setlength{\itemsep}{0em}
+       \setlength{\parsep}{0em}
+       \setlength{\listparindent}{0em}
+   }
+}{%
+   \end{list}%
+}
+
+\def\JTitle#1{{\LARGE #1}\\\smallskip}
+\def\ETitle#1{{\LARGE #1}\\\smallskip}
+
+\def\Abstract#1{
+\begin{minipage}{.95\textwidth}
+{\bf Abstract:~}\baselineskip 1.5ex #1
+\end{minipage}\bigskip}
+
+\def\JEAuthor#1#2#3{
+\begin{minipage}{#3}
+\centering
+\Large #1\\
+\large #2 \\
+\smallskip 
+\end{minipage}
+}
+
+\def\JEAffiliation#1#2#3{
+\begin{minipage}{#3}
+\centering
+\normalfont #1\\
+\normalfont #2\\
+\smallskip  
+\end{minipage}
+}
+
+\def\EAuthor#1#2{
+\begin{minipage}{#2}
+\centering
+\large #1 \\
+\smallskip 
+\end{minipage}
+}
+
+\def\EAffiliation#1#2{
+\begin{minipage}{#2}
+\centering
+\normalfont #1\\
+\smallskip  
+\end{minipage}
+}
+\makeatother
+
+%図表参照用マクロ
+% macro for referring figure and tables
+\def\figref#1{Fig.~\ref{fig:#1}}
+\def\tabref#1{Tab.~\ref{tab:#1}}
+
+
+

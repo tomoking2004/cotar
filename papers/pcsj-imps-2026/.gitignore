@@ -2,3 +2,4 @@
 *.log
 *.dvi
 *.out
+.check-ok
