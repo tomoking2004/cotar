@@ -1,8 +1,9 @@
 """Reading a finished experiment: which runs it is, and what can be measured on them.
 
-Nothing here trains the model or needs a GPU. The nine runs left their representations
-and predictions behind, and every question the study asks of them afterwards is asked
-from a laptop, through this package.
+Nothing here trains the model. The nine runs left their representations, predictions
+and weights behind, and every question the study asks of them afterwards is asked
+through this package — from a laptop, except `jacobian`, which rebuilds the model from
+the saved weights to differentiate it and so needs them and a GPU.
 """
 
 from .experiment import (

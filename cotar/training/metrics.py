@@ -9,8 +9,7 @@ epoch's.
 
 What `cotar.analysis` measures afterwards is not an exception to that. It asks its
 questions of what a run left behind — the saved representations, the predictions, the
-weights — never of a model as it runs, and it needs neither a GPU nor a training loop
-to do so.
+weights — never of a model as it trains, and it needs no training loop to do so.
 """
 
 from __future__ import annotations

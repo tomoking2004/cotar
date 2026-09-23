@@ -122,10 +122,11 @@ cotar/
     losses.py          supervised_contrastive_loss
     metrics.py         Evaluator — run が測る数値はすべてここ．公式 GQA 評価器もここから
     logit_scale.py     LogitScale — 学習可能な温度
-  analysis/          ── 済んだ実験を読む（GPU も学習も要らない）
+  analysis/          ── 済んだ実験を読む（学習は要らない）
     experiment.py      報告する実験はどれで，その成果物をどう読むか（重みの読み口もここ）
     probing.py         線形プローブと，質問文だけを入力にした対照（コードでは surface）
     subspaces.py       部分空間の中と外で読み，同じ幅のランダムな対照と突き合わせる
+    jacobian.py        第16層から読み出しへのベクトル–ヤコビ積．§A.4 第2段・第3段が共有する（要 checkpoints・GPU）
     statistics.py      平均±標準偏差・対にした差・信頼区間——3 seed のまとめ方の唯一の定義
   models/            SmolVLM + SmolVLMProcessor（プロンプト構築・ラベルマスク・表現のプール）
   data/
@@ -147,9 +148,9 @@ scripts/
   probe_dependence.py       答えが第16層にどれだけ頼っているかを群間で比べる（要 checkpoints・GPU）
 ```
 
-**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py` は `training/` を，分析の7本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` は GPU も学習済みモデルも要求しないので，ノートPCで完結する．
+**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の9本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` だけで，残りはノートPCで完結する．
 
-**機構は，この研究の中身に依存しない．** 別の研究に持っていくとき差し替わるのは3つだけ——**ファイルがどこにあるか**（`config.py`），**1 run をどう建てるか**（`training/run.py`），**どの実験を報告するか**（`analysis/experiment.py` の `TIMESTAMP`）．残りはすべてパスを引数で受け取り，実験を名指ししない．だから `cotar/` で `cfg` を import するのは後の2つだけで，機構は一つも import しない——`data`・`models`・`types`・`pairwise` と，`training/` の残り（`trainer.py`・`losses.py`・`metrics.py`・`logit_scale.py`）のどこにも `cfg` は無い．`cotar/__init__.py` が何も再輸出しないのも同じ理由で，`import cotar` がマシン固有のパスを束縛しないためである．
+**機構は，この研究の中身に依存しない．** 別の研究に持っていくとき差し替わるのは3つだけ——**ファイルがどこにあるか**（`config.py`），**1 run をどう建てるか**（`training/run.py`），**どの実験を報告するか**（`analysis/experiment.py` の `TIMESTAMP`）．残りはすべてパスを引数で受け取り，実験を名指ししない．だから `cotar/` で `cfg` を import するのは後の2つと，済んだ実験の重みを読み直す `analysis/jacobian.py` だけで，機構は一つも import しない——`data`・`models`・`types`・`pairwise` と，`training/` の残り（`trainer.py`・`losses.py`・`metrics.py`・`logit_scale.py`）のどこにも `cfg` は無い．`cotar/__init__.py` が何も再輸出しないのも同じ理由で，`import cotar` がマシン固有のパスを束縛しないためである．
 
 `cfg` 自身も2種類を分けて持つ——**マシン固有**（データセット・`runs/`・デバイス）と，**チェックアウト相対**（`snapshots/`・`analyses/`）．**済んだ実験を読む側が触るのは後者だけ**で，マシンのことは一度も訊かない．
 
