@@ -56,7 +56,7 @@ from cotar.analysis import (
     vjp_at_site,
 )
 from cotar.config import cfg
-from cotar.models import build_smolvlm
+from cotar.models import SmolVLM, build_smolvlm
 from cotar.utils import load_json, save_json
 
 # The widths the first two stages swept, so dependence is read on the same axis as where
@@ -66,7 +66,7 @@ DIMS = (8, 32, 128)
 # The prompts and batching the second stage used, so the two measurements describe the
 # same linearisation.
 PROMPTS = 64
-BATCH = 8
+BATCH   = 8
 
 # Prefixes the running values are reported at, to show whether PROMPTS was enough.
 CHECKPOINTS = (8, 16, 32, 48, 64)
@@ -75,7 +75,7 @@ OUT_PATH = analysis_path(__file__)
 
 
 def sensitivities(
-    vlm: Any, batches: list[dict[str, Any]], directions: torch.Tensor
+    vlm: SmolVLM, batches: list[dict[str, Any]], directions: torch.Tensor
 ) -> tuple[torch.Tensor, dict[int, torch.Tensor]]:
     """Per-prompt relative sensitivities `(P, m)`, and the mean pulled direction after each prompt.
 
