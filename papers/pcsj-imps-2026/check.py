@@ -2,10 +2,12 @@
 
     python check.py          組版し，全項目を検査して結果を出す（manuscript.pdf を更新する）
     python check.py --hook   Claude Code の PostToolUse フックから呼ぶ．tex と sty が前回合格時から
-                             変わっていなければ何もしない．不合格なら報告を stderr に出して終了コード 2
+                             変わっていなければ何もしない．不合格なら報告を stderr に出して
+                             終了コード 2
 
 検査項目の出どころは三つ——公式サンプル（template/）の定め，アップロード画面の定め，
-../principles.md §3・§6 の記法と走査．合格すると .check-ok に tex と sty のハッシュを書く（git には載せない）．
+../principles.md §3・§6 の記法と走査．合格すると .check-ok に tex と sty のハッシュを書く
+（git には載せない）．
 """
 
 from __future__ import annotations
@@ -42,7 +44,10 @@ SPACING_EXCEPTION = r"〒\hspace{0pt}"   # 公式サンプル由来の定型だ�
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
     """原稿のディレクトリで外部コマンドを走らせ，出力を文字列で受ける．"""
-    return subprocess.run(args, cwd=HERE, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return subprocess.run(
+        args, cwd=HERE, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False,  # 失敗はここで投げない．呼び手が returncode を見る
+    )
 
 
 def fingerprint() -> str:
@@ -54,14 +59,21 @@ def fingerprint() -> str:
 
 
 def typeset() -> list[str]:
-    """platex 2回 → dvipdfmx -p a4 で PDF を作る．エラー・警告・バッドボックスは 0 でなければならない．"""
+    """platex 2回 → dvipdfmx -p a4 で PDF を作る．
+
+    エラー・警告・バッドボックスは 0 でなければならない．
+    """
     fails: list[str] = []
     for _ in range(2):
         if run("platex", "-interaction=nonstopmode", TEX.name).returncode != 0:
             break
     log = (HERE / "manuscript.log").read_text(encoding="utf-8", errors="replace").splitlines()
-    for label, prefix in (("TeX エラー", "! "), ("バッドボックス", ("Overfull", "Underfull")), ("LaTeX Warning", "LaTeX Warning")):
-        if hits := [l for l in log if l.startswith(prefix)]:
+    for label, prefix in (
+        ("TeX エラー", "! "),
+        ("バッドボックス", ("Overfull", "Underfull")),
+        ("LaTeX Warning", "LaTeX Warning"),
+    ):
+        if hits := [line for line in log if line.startswith(prefix)]:
             fails.append(f"{label} {len(hits)} 件: " + " / ".join(hits[:3]))
     if DVI.exists():
         r = run("dvipdfmx", "-p", "a4", DVI.name)
@@ -101,31 +113,43 @@ def inspect_source() -> tuple[list[str], list[str]]:
     lines = src.splitlines()
 
     def where(pattern: str) -> list[int]:
-        return [i for i, l in enumerate(lines, 1) if re.search(pattern, l.replace(SPACING_EXCEPTION, ""))]
+        return [
+            i for i, line in enumerate(lines, 1)
+            if re.search(pattern, line.replace(SPACING_EXCEPTION, ""))
+        ]
 
     for message, pattern in (
         ("禁止文字（、。 全角英数 半角カナ 〜）", r"[、。]|[０-９Ａ-Ｚａ-ｚ]|[ｦ-ﾟ]|〜"),
         ("手動空白 \\vspace/\\hspace（〒\\hspace{0pt} 以外）", r"\\[vh]space"),
-        (f"ラベル接頭辞が規約外（{'/'.join(LABEL_PREFIXES)}:）", r"\\label\{(?!(" + "|".join(LABEL_PREFIXES) + r"):)"),
+        (f"ラベル接頭辞が規約外（{'/'.join(LABEL_PREFIXES)}:）",
+         r"\\label\{(?!(" + "|".join(LABEL_PREFIXES) + r"):)"),
         ("図表の配置に [h] がある（[t]・[b] を使う）", r"\\begin\{(table|figure)\}\[[^\]]*[hH]"),
         ("ⓒ・copyright の記載がある", r"(?i)\(c\)|©|ⓒ|copyright"),
     ):
         if hits := where(pattern):
             fails.append(f"{message}: 行 {hits}")
 
-    title = re.sub(r"\\\\|\s", "", m.group(1)) if (m := re.search(r"\\JTitle\{(.*?)\}\s*\n", src, re.S)) else ""
+    title = (
+        re.sub(r"\\\\|\s", "", m.group(1))
+        if (m := re.search(r"\\JTitle\{(.*?)\}\s*\n", src, re.DOTALL))
+        else ""
+    )
     if title != REGISTERED_TITLE:
         fails.append(f"和文タイトルが登録内容と違う: 「{title}」")
-    authors = tuple(re.sub(r"\$.*$", "", a).strip() for a in re.findall(r"\\JEAuthor\{([^}]*)\}", src))
+    authors = tuple(
+        re.sub(r"\$.*$", "", a).strip() for a in re.findall(r"\\JEAuthor\{([^}]*)\}", src)
+    )
     if authors != REGISTERED_AUTHORS:
         fails.append(f"著者名が登録内容と違う: {authors}")
 
-    cites = list(dict.fromkeys(k.strip() for keys in re.findall(r"\\cite\{([^}]*)\}", src) for k in keys.split(",")))
+    cites = list(dict.fromkeys(
+        k.strip() for keys in re.findall(r"\\cite\{([^}]*)\}", src) for k in keys.split(",")
+    ))
     bibs = re.findall(r"\\bibitem\{([^}]*)\}", src)
     if cites != bibs:
         fails.append(f"文献の並びが本文初出順と違う: 初出 {cites} / 文献 {bibs}")
 
-    if m := re.search(r"\\Abstract\{\s*(.*?)\s*\}\s*\]", src, re.S):
+    if m := re.search(r"\\Abstract\{\s*(.*?)\s*\}\s*\]", src, re.DOTALL):
         if (n := len(re.sub(r"\s", "", m.group(1)))) > ABSTRACT_CHARS + 30:
             warns.append(f"アブストラクトが {n} 字（{ABSTRACT_CHARS} 字程度）")
     else:
@@ -149,7 +173,8 @@ def check() -> tuple[list[str], list[str]]:
 
 def report(fails: list[str], warns: list[str]) -> str:
     """人が読む結果．不合格は x，警告は ! で並べる．"""
-    head = (f"予稿の書式検査: 不合格 {len(fails)} 件（{TEX.relative_to(HERE.parent.parent).as_posix()}）" if fails
+    path = TEX.relative_to(HERE.parent.parent).as_posix()
+    head = (f"予稿の書式検査: 不合格 {len(fails)} 件（{path}）" if fails
             else f"予稿の書式検査: 合格（{MAX_PAGES} ページ以内・A4・全フォント埋め込み・警告 0）")
     return "\n".join([head, *(f"  x {f}" for f in fails), *(f"  ! {w}" for w in warns)])
 
