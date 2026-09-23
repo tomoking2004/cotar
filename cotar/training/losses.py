@@ -14,6 +14,13 @@ def supervised_contrastive_loss(
     labels: Sequence[Hashable],
     logit_scale: float | torch.Tensor,
 ) -> torch.Tensor:
+    """Supervised contrastive loss over one batch: rows sharing a label are pulled together.
+
+    Each row's scaled cosine to every other row is a logit, the row itself excluded. A
+    row's loss is the log-sum-exp of those logits minus the mean logit to its positives,
+    and the batch's is the mean over the rows that have one. A batch holding no positive
+    pair returns a zero that is still attached to the graph.
+    """
     if logit_scale <= 0:
         raise ValueError(f"logit_scale must be positive, got {logit_scale}.")
     if features.size(0) != len(labels):
