@@ -27,10 +27,10 @@ reports — a mismatch means the checkpoint and the saved representations are no
 same run. And the width `m` is swept, because a conclusion that survives only at one width
 is a property of that width.
 
-This is the first of the three stages in context.md §A.4. It answers "is the signature in the
-directions the output layer reads", not "did this arm come to depend on the site less than
-that one" — the latter needs the propagation from the site to the final layer, and is only
-worth its cost if this stage comes back undecided.
+This is the first of the three stages in context.md §A.4. It answers "is the signature in
+the directions the output layer reads", not "did this arm come to depend on the site less
+than that one" — the latter needs the propagation from the site to the final layer, and is
+only worth its cost if this stage comes back undecided.
 """
 
 from __future__ import annotations

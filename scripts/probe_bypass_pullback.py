@@ -1,9 +1,9 @@
 """Ask the bypass question again, with the output layer's directions carried to the site.
 
-This is the second of the three stages in context.md §A.4, and it runs because the first did
-not decide. There, the answer directions were read off the output layer and applied to the
-sixteenth layer's vector as they stood — the two spaces have the same width, but they are
-not the same space, and the first stage assumed they were. What it found is what a bad
+This is the second of the three stages in context.md §A.4, and it runs because the first
+did not decide. There, the answer directions were read off the output layer and applied to
+the sixteenth layer's vector as they stood — the two spaces have the same width, but they
+are not the same space, and the first stage assumed they were. What it found is what a bad
 approximation looks like: the output layer's span held no more of the signature than a
 random span of the same width did, in *every* arm, alignment or none. A subspace that is
 no better than random before anything was optimised is not the subspace the output reads.

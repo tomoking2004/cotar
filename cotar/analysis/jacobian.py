@@ -3,9 +3,8 @@
 Two measurements need the same backward pass and differ only in what they keep of it.
 context.md §A.4's second stage asks *where* the answer directions land at the site, and
 keeps the mean direction. Its third stage asks *how far* the readout moves when the site
-does, and keeps the length.
-Both live here so the two cannot disagree about which layer, which position, or which
-prompts they are talking about.
+does, and keeps the length. Both live here so the two cannot disagree about which layer,
+which position, or which prompts they are talking about.
 
 **One backward per direction, and the `H x H` Jacobian is never formed.** A vector-Jacobian
 product is all either measurement wants, and the graph is retained only while directions

@@ -1,12 +1,12 @@
 """Reading a representation inside a subspace and outside it, and the controls that make
 either reading mean something.
 
-The first two stages of context.md §A.4 ask the same question of the same rows and differ only in
-where the subspace comes from: the first takes the output layer's answer directions as
-they stand, the second pulls them back to the constrained site through the network in
-between. Everything after that — the four places a probe is run, and the statistic the
-verdict rests on — is shared, and lives here so the two stages cannot answer the same
-question two ways.
+The first two stages of context.md §A.4 ask the same question of the same rows and differ
+only in where the subspace comes from: the first takes the output layer's answer
+directions as they stand, the second pulls them back to the constrained site through the
+network in between. Everything after that — the four places a probe is run, and the
+statistic the verdict rests on — is shared, and lives here so the two stages cannot answer
+the same question two ways.
 
 **Both sides need the random twin.** A subspace wide enough holds the signature whatever
 it is built from, so scoring well inside `U` is not evidence. A complement that keeps most
