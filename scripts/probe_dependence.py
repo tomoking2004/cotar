@@ -10,8 +10,9 @@ and discards its length.
 The length is what this keeps. For one prompt and one answer direction `u`, the
 vector-Jacobian product gives how far the readout moves along `u` per unit of movement at
 the site. That number carries units from both ends, and alignment is free to have changed
-either — a run whose site vectors are simply shorter would look less depended-upon without
-anything about the computation having changed. So it is reported as an **elasticity**,
+either — a run whose site vectors are simply shorter would look less depended-upon
+without anything about the computation having changed. So it is reported as a
+**relative sensitivity**,
 
     e = |J^T u| * |h| / |r|
 
@@ -25,7 +26,7 @@ Dependence is a magnitude, so the norms are taken first and averaged after.
 
 **The prompt count is checked rather than assumed.** The second stage averaged over 64
 prompts without showing that 64 was enough. Both quantities are reported at prefixes of the
-same prompt set, so a reader can see whether they had settled — the elasticity by its
+same prompt set, so a reader can see whether they had settled — the sensitivity by its
 running mean, and the second stage's own subspace by the cosine between the prefix's mean
 direction and the full one.
 """
@@ -73,10 +74,10 @@ CHECKPOINTS = (8, 16, 32, 48, 64)
 OUT_PATH = analysis_path(__file__)
 
 
-def elasticities(
+def sensitivities(
     vlm: Any, batches: list[dict[str, Any]], directions: torch.Tensor
 ) -> tuple[torch.Tensor, dict[int, torch.Tensor]]:
-    """Per-prompt elasticities `(P, m)`, and the mean pulled direction after each prompt.
+    """Per-prompt relative sensitivities `(P, m)`, and the mean pulled direction after each prompt.
 
     The second return is the second stage's own quantity accumulated prompt by prompt, kept so its
     convergence can be read from the same backward passes rather than assumed.
@@ -119,7 +120,7 @@ if __name__ == "__main__":
 
     print(f"site: layer {layer}, {hidden_width} dimensions wide")
     print(f"{len(answer_rows):,} output-layer rows from the answer vocabulary")
-    print(f"elasticity averaged over {counted} prompts in {len(batches)} batches\n")
+    print(f"relative sensitivity averaged over {counted} prompts in {len(batches)} batches\n")
 
     results: dict[str, Any] = {}
     for arm in ARMS:
@@ -127,7 +128,7 @@ if __name__ == "__main__":
         for seed in SEEDS:
             vlm, weight, source = load_for_jacobian(arm, seed, layer, cfg.device)
             span = output_basis(weight, answer_rows, max(DIMS))
-            per_prompt, running = elasticities(vlm, batches, span)
+            per_prompt, running = sensitivities(vlm, batches, span)
             del vlm
             empty_cuda_cache()
 
@@ -135,7 +136,7 @@ if __name__ == "__main__":
                 "output_layer": source,
                 "by_dim": {
                     str(m): {
-                        "elasticity": per_prompt[:, :m].mean().item(),
+                        "sensitivity": per_prompt[:, :m].mean().item(),
                         "running": [per_prompt[:n, :m].mean().item() for n in CHECKPOINTS],
                     }
                     for m in DIMS
@@ -146,7 +147,7 @@ if __name__ == "__main__":
             print(f"[{arm} seed{seed}] output layer: {source}")
             for m in DIMS:
                 by = entry["by_dim"][str(m)]
-                print(f"{f'm = {m}':>26}  elasticity {by['elasticity']:7.4f}"
+                print(f"{f'm = {m}':>26}  sensitivity {by['sensitivity']:7.4f}"
                       f"   prefixes " + " ".join(f"{v:6.4f}" for v in by["running"]))
             print(f"{'direction settled':>26}  "
                   + " ".join(f"{v:5.3f}" for v in entry["direction_settled"])
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     # and would have to be squared with §5.2's unmoved accuracy.
     summary = {
         arm: {
-            str(m): mean(results[arm][str(s)]["by_dim"][str(m)]["elasticity"] for s in SEEDS)
+            str(m): mean(results[arm][str(s)]["by_dim"][str(m)]["sensitivity"] for s in SEEDS)
             for m in DIMS
         }
         for arm in ARMS
@@ -170,15 +171,15 @@ if __name__ == "__main__":
 
     # Paired the way context.md §4.3 pairs everything: the ratio is taken within each
     # seed and the three ratios averaged — the number the document's table carries. The
-    # ratio of the mean elasticities is close but not it, and printing that instead
+    # ratio of the mean sensitivities is close but not it, and printing that instead
     # would put two conventions behind one comparison.
     reference, *aligned = ARMS
     for arm in aligned:
         print(f"\n{arm} relative to {reference} (ratio per seed, then averaged)")
         for m in DIMS:
             seeds = [
-                100 * (results[arm][str(s)]["by_dim"][str(m)]["elasticity"]
-                       / results[reference][str(s)]["by_dim"][str(m)]["elasticity"] - 1)
+                100 * (results[arm][str(s)]["by_dim"][str(m)]["sensitivity"]
+                       / results[reference][str(s)]["by_dim"][str(m)]["sensitivity"] - 1)
                 for s in SEEDS
             ]
             print(f"  m = {m:>3}:  {mean(seeds):+6.1f}%   seeds "
