@@ -26,20 +26,20 @@
 
 % 概要
 \Abstract{
-視覚言語モデル（VLM）は画像とテキストを包括的に理解するモデルであり，視覚的質問応答（VQA）などに応用されている．VLMの内部表現は，答えが同じでも入力の揺らぎで大きく変わりうる．しかし，推論の手順が同じ質問同士で内部表現が近いかは明らかでない．本研究では，推論の手順を「見つける」「たどる」「答える」のような操作の名前の並び（タスク署名）で表し，タスク署名が一致する質問同士の内部表現を近づける，タスク類似性に基づく内部表現整合学習を検討する．これにより推論の手順の情報が答えの生成に用いられると期待したが，検証の結果，提案手法は正解率を有意に変えずにタスク署名の読み取り精度を大きく高める一方，答えの生成が内部表現に依存する度合いを下げることが示唆された．
+視覚言語モデル（VLM）は画像とテキストを包括的に理解するモデルであり，視覚的質問応答（VQA）などに応用されている．VLMの内部表現は，答えが変わらない場合でも，入力の違いで大きく変わることがある．本研究では，内部表現は推論の手順に応じて定まることが望ましいと考える．そこで，推論の手順を「見つける」「たどる」「答える」のような操作の名前の並び（タスク署名）で表し，タスク署名が一致する質問同士の内部表現を近づける，タスク類似性に基づく内部表現整合学習を検討する．これにより推論の手順の情報が答えの生成に用いられると期待したが，検証の結果，提案手法により，正解率は有意に変わらずにタスク署名の読み取り精度が大きく高まる一方，答えの生成が内部表現に依存する度合いが下がることが示唆された．
 }
 ]
 
 \section{はじめに}
 \label{sec:intro}
 
-視覚言語モデル（Vision-Language Model; VLM）は，画像とテキストを入力として，それらに応じた出力を生成するモデルであり，画像についての質問に答える視覚的質問応答（Visual Question Answering; VQA）などに応用されている．本稿では，VLMのうち答えを生成する言語モデル部の各層が表現する潜在特徴を，内部表現と呼ぶ．
+視覚言語モデル（Vision-Language Model; VLM）は，画像とテキストを入力として，入力に応じた出力を生成するモデルであり，画像についての質問に答える視覚的質問応答（Visual Question Answering; VQA）などに応用されている．VLMは一般に，画像を特徴に変換する視覚エンコーダと，画像の特徴と質問文から答えを生成する言語モデル部から成る．本稿では，言語モデル部の各層が表現する潜在特徴を内部表現と呼ぶ．
 
-多くのVLMでは正解率を高めるよう学習が行われ，内部表現がどう形成されるべきかは学習の目的に含まれない．これに対しWaniら\cite{wani}は，平行移動など質問の正解を変えない加工を画像に施すと，答えは同じでも内部表現が大きく変わりうることを示した．
+多くのVLMは正しい答えを出力するよう学習され，内部表現がどう形成されるべきかは学習の目的に含まれない．Waniら\cite{wani}は，質問の正解が変わらない範囲で画像に文字を重ねるなどの加工を施すと，加工の前後でVLMの答えが同じでも，内部表現の変化が無関係な画像同士の内部表現の違いに迫る場合があることを示した．すなわち，答えが安定していても，内部表現が安定しているとは限らない．
 
-Waniらは同じ質問での画像加工を扱ったが，異なる質問が同じ推論の手順で解ける場合もある．例えば``Who is wearing the dress?''と``What is the boy wearing?''では，dressとboyを見つけ，wearingの関係で相手をたどって名前を答える．本稿ではこうした質問をタスクが類似した質問と呼ぶ．その内部表現の近さは未解明である．
+これに対し本稿では，内部表現は，質問の答えを導く推論の手順に応じて定まることが望ましいと考える．例えば``Who is wearing the dress?''と``What is the boy wearing?''は，前者ではdressを，後者ではboyを見つけ，wearingという関係で結ばれた相手の名前を答えるという同じ手順で解ける．本稿ではこうした質問をタスクが類似した質問と呼ぶ．タスクが類似した質問同士の内部表現が近ければ，推論の手順の情報が質問に現れる物によらず内部表現に含まれ，答えの生成に用いられやすくなると考えられる．
 
-本稿では，タスク類似性に基づく内部表現整合学習を提案する．VQAデータセットGQA\cite{gqa}の推論の手順の記述から，「見つける」「たどる」「答える」のような操作の名前だけを順に並べた列（タスク署名）を作り，タスク署名が一致する質問同士の内部表現を近づけ，一致しない質問同士を遠ざける整合損失を導入する．これにより，VLMが推論の手順の情報を答えの生成に用いると期待できる．
+そこで本稿では，タスク類似性に基づく内部表現整合学習を提案する．提案手法では，タスクが類似した質問同士の内部表現を近づけ，類似しない質問同士を遠ざける整合損失を，通常の学習の損失に加えて用いる．本稿では，提案手法がVLMの出力に与える影響を調べる．
 
 \section{提案手法}
 \label{sec:method}
@@ -47,7 +47,7 @@ Waniらは同じ質問での画像加工を扱ったが，異なる質問が同�
 \subsection{提案手法の概要}
 \label{sec:overview}
 
-図\ref{fig:overview}に提案手法の概要を示す．VLMにはSmolVLM-500M-Instruct\cite{smolvlm}を用いる．32層の言語モデル部は画像の特徴と質問文をトークンの列として受け取り，各トークンの計算では注意機構によりそれ以前のトークンだけを参照する．よって，画像と質問文のすべてを参照するのは，答えを書き出す直前の末尾のトークンだけである．本稿では，末尾のトークンの第16層における960次元のベクトルを内部表現$\boldsymbol{h}$とし，整合損失を適用する．
+図\ref{fig:overview}に提案手法の概要を示す．VLMにはSmolVLM-500M-Instruct\cite{smolvlm}を用いる．32層の言語モデル部は，画像の特徴と質問文をトークンの列として受け取る．注意機構により，各トークンは列の中で自身以前のトークンだけを参照する．よって，画像と質問文のすべてを参照するのは，答えを生成する直前の末尾のトークンだけである．本稿では，末尾のトークンの第16層における960次元のベクトルを内部表現$\boldsymbol{h}$とし，整合損失を課す．
 
 \begin{figure}[tb]
 \centering
@@ -94,28 +94,28 @@ Waniらは同じ質問での画像加工を扱ったが，異なる質問が同�
 \subsection{タスク署名}
 \label{sec:signature}
 
-GQAの各質問には，答えを導く手順を記述したfunctional programが付与されている．functional programの各段は，selectやrelateのような操作の名前と，dressやwearingのような操作の対象から成る．例えば``Who is wearing the dress?''のfunctional programは，dressを見つける（select），wearingの関係で人物へたどる（relate），人物の名前を答える（query）の3段から成る．本稿では，各段の操作の名前だけを順に並べた列（この例では\texttt{select > relate > query}）をタスク署名と呼び，タスク署名が完全に一致する質問同士をタスクが類似した質問とみなす．1章の二つの質問は同じタスク署名を持ち，``What color is the cup?''は\texttt{select > query}であり異なる．対象を除くのは，対象まで含めるとタスク署名が一致する質問がほぼ同一の質問に限られ，対象が異なり手順が同じ質問同士を近づけられないためである．
+VQAのデータセットGQA\cite{gqa}の各質問には，質問の答えを導く手順を記述したfunctional programが付与されている．functional programの各段は，selectやrelateのような操作の名前と，dressやwearingのような操作の対象から成る．例えば``Who is wearing the dress?''のfunctional programは，dressを見つける（select），wearingの関係で人物へたどる（relate），人物の名前を答える（query）の3段から成る．本稿では，各段の操作の名前だけを順に並べた列をタスク署名と呼び，タスク署名が完全に一致する質問同士をタスクが類似した質問とみなす．この例のタスク署名は\texttt{select > relate > query}である．functional programから対象を除く理由は，対象まで含めるとタスク署名が一致する質問が対象も同じ質問に限られ，対象が異なり手順が同じ質問同士を近づけられないためである．
 
 \subsection{内部表現整合損失と学習方法}
 \label{sec:loss}
 
-整合損失$\mathcal{L}_{\mathrm{align}}$には，ラベルをタスク署名としたsupervised contrastive loss\cite{supcon}を用いる．この損失は，バッチ内の各質問について，タスク署名が一致する質問との内部表現の類似度を，他の全質問との類似度に比べて高めるほど小さくなる．類似度はコサイン類似度とし，類似度の尺度を温度と呼ばれる学習可能なパラメータ$\tau$で調整する．
-通常の学習では，正解の答えのトークン列に対する交差エントロピー損失$\mathcal{L}_{\mathrm{LM}}$を最小化する．提案手法では，整合損失の重みを$\lambda$とした全体の損失$\mathcal{L} = \mathcal{L}_{\mathrm{LM}} + \lambda \mathcal{L}_{\mathrm{align}}$を最小化するよう，VLMのパラメータと$\tau$を学習する．
+整合損失$\mathcal{L}_{\mathrm{align}}$には，supervised contrastive loss\cite{supcon}を用いる．この損失は，バッチ内の各質問について，タスク署名が一致する質問との内部表現のコサイン類似度を，他の全質問との類似度より高めるほど小さくなる．
+通常の学習では，正解のトークン列に対する交差エントロピー損失$\mathcal{L}_{\mathrm{LM}}$を最小化する．提案手法では，整合損失の重みを$\lambda$とした全体の損失$\mathcal{L} = \mathcal{L}_{\mathrm{LM}} + \lambda \mathcal{L}_{\mathrm{align}}$を最小化する．
 
 \section{実験}
 \label{sec:exp}
 
-\subsection{実験設定}
+\subsection{実験概要}
 \label{sec:setup}
 
 学習には，GQAの学習用データのうち答えの偏りを緩めた\texttt{train\_balanced}の942,116問を用いる．各バッチは，無作為に選んだ16種のタスク署名から各2問，計32問とする．更新回数は，学習データの問数を32で割った1エポック分とする．
-学習条件は，整合損失を用いないbaseline（$\lambda = 0$），提案手法のproposal（$\lambda = 0.1$），ablationである．ablationでは，proposalと同じ学習方法で，バッチ内の質問の間でタスク署名を無作為に並べ替えて整合損失を計算する．並べ替えたタスク署名は推論の手順と無関係になるが，種類と数は変わらないため，proposalで生じablationで生じない変化は，推論の手順に基づいて内部表現を近づけたことによる．各条件で，初期値やデータの順序を決める乱数の種を3通り変えて学習し，平均を示す．
+学習条件は，整合損失を用いないbaseline（$\lambda = 0$），提案手法のproposal（$\lambda = 0.1$），ablationである．ablationでは，バッチ内の質問の間でタスク署名を無作為に並べ替えて，proposalと同じく整合損失を求める．並べ替えたタスク署名は，種類と数を保ったまま推論の手順と無関係になる．各条件で，初期値やデータの順序を決める乱数の種を3通り変えて学習し，平均を示す．
 
 評価には学習に用いない\texttt{testdev\_balanced}の12,578問を用い，3つの指標を測る．第1の指標は正解率であり，生成の各ステップで最も確率の高いトークンを選んで作った答えを，GQA公式の評価プログラムで採点して求める．
 
-第2の指標はタスク署名の読み取り精度であり，内部表現$\boldsymbol{h}$からタスク署名を予測する線形分類器（線形プローブ）の正解率とする．読み取り精度が高いほど，タスク署名の情報が線形に取り出せる形で内部表現に含まれている．プローブは評価データの半数で学習し，残りで測る．
+第2の指標はタスク署名の読み取り精度であり，内部表現$\boldsymbol{h}$からタスク署名を予測する線形分類器（線形プローブ）の正解率とする．読み取り精度が高いほど，タスク署名の情報が線形に取り出せる形で内部表現に含まれている．プローブは，評価データのうち10問以上あるタスク署名の10,990問を二分し，一方で学習し，他方で測る．
 
-第3の指標は相対感度である．プローブで読み取れる情報が答えの生成に用いられるとは限らない\cite{elazar}ため，答えの生成が$\boldsymbol{h}$に依存する度合いを測る．出力層の重み行列から答えの先頭トークンに対応する行を取り出し，各列の平均を引いて主成分分析を行い，上位$m$個の主成分を，答えの候補の間でスコアの変化が最も異なる方向として得る．答えの最初のトークンは末尾のトークンの最終層のベクトル$\boldsymbol{r}$から選ばれるので，$\boldsymbol{h}$から$\boldsymbol{r}$へのヤコビ行列$\boldsymbol{J}$\cite{workspace}を用い，方向$\boldsymbol{u}$に対する相対感度を$e = \| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{h} \| / \| \boldsymbol{r} \|$とする．$e$は，$\boldsymbol{h}$を相対的に1\%動かすと$\boldsymbol{r}$が$\boldsymbol{u}$方向へ最大で何\%動くかを表し，大きいほど答えの選択が$\boldsymbol{h}$に依存する．$e$は$m$本の方向と評価データ64問で平均する．
+第3の指標は相対感度である．プローブで読み取れる情報が答えの生成に用いられるとは限らない\cite{elazar}ため，答えの生成が$\boldsymbol{h}$に依存する度合いを測る．出力層の重み行列から答えの候補の先頭トークンに対応する行を取り出し，各列の平均を引いて主成分分析を行い，上位$m$個の主成分を，答えの候補の間でスコアの変化が最も異なる方向として得る．答えの先頭トークンは末尾のトークンの最終層のベクトル$\boldsymbol{r}$から選ばれるので，$\boldsymbol{h}$から$\boldsymbol{r}$へのヤコビ行列$\boldsymbol{J}$\cite{workspace}を用い，方向$\boldsymbol{u}$に対する相対感度を$e = \| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{h} \| / \| \boldsymbol{r} \|$とする．$e$は，$\boldsymbol{h}$を相対的に1\%動かすと$\boldsymbol{r}$が$\boldsymbol{u}$方向へ最大で何\%動くかを表し，大きいほど答えの選択が$\boldsymbol{h}$に依存する．$e$は$m$本の方向と評価データ64問で平均する．
 
 \subsection{結果}
 \label{sec:results}
@@ -135,20 +135,21 @@ $e$（$m = 128$） & 0.2415 & \textbf{0.1973} & 0.2419 \\\hline
 \end{tabular}
 \end{table}
 
-表\ref{tab:main}より，proposalの読み取り精度はbaselineより13.0ポイント高く，ablationの読み取り精度は向上しなかった．よって，この向上は推論の手順に基づいて内部表現を近づけたことによる．正解率のproposalとbaselineの差は平均$-0.06$ポイントで，その95\%信頼区間$[-1.81, +1.70]$は0を含み，正解率の低下は最大1.81ポイントである．
+表\ref{tab:main}より，正解率のproposalとbaselineの差は平均$-0.06$ポイントで，差の95\%信頼区間$[-1.81, +1.70]$は0を含む．proposalの読み取り精度はbaselineより13.0ポイント高く，相対感度$e$は，乱数の種ごとのbaseline比の平均で18--28\%低く，すべての$m$と乱数の種で低下した．
 
-proposalの相対感度$e$は，乱数の種ごとのbaseline比の平均で18--28\%低く，$m$と乱数の種のすべての組で低下した．ablationの相対感度はほぼ不変のため，この低下も推論の手順に基づいて内部表現を近づけたことによる．よって，タスク署名の情報が内部表現に含まれても，VLMがそれを答えの生成により多く用いるとは言えない．
+ablationでは，読み取り精度は向上せず，相対感度の変化は同じ平均で$-4.3$\%から$+0.4$\%にとどまった．よって，読み取り精度の向上と相対感度の低下は，推論の手順に基づいて内部表現を近づけたことによる．以上より，内部表現から読み取れるタスク署名の情報が増えても，VLMがその情報を答えの生成により多く用いるとは言えない．
+
 \section{おわりに}
 \label{sec:conclusion}
 
-本稿のタスク類似性に基づく内部表現整合学習は正解率を有意に変えずにタスク署名の読み取り精度を大きく高めたが，答えの生成が内部表現に依存する度合いを下げた．
+タスク類似性に基づく内部表現整合学習は，正解率を有意に変えずにタスク署名の読み取り精度を大きく高めたが，答えの生成が内部表現に依存する度合いを下げた．
 
 {\footnotesize% 予稿で常用される範囲のサイズ指定（../principles.md §1）
 % 形式は杉村先生の注釈（2026-10）に従い，2ページに収めるため「発表先，年」に揃える（vol.・pp. は省く）
 \begin{thebibliography}{9}
 \bibitem{wani} F. A. Wani {\it et al.}, ``Same Answer, Different Representations: Hidden Instability in VLMs,'' arXiv:2602.06652, 2026.
-\bibitem{gqa} D. A. Hudson and C. D. Manning, ``GQA: A New Dataset for Real-World Visual Reasoning and Compositional Question Answering,'' in Proc. {\it IEEE/CVF CVPR}, 2019.
 \bibitem{smolvlm} SmolVLM-500M-Instruct, \url{https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct}
+\bibitem{gqa} D. A. Hudson and C. D. Manning, ``GQA: A New Dataset for Real-World Visual Reasoning and Compositional Question Answering,'' in Proc. {\it IEEE/CVF CVPR}, 2019.
 \bibitem{supcon} P. Khosla {\it et al.}, ``Supervised Contrastive Learning,'' in Proc. {\it NeurIPS}, 2020.
 \bibitem{elazar} Y. Elazar {\it et al.}, ``Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals,'' {\it TACL}, 2021.
 \bibitem{workspace} W. Gurnee {\it et al.}, ``Verbalizable Representations Form a Global Workspace in Language Models,'' {\it Transformer Circuits Thread}, 2026.
