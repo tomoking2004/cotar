@@ -48,38 +48,37 @@
 \node[box,anchor=west] (img) at (0,3.2mm) {画像};
 \node[box,anchor=west] (q) at (0,-1.9mm) {質問文};
 \node[box,text width=12.4mm,anchor=west] (enc) at (9mm,3.2mm) {視覚\\エンコーダ};
-\foreach \name/\x/\lab in {l1/27.5/第1層,l16/38.5/第16層,l32/49.5/第32層}
+\foreach \name/\x/\lab in {l1/26.8/第1層,l16/37.8/第16層,l32/48.8/第32層}
   \node[layer,label={[name=\name lab,inner sep=0.5pt]above:\lab}] (\name) at (\x mm,0) {};
 \foreach \y/\n in {2.85/a,0.95/b,-0.95/c,-2.85/d} {
   \draw[->] (l1.east |- 0,\y mm) -- (l16.west |- 0,\y mm);
   \draw[->] (l16.east |- 0,\y mm) -- (l32.west |- 0,\y mm);
-  \node[tok] (o\n) at (53.5mm,\y mm) {};
+  \node[tok] (o\n) at (52.8mm,\y mm) {};
   \draw[->] (l32.east |- 0,\y mm) -- (o\n);
 }
 \foreach \y in {2.85,0.95} \draw[->] (enc.east |- 0,\y mm) -- (l1.west |- 0,\y mm);
 \foreach \y in {-0.95,-2.85} \draw[->] (q.east |- 0,\y mm) -- (l1.west |- 0,\y mm);
 \draw[->] (img) -- (enc);
 \node[tok,fill=black] at (od) {};
-\node[draw,inner xsep=0.6mm,inner ysep=0.3mm,fit=(l1)(l32)(oa)(od)(l1lab)(l16lab)(l32lab),label={[name=lmlabel,anchor=north west,inner sep=0.8pt]south west:言語モデル部}] (lm) {};
-\node[inner sep=1pt] (r) at (63.5mm,-2.85mm) {$\boldsymbol{r}$};
-\draw[->] (od) -- (r) node[midway,above=0.6mm,inner sep=0pt] {正規化};
-\node[box,anchor=west] (head) at (65.5mm,-2.85mm) {出力層\\$\boldsymbol{W}$};
-\draw[->] (r) -- (head);
-\node[draw,dashed,inner sep=0.45mm,fit=(enc)(lm)(lmlabel)(head),label={[anchor=north east,inner sep=1pt]north east:VLM}] (vlm) {};
-\node[box,anchor=east] (ans) at (83.6mm,-2.85mm) {回答};
-\draw[->] (head) -- (ans);
-\node[box,anchor=east] (gt) at (83.6mm,-12.4mm) {正解の\\回答};
+% 言語モデル部は32層と，最後の正規化・出力層まで（2.1 の「言語モデル部」と同じ範囲）
+\node[draw,inner sep=1.2pt,anchor=west] (head) at (63.2mm,-2.4mm) {出力層$\boldsymbol{W}$};
+\node[draw,inner xsep=0.6mm,inner ysep=0.3mm,fit=(l1)(l32)(oa)(od)(l1lab)(l16lab)(l32lab)(head.east),label={[name=lmlabel,anchor=north west,inner sep=0.8pt]south west:言語モデル部}] (lm) {};
+\draw[->] (od) -- (od -| head.west) node[pos=0.4,above=0.6mm,inner sep=0pt] {正規化} node[pos=0.9,above=0.4mm,inner sep=0pt] {$\boldsymbol{r}$};
+\node[draw,dashed,inner sep=0.45mm,fit=(enc)(lm)(lmlabel),label={[anchor=south east,inner sep=1pt]south east:VLM}] (vlm) {};
+\node[box,anchor=east] (ans) at (84.1mm,-2.85mm) {回答};
+\draw[->] (head.east |- ans.west) -- (ans.west);
+\node[box,anchor=east] (gt) at (84.1mm,-12.4mm) {正解の\\回答};
 \draw[<->] (ans) -- (ans |- gt.north);
 \node[anchor=east,align=right,inner sep=1pt] at ([xshift=-0.5mm]gt.west) {言語モデル\\損失 $\mathcal{L}_{\mathrm{LM}}$};
 % 中段．整合損失を課す内部表現（第16層における入力末尾のトークンの出力）
-\node[pt,fill=black] (hpt) at (44mm,-2.85mm) {};
+\node[pt,fill=black] (hpt) at (43.3mm,-2.85mm) {};
 % 下段．整合損失の模式図
-\node[pt,fill=black] (n1) at (32.5mm,-12.4mm) {};
-\node[pt,fill=black] (n2) at (42mm,-10.9mm) {};
-\node[pt,draw] (n3) at (50.5mm,-13.4mm) {};
+\node[pt,fill=black] (n1) at (33.1mm,-12.4mm) {};
+\node[pt,fill=black] (n2) at (42.6mm,-10.9mm) {};
+\node[pt,draw] (n3) at (51.1mm,-13.4mm) {};
 \draw[<->] (n1) -- (n2) node[pos=0.4,above,sloped,inner sep=1.5pt] (near) {近づける};
 \draw[->] (n2) -- (n3) node[pos=0.5,below,sloped,inner sep=1.5pt] (far) {遠ざける};
-\node[anchor=north west,align=left,inner sep=1pt] (alab) at (52mm,-8.1mm) {整合損失\\$\mathcal{L}_{\mathrm{align}}$};
+\node[anchor=north west,align=left,inner sep=1pt] (alab) at (52.6mm,-8.1mm) {整合損失\\$\mathcal{L}_{\mathrm{align}}$};
 \node[draw,dotted,inner sep=1pt,fit=(n1)(n2)(n3)(near)(far)(alab)] (align) {};
 \node[anchor=east,align=left,inner sep=1pt] at ([xshift=-0.5mm]align.west) {\tikz\node[pt,fill=black]{};\ タスク署名Aの質問の $\boldsymbol{h}$\\\tikz\node[pt,draw]{};\ タスク署名Bの質問の $\boldsymbol{h}$};
 \draw[->] (hpt) -- (hpt |- align.north);
@@ -127,7 +126,7 @@
 
 学習には，GQAが学習用に配布する\texttt{train\_balanced}から942,116問を用いた．各バッチは，無作為に選んだ16種のタスク署名から各2問，計32問とした．VLMのパラメータは，バッチごとに，学習データの問数を32で割った29,441回更新した．比較手法は，$\lambda = 0$とし，言語モデル損失のみを用いて学習したbaselineと，$\lambda = 0.1$とした提案手法のproposalの二つである．
 
-学習に用いない\texttt{testdev\_balanced}の12,578問に対し，三つの指標を用いて評価した．第一の指標は，GQA公式の評価プログラムで採点した正解率である．第二の指標は読み取り精度であり，潜在特徴$\boldsymbol{h}$からタスク署名を予測する線形分類器の正解率である．第三の指標は相対感度である．線形分類器で読み取れる情報が回答の生成に用いられるとは限らない\cite{elazar}ため，回答の生成が潜在特徴$\boldsymbol{h}$に依存する度合いを測る．図\ref{fig:overview}のように，入力末尾のトークンにおける第32層の出力を正規化したベクトルを$\boldsymbol{r}$とする．出力層は，各行が語彙中の一つのトークンに対応する重み行列$\boldsymbol{W}$を$\boldsymbol{r}$に掛け，各トークンが次に出力されるもっともらしさを表すスコアを求める．スコアが最も高いトークンが回答の最初のトークンとなる．評価データの正解の回答の最初のトークンを候補と呼ぶと，どの候補が出力されるかは候補間のスコアの差で決まる．この差を大きく変える$\boldsymbol{r}$の変化の方向$\boldsymbol{u}$には，候補に対応する$\boldsymbol{W}$の行の上位$m$個の主成分を用いる．相対感度$e$は，$\boldsymbol{h}$に$\boldsymbol{h}$の大きさの1\%の変化を加えたとき，$\boldsymbol{r}$の$\boldsymbol{u}$方向の成分が最大で$\boldsymbol{r}$の大きさの何\%変わるかを表す．$e$が大きいほど，$\boldsymbol{h}$のわずかな変化で回答が変わりやすい．$\boldsymbol{r}$は第16層以降の計算で$\boldsymbol{h}$から定まるので，相対感度は，$\boldsymbol{h}$の微小な変化に対する$\boldsymbol{r}$の変化率を並べたヤコビ行列$\boldsymbol{J}$を用いて定義できる．すなわち，相対感度$e$は，$e = \| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{h} \| / \| \boldsymbol{r} \|$と与えられる．評価では，$m$ごとに，$m$本の$\boldsymbol{u}$と評価データの64問のすべての組で$e$を求めて平均した．
+学習に用いない\texttt{testdev\_balanced}の12,578問に対し，三つの指標を用いて評価した．第一の指標は，GQA公式の評価プログラムによる正解率である．第二の指標は読み取り精度であり，潜在特徴$\boldsymbol{h}$からタスク署名を予測する線形分類器を10問以上あるタスク署名の問の約半数で学習し，残りで測った正解率である．第三の指標は相対感度である．線形分類器で読み取れる情報が回答の生成に用いられるとは限らない\cite{elazar}ため，回答の生成が潜在特徴$\boldsymbol{h}$に依存する度合いを測る．入力末尾のトークンの第32層の出力を正規化したベクトルを$\boldsymbol{r}$とする．出力層は，各行が語彙中の一つのトークンに対応する重み行列$\boldsymbol{W}$を$\boldsymbol{r}$に掛け，各トークンが次に出力されるもっともらしさを表すスコアを求める．スコアが最も高いトークンが回答の最初のトークンとなる．正解の回答の最初のトークンを候補と呼ぶと，出力される候補は候補間のスコアの差で決まる．この差を大きく変える$\boldsymbol{r}$の変化の方向$\boldsymbol{u}$には，候補に対応する$\boldsymbol{W}$の行の上位$m$個の主成分を用いる．相対感度$e$は，$\boldsymbol{h}$に$\boldsymbol{h}$の大きさの1\%の変化を加えたとき，$\boldsymbol{r}$の$\boldsymbol{u}$方向の成分が$\boldsymbol{r}$の大きさの最大何\%変わるかを近似的に表す．$e$が大きいほど，$\boldsymbol{h}$のわずかな変化で回答が変わりやすい．$\boldsymbol{r}$は第16層以降の計算で$\boldsymbol{h}$から定まるので，相対感度は，$\boldsymbol{h}$の微小な変化に対する$\boldsymbol{r}$の変化率を並べたヤコビ行列$\boldsymbol{J}$を用いて定義できる．すなわち，相対感度$e$は，$e = \| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{h} \| / \| \boldsymbol{r} \|$と与えられる．評価では，$m$ごとに，$m$本の$\boldsymbol{u}$と評価データの64問の全組で$e$を平均した．
 
 \subsection{結果}
 \label{sec:results}
