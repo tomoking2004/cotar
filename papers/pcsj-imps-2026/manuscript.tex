@@ -40,49 +40,53 @@
 \begin{tikzpicture}[
   font=\scriptsize,
   >={Latex[length=1.2mm]},
-  box/.style={draw,inner sep=1.2pt,minimum height=4.8mm,align=center},
+  box/.style={draw,inner sep=1.2pt,align=center},
   layer/.style={draw,minimum width=2.6mm,minimum height=7.6mm,inner sep=0pt},
   tok/.style={draw,minimum size=1.4mm,inner sep=0pt},
   pt/.style={circle,inner sep=0pt,minimum size=1.4mm}]
 % 上段．VLM の処理の流れ．横の各行が入力の一つのトークン（上の2行が画像の特徴，下の2行が質問文で，最下行が入力末尾）
-\node[box,anchor=west] (img) at (0,3.2mm) {画像};
-\node[box,anchor=west] (q) at (0,-1.9mm) {質問文};
-\node[box,text width=12.4mm,anchor=west] (enc) at (9mm,3.2mm) {視覚\\エンコーダ};
-\foreach \name/\x/\lab in {l1/26.8/第1層,l16/37.8/第16層,l32/48.8/第32層}
+\node[box,minimum width=8.3mm,minimum height=4.8mm] (img) at (4.15mm,3.4mm) {画像};
+\node[box,minimum width=8.3mm,minimum height=4.8mm] (q) at (4.15mm,-1.9mm) {質問文};
+\node[box,text width=12.4mm,anchor=west] (enc) at (10.4mm,3.4mm) {視覚\\エンコーダ};
+\foreach \name/\x/\lab in {l1/29.6/第1層,l16/39.9/第16層,l32/50.2/第32層}
   \node[layer,label={[name=\name lab,inner sep=0.5pt]above:\lab}] (\name) at (\x mm,0) {};
 \foreach \y/\n in {2.85/a,0.95/b,-0.95/c,-2.85/d} {
   \draw[->] (l1.east |- 0,\y mm) -- (l16.west |- 0,\y mm);
   \draw[->] (l16.east |- 0,\y mm) -- (l32.west |- 0,\y mm);
-  \node[tok] (o\n) at (52.8mm,\y mm) {};
+  \node[tok] (o\n) at (53.5mm,\y mm) {};
   \draw[->] (l32.east |- 0,\y mm) -- (o\n);
 }
 \foreach \y in {2.85,0.95} \draw[->] (enc.east |- 0,\y mm) -- (l1.west |- 0,\y mm);
 \foreach \y in {-0.95,-2.85} \draw[->] (q.east |- 0,\y mm) -- (l1.west |- 0,\y mm);
 \draw[->] (img) -- (enc);
 \node[tok,fill=black] at (od) {};
+% 入力末尾のトークンの出力から回答まで．三つの箱は下端を層の箱にそろえ，最下行の高さの一本の線でつなぐ
+\node[box,inner sep=0.9pt,anchor=south west] (norm) at (55.6mm,-3.8mm) {正規化};
+\node[box,anchor=south west] (head) at (66.5mm,-3.8mm) {出力層\\$\boldsymbol{W}$};
+\draw[->] (od) -- (od -| norm.west);
+\draw[->] (norm.east |- od) -- (od -| head.west) node[midway,above=0.3mm,inner sep=0pt] {$\boldsymbol{r}$};
 % 言語モデル部は32層と，最後の正規化・出力層まで（2.1 の「言語モデル部」と同じ範囲）
-\node[draw,inner sep=1.2pt,anchor=west] (head) at (63.2mm,-2.4mm) {出力層$\boldsymbol{W}$};
-\node[draw,inner xsep=0.6mm,inner ysep=0.3mm,fit=(l1)(l32)(oa)(od)(l1lab)(l16lab)(l32lab)(head.east),label={[name=lmlabel,anchor=north west,inner sep=0.8pt]south west:言語モデル部}] (lm) {};
-\draw[->] (od) -- (od -| head.west) node[pos=0.4,above=0.6mm,inner sep=0pt] {正規化} node[pos=0.9,above=0.4mm,inner sep=0pt] {$\boldsymbol{r}$};
+\node[draw,inner xsep=0.6mm,inner ysep=0.3mm,fit=(l1)(l32)(l1lab)(l16lab)(l32lab)(head),label={[name=lmlabel,anchor=north west,inner sep=0.8pt]south west:言語モデル部}] (lm) {};
 \node[draw,dashed,inner sep=0.45mm,fit=(enc)(lm)(lmlabel),label={[anchor=south east,inner sep=1pt]south east:VLM}] (vlm) {};
-\node[box,anchor=east] (ans) at (84.1mm,-2.85mm) {回答};
-\draw[->] (head.east |- ans.west) -- (ans.west);
-\node[box,anchor=east] (gt) at (84.1mm,-12.4mm) {正解の\\回答};
-\draw[<->] (ans) -- (ans |- gt.north);
-\node[anchor=east,align=right,inner sep=1pt] at ([xshift=-0.5mm]gt.west) {言語モデル\\損失 $\mathcal{L}_{\mathrm{LM}}$};
-% 中段．整合損失を課す内部表現（第16層における入力末尾のトークンの出力）
-\node[pt,fill=black] (hpt) at (43.3mm,-2.85mm) {};
-% 下段．整合損失の模式図
-\node[pt,fill=black] (n1) at (33.1mm,-12.4mm) {};
-\node[pt,fill=black] (n2) at (42.6mm,-10.9mm) {};
-\node[pt,draw] (n3) at (51.1mm,-13.4mm) {};
-\draw[<->] (n1) -- (n2) node[pos=0.4,above,sloped,inner sep=1.5pt] (near) {近づける};
-\draw[->] (n2) -- (n3) node[pos=0.5,below,sloped,inner sep=1.5pt] (far) {遠ざける};
-\node[anchor=north west,align=left,inner sep=1pt] (alab) at (52.6mm,-8.1mm) {整合損失\\$\mathcal{L}_{\mathrm{align}}$};
-\node[draw,dotted,inner sep=1pt,fit=(n1)(n2)(n3)(near)(far)(alab)] (align) {};
-\node[anchor=east,align=left,inner sep=1pt] at ([xshift=-0.5mm]align.west) {\tikz\node[pt,fill=black]{};\ タスク署名Aの質問の $\boldsymbol{h}$\\\tikz\node[pt,draw]{};\ タスク署名Bの質問の $\boldsymbol{h}$};
-\draw[->] (hpt) -- (hpt |- align.north);
+\node[box,minimum height=4.8mm,anchor=south east] (ans) at (84mm,-3.8mm) {回答};
+\draw[->] (head.east |- od) -- (ans.west |- od);
+% 中段．整合損失を課す内部表現（第16層の出力のうち入力末尾のトークンのもの）
+\node[pt,fill=black] (hpt) at (45.05mm,-2.85mm) {};
 \node[anchor=west,inner sep=0.5pt] at ([xshift=0.3mm]hpt |- lmlabel.west) {内部表現 $\boldsymbol{h}$};
+% 下段．整合損失の模式図（黒丸どうしを近づけ，白丸を遠ざける）
+\node[pt,fill=black] (n1) at (30.8mm,-12.5mm) {};
+\node[pt,fill=black] (n2) at (39.8mm,-11.2mm) {};
+\node[pt,draw] (n3) at (49.4mm,-13.7mm) {};
+\draw[<->] (n1) -- (n2) node[pos=0.45,above,sloped,inner sep=1.2pt] (near) {近づける};
+\draw[->] (n2) -- (n3) node[pos=0.43,below,sloped,inner sep=1.2pt] (far) {遠ざける};
+\node[draw,dotted,inner sep=0.8pt,fit=(n1)(n2)(n3)(near)(far)] (align) {};
+\draw[->] (hpt) -- (hpt |- align.north);
+\node[anchor=west,align=left,inner sep=1pt] (alab) at ([xshift=0.6mm]align.east) {整合損失\\$\mathcal{L}_{\mathrm{align}}$};
+\node[anchor=east,align=left,inner sep=1pt] at ([xshift=-0.8mm]align.west) {\tikz\node[pt,fill=black]{};\ タスク署名Aの$\boldsymbol{h}$\\\tikz\node[pt,draw]{};\ タスク署名Bの$\boldsymbol{h}$};
+% 言語モデル損失．正解の回答は下端を模式図の枠にそろえる
+\node[box,anchor=south east] (gt) at (84mm,0 |- align.south) {正解の\\回答};
+\draw[<->] (ans.south) -- (ans.south |- gt.north);
+\node[anchor=east,align=right,inner sep=1pt] at ([xshift=-0.8mm]gt.west) {言語モデル\\損失 $\mathcal{L}_{\mathrm{LM}}$};
 \end{tikzpicture}
 \caption{提案手法の概要}
 \label{fig:overview}
