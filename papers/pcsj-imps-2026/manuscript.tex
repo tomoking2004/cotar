@@ -138,7 +138,7 @@
 
 学習には，GQAが学習用に配布する\texttt{train\_balanced}から942,116問を用いた．各バッチは，無作為に選んだ16種のタスク署名から各2問，計32問とした．VLMのパラメータは，バッチごとに，学習データの問数を32で割った29,441回更新した．比較手法は，$\lambda = 0$とし，言語モデル損失のみを用いて学習したbaselineと，$\lambda = 0.1$とした提案手法のproposalの二つである．
 
-学習に用いない\texttt{testdev\_balanced}の12,578問に対し，三つの指標を用いて評価した．第一の指標は，GQA公式の評価プログラムによる正解率である．第二の指標は読み取り精度であり，潜在特徴$\boldsymbol{h}$からタスク署名を予測する線形分類器を10問以上あるタスク署名の問の約半数で学習し，残りで測った正解率である．第三の指標は相対感度$e$である．線形分類器で読み取れる情報が回答の生成に用いられるとは限らない\cite{elazar}ため，回答の生成が潜在特徴$\boldsymbol{h}$に依存する度合いを測る．回答は1トークンずつ生成され，以降のトークンは最初のトークンに続けて決まるので，最初のトークンの出力に着目する．まず，入力末尾のトークンの第32層の出力を正規化したベクトル$\boldsymbol{r}$を考える．出力層は，各行が語彙中の一つのトークンに対応する重み行列$\boldsymbol{W}$を$\boldsymbol{r}$に掛け，各トークンの出現確率を計算する．そして，計算された出現確率が最も高いトークンを推論結果として出力する．評価データの正解の回答の最初のトークン1,085種を候補と呼ぶ．各候補の出現確率は，$\boldsymbol{W}$の対応する行と$\boldsymbol{r}$の内積から計算される．そのため，候補に対応する$\boldsymbol{W}$の行が大きくばらつく方向に$\boldsymbol{r}$が変化すると，出力される候補が変わりやすい．そこで，$\boldsymbol{r}$の変化の方向$\boldsymbol{u}$には，候補に対応する$\boldsymbol{W}$の行の上位$m$個の主成分の方向を用いる．相対感度は，$\boldsymbol{h}$をわずかに変えたときに$\boldsymbol{r}$の$\boldsymbol{u}$方向の成分が最大でどれだけ変わるかを，$\boldsymbol{h}$と$\boldsymbol{r}$の大きさに対する割合で比べる．$\boldsymbol{r}$は第16層より後の層と正規化で$\boldsymbol{h}$から計算されるので，相対感度は，$\boldsymbol{h}$の微小な変化に対する$\boldsymbol{r}$の変化率を並べたヤコビ行列$\boldsymbol{J}$を用いて定義できる．$\boldsymbol{J}$の$(k, l)$成分は$\partial r_k / \partial h_l$である．$\boldsymbol{h}$に微小な変化$\boldsymbol{\delta}$を加えると，$\boldsymbol{r}$の$\boldsymbol{u}$方向の成分は一次近似で$\boldsymbol{u}^{\top} \boldsymbol{J} \boldsymbol{\delta}$だけ変わり，その大きさは最大で$\| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{\delta} \|$となる．よって，相対感度$e$は，$e = (\| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{\delta} \| / \| \boldsymbol{r} \|) / (\| \boldsymbol{\delta} \| / \| \boldsymbol{h} \|) = \| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{h} \| / \| \boldsymbol{r} \|$と与えられる．すなわち，$e$が大きいほど，$\boldsymbol{h}$のわずかな変化で回答が変わりやすい．評価では，$m$ごとに，$m$個の$\boldsymbol{u}$と評価データの64問の全組で$e$を平均した．
+学習に用いない\texttt{testdev\_balanced}の12,578問に対し，三つの指標を用いて評価した．第一の指標は，GQA公式の評価プログラムによる正解率である．第二の指標は読み取り精度であり，潜在特徴$\boldsymbol{h}$からタスク署名を予測する線形分類器を10問以上あるタスク署名の問の約半数で学習し，残りで測った正解率である．第三の指標は相対感度$e$である．線形分類器で読み取れる情報が回答の生成に用いられるとは限らない\cite{elazar}ため，回答の生成が潜在特徴$\boldsymbol{h}$に依存する度合いを測る．回答は1トークンずつ生成され，以降のトークンは最初のトークンに続けて決まるので，最初のトークンの出力に着目する．まず，入力末尾のトークンの第32層の出力を正規化したベクトル$\boldsymbol{r}$を考える．出力層は，各行が語彙中の一つのトークンに対応する重み行列$\boldsymbol{W}$を$\boldsymbol{r}$に掛け，各トークンの出現確率を計算する．そして，計算された出現確率が最も高いトークンを推論結果として出力する．評価データの正解の回答の最初のトークン1,085種を候補と呼ぶ．各候補の出現確率は，$\boldsymbol{W}$の対応する行と$\boldsymbol{r}$の内積から計算される．そのため，候補に対応する$\boldsymbol{W}$の行どうしの差が大きい方向に$\boldsymbol{r}$が変化すると，出力される候補もまた変化しやすい．そこで，出力される候補の変化の度合いを調べるために，$\boldsymbol{r}$の変化の方向$\boldsymbol{u}$を考える．ここでは，候補に対応する$\boldsymbol{W}$の行の上位$m$個の主成分に対応する主成分ベクトルの方向を採用する．$\boldsymbol{r}$は第16層より後の層および正規化で$\boldsymbol{h}$により表現されるので，相対感度は，$\boldsymbol{h}$の微小な変化に対する$\boldsymbol{r}$の変化率を並べたヤコビ行列$\boldsymbol{J}$を用いて定義できる．ここで，$\boldsymbol{J}$の$(k, l)$成分は$\partial r_k / \partial h_l$である．$\boldsymbol{h}$に微小な変化$\boldsymbol{\delta}$を加えると，$\boldsymbol{r}$の$\boldsymbol{u}$方向の成分は一次近似することで$\boldsymbol{u}^{\top} \boldsymbol{J} \boldsymbol{\delta}$変化する．すなわち，その大きさは最大で$\| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{\delta} \|$となる．よって，$e = (\| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{\delta} \| / \| \boldsymbol{r} \|) / (\| \boldsymbol{\delta} \| / \| \boldsymbol{h} \|) = \| \boldsymbol{J}^{\top} \boldsymbol{u} \| \, \| \boldsymbol{h} \| / \| \boldsymbol{r} \|$と与えられる．すなわち，$e$が大きいほど，$\boldsymbol{h}$のわずかな変化に伴い回答が変わりやすいことを意味する．評価では，$m$ごとに，$m$個の$\boldsymbol{u}$と評価データの64問の全組で$e$を平均した$\overline{e}$を用いた．
 
 \subsection{結果}
 \label{sec:results}
@@ -153,12 +153,12 @@
  & baseline & \textbf{proposal} \\\hline
 正解率（\%） & $53.54{\pm}0.57$ & $53.49{\pm}0.31$ \\
 読み取り精度（\%） & 82.9 & \textbf{95.9} \\\hline
-相対感度$e$（$m = 8$） & 0.4023 & 0.2883 \\
-相対感度$e$（$m = 128$） & 0.2415 & 0.1973 \\\hline
+相対感度$\overline{e}$（$m = 8$） & 0.4023 & 0.2883 \\
+相対感度$\overline{e}$（$m = 128$） & 0.2415 & 0.1973 \\\hline
 \end{tabular}
 \end{table}
 
-表\ref{tab:main}に評価結果を示す．両手法の正解率の差は平均$-0.06$ポイントで，95\%信頼区間は0を含むので，正解率に有意な差はない．一方，proposalの読み取り精度は13.0ポイント高く，類似する手続きの特徴が一貫した形で内部表現に表れた．また，proposalの相対感度$e$は$m = 8$，128のいずれでも18--28\%低く，回答の選択が潜在特徴$\boldsymbol{h}$に依存する度合いは下がった．これは，内部表現に表れた手続きの特徴が回答の生成に十分用いられていないことを示唆する．以上の結果より，提案手法は正解率を保ったまま手続きの特徴を内部表現に持たせられるが，回答の性能の向上には至らなかった．正解率を高めるには，手続きの特徴を回答の生成に用いる工夫が必要になると考えられる．
+表\ref{tab:main}に評価結果を示す．両手法の正解率の差は平均$-0.06$ポイントで，95\%信頼区間は0を含むので，正解率に有意な差はない．一方，proposalの読み取り精度は13.0ポイント高く，類似する手続きの特徴が一貫した形で内部表現に表れた．また，proposalの相対感度$\overline{e}$は$m = 8$，128のいずれでも18--28\%低く，回答の選択が潜在特徴$\boldsymbol{h}$に依存する度合いは下がった．これは，内部表現に表れた手続きの特徴が回答の生成に十分用いられていないことを示唆する．以上の結果より，提案手法は正解率を保ったまま手続きの特徴を内部表現に持たせられるが，回答の性能の向上には至らなかった．正解率を高めるには，手続きの特徴を回答の生成に用いる工夫が必要になると考えられる．
 
 \section{おわりに}
 \label{sec:conclusion}
