@@ -1,6 +1,8 @@
 # このリポジトリで作業するときの決まり
 
-## 学会予稿（papers/pcsj-imps-2026/）は，いつでも提出できる形に保つ
+## 学会予稿（papers/pcsj-imps-2026/）は，締切までは提出できる形に保ち，締切後は変えない
+
+- 原稿の締切は 2026-10-16 23:59 JST で，提出版は教授の了承を得た 70fb342 である．締切を過ぎたら `manuscript.tex`・`manuscript.pdf` を変えない——アップロードした PDF とリポジトリの組版結果を一致させておくためである．下の検査フックは，締切後に誤って触ったときに気づくために残す．
 
 - 書式の定めは公式テンプレート [papers/pcsj-imps-2026/template/](papers/pcsj-imps-2026/template/) と [papers/principles.md](papers/principles.md) にある．手元の `pcsjimps-j.sty` は公式と同一でなければならず，書き換えない．
 - `manuscript.tex` や `pcsjimps-j.sty` を変えたら，必ず [papers/pcsj-imps-2026/check.py](papers/pcsj-imps-2026/check.py) を通す．PostToolUse フック（[.claude/settings.json](.claude/settings.json)）が Edit・Write・Bash の後に自動で走り，不合格なら理由を返す．**不合格のまま作業を終えない．** 合格した組版が `manuscript.pdf` であり，これが提出物である．
