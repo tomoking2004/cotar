@@ -2,7 +2,7 @@
 
 **「視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習に関する検討」の実装．**（`cotar` はリポジトリ名でありパッケージ名．手法や研究の名前ではない．）
 
-GQA の各質問には functional program が付いている．その**演算子列**（例 `select > relate > query`）を**タスク署名**と呼び，署名の一致をもって**タスク類似性**とする．署名が一致するタスクどうしの中間層表現を supervised contrastive loss で引き寄せる——これが**内部表現整合**である．言語モデリング損失への補助項として足すだけで，掴むのは生の hidden state そのもの．
+GQA の各質問には functional program が付いている．その**演算子列**（例 `select > relate > query`）を**タスク署名**と呼び，署名の一致をもって**タスク類似性**とする．署名が一致するタスクどうしの中間層表現を supervised contrastive loss で引き寄せる——これが**内部表現整合**である．言語モデル損失への補助項として足すだけで，掴むのは生の hidden state そのもの．
 
 問いと結果は研究文書にある．**この README は「どう動かすか」だけを扱う．**
 
@@ -97,7 +97,7 @@ python scripts/summarize_sweep.py
 
 **逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．持ってくるなら，実行機の `runs/` の写しを USB（`E:\runs`）に置くか，置き場所を `$COTAR_RUNS_ROOT` で名指しする——重みを読む側は run ごとに，`$COTAR_RUNS_ROOT`・ローカルの `runs/`・`E:\runs` の順に探す（`cotar/config.py` の `run_roots`）．
 
-`snapshots/` には4つのバッチが在る．研究文書が報告するのは `20260829-134859` の9 run（3群 × 3 seed）で，分析スクリプトは `summarize_sweep.py` を除いてこれしか読まない．`20260830-223056` の2 run は層を第8層・第24層に移した試走（研究文書 §A.5）で，`summarize_sweep.py` だけが読む．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
+`snapshots/` には4つのバッチが在る．研究文書が報告するのは `20260829-134859` の9 run（3群 × 3 seed）で，分析スクリプトは `summarize_sweep.py` を除いてこれしか読まない．`20260830-223056` の2 run は層を第8層・第24層に移した試走（研究文書 §A.5）で，`summarize_sweep.py` だけが読む．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) の前期公開（2026-07-24）のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
 
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回り，**この checkout の外が決めるもの**はバナーが引き受ける．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
