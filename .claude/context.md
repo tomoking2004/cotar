@@ -486,4 +486,5 @@ $$
 - B.-K. Lee ら「VLsI: Verbalized Layers-to-Interactions from Large to Small Vision Language Models」CVPR 2025．<https://arxiv.org/abs/2412.01822>
 - T. McGrath ら「The Hydra Effect: Emergent Self-repair in Language Model Computations」2023．<https://arxiv.org/abs/2307.15771>
 - W. Gurnee ら「Verbalizable Representations Form a Global Workspace in Language Models」Transformer Circuits Thread 2026．<https://transformer-circuits.pub/2026/workspace/index.html>
+- A. Marafioti ら「SmolVLM: Redefining Small and Efficient Multimodal Models」2025．<https://arxiv.org/abs/2504.05299>
 - SmolVLM-500M-Instruct（使用モデル）．<https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct>
