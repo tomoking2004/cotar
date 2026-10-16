@@ -6,7 +6,6 @@
 % 本文の執筆は，残りの測定（特に表現の頑健性，context.md §8.1）が済んでから行う．
 \documentclass[report]{jsbook}
 \usepackage{amsmath,amssymb}% 本文の数式は context.md の形をそのまま使う（\mathbb・\varnothing に要る）
-\usepackage{xurl}% url 互換で，URL をどこでも改行できる（参考文献の Underfull を防ぐ）
 \usepackage[dvipdfmx,hidelinks,bookmarksnumbered]{hyperref}
 \usepackage{pxjahyper}
 \hypersetup{pdftitle={視覚言語モデルにおけるタスク類似性に基づく内部表現整合学習に関する検討},
@@ -68,16 +67,17 @@
 % ---------------- 参考文献 ----------------
 % context.md の参考文献と references/ のノートに対応．並びは本文での初出順（../principles.md）．
 \begin{thebibliography}{99}
-\bibitem{wani} F. A. Wani et al.: ``Same Answer, Different Representations: Hidden Instability in VLMs,'' arXiv:2602.06652, 2026.
-\bibitem{elazar} Y. Elazar et al.: ``Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals,'' TACL, vol. 9, pp. 160--175, 2021.
-\bibitem{vlsi} B.-K. Lee et al.: ``VLsI: Verbalized Layers-to-Interactions from Large to Small Vision Language Models,'' CVPR, 2025.
-\bibitem{belinkov} Y. Belinkov: ``Probing Classifiers: Promises, Shortcomings, and Advances,'' Computational Linguistics, vol. 48, no. 1, pp. 207--219, 2022.
-\bibitem{sahoo} S. Sahoo et al.: ``Linear Probes Detect Task Format, Not Reasoning Mode in Language Model Hidden States,'' 6th Workshop on Trustworthy NLP, ACL 2026.
-\bibitem{supcon} P. Khosla et al.: ``Supervised Contrastive Learning,'' NeurIPS, 2020.
-\bibitem{gqa} D. A. Hudson and C. D. Manning: ``GQA: A New Dataset for Real-World Visual Reasoning and Compositional Question Answering,'' CVPR, 2019.
-\bibitem{smolvlm} SmolVLM-500M-Instruct, \url{https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct}
-\bibitem{hydra} T. McGrath et al.: ``The Hydra Effect: Emergent Self-repair in Language Model Computations,'' arXiv:2307.15771, 2023.
-\bibitem{workspace} W. Gurnee et al.: ``Verbalizable Representations Form a Global Workspace in Language Models,'' Transformer Circuits Thread, 2026.
+\bibitem{wani} F. A. Wani {\it et al.}, ``Same Answer, Different Representations: Hidden Instability in VLMs,'' arXiv:2602.06652, 2026.
+\bibitem{elazar} Y. Elazar {\it et al.}, ``Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals,'' {\it TACL}, vol. 9, pp. 160--175, 2021.
+\bibitem{vlsi} B.-K. Lee {\it et al.}, ``VLsI: Verbalized Layers-to-Interactions from Large to Small Vision Language Models,'' in Proc. {\it IEEE/CVF CVPR}, 2025.
+\bibitem{belinkov} Y. Belinkov, ``Probing Classifiers: Promises, Shortcomings, and Advances,'' {\it Computational Linguistics}, vol. 48, no. 1, pp. 207--219, 2022.
+\bibitem{sahoo} S. Sahoo {\it et al.}, ``Linear Probes Detect Task Format, Not Reasoning Mode in Language Model Hidden States,'' in Proc. {\it 6th Workshop on Trustworthy NLP}, 2026.
+\bibitem{supcon} P. Khosla {\it et al.}, ``Supervised Contrastive Learning,'' in Proc. {\it NeurIPS}, 2020.
+\bibitem{gqa} D. A. Hudson and C. D. Manning, ``GQA: A New Dataset for Real-World Visual Reasoning and Compositional Question Answering,'' in Proc. {\it IEEE/CVF CVPR}, 2019.
+% arXiv 番号の前で改行を許す．許さないと，番号が丸ごと次の行へ送られ，題名の行が Underfull になる
+\bibitem{smolvlm} A. Marafioti {\it et al.}, ``SmolVLM: Redefining Small and Efficient Multimodal Models,'' arXiv:\allowbreak 2504.05299, 2025.
+\bibitem{hydra} T. McGrath {\it et al.}, ``The Hydra Effect: Emergent Self-repair in Language Model Computations,'' arXiv:2307.15771, 2023.
+\bibitem{workspace} W. Gurnee {\it et al.}, ``Verbalizable Representations Form a Global Workspace in Language Models,'' {\it Transformer Circuits Thread}, 2026.
 \end{thebibliography}
 
 % ---------------- 付録 ----------------
