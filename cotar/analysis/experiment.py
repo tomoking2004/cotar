@@ -12,6 +12,7 @@ happen on every read instead of being remembered by each caller.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -20,6 +21,7 @@ from typing import Any
 import torch
 
 from ..config import cfg
+from ..models import SmolVLM, build_smolvlm
 from ..training import ARMS, Arm
 from ..utils import load_json
 
@@ -41,6 +43,7 @@ __all__ = [
     "require_checkpoints",
     "run_config",
     "run_id",
+    "trained_model",
     "training_batches",
     "training_duration",
     "weights",
@@ -319,6 +322,32 @@ def weights(
         f"{path}: found neither an lm_head nor an embedding to use as the output layer.\n"
         f"  models: {sorted(states)}"
     )
+
+
+def trained_model(
+    arm: Arm,
+    seed: int,
+    layers: int | Sequence[int],
+    device: str,
+    variant: str = "",
+    timestamp: str = TIMESTAMP,
+) -> tuple[SmolVLM, Weights]:
+    """One run's model, rebuilt from its checkpoint and reading the layers asked for.
+
+    The weights are returned beside the model because they are already in hand: an
+    analysis that also wants the output layer should not open the 6GB blob a second time
+    to get it. Evaluation mode, because what is being measured is the network as it
+    answers rather than as it trains — and because the model turns gradient checkpointing
+    on for CUDA, which the layers apply only while training.
+
+    `layers` is the caller's, not the run's: the run constrained one layer, and an
+    analysis may read that one, or that one beside another, without changing which it
+    was. The base checkpoint is asserted against what the run recorded (`MODEL`).
+    """
+    trained = weights(arm, seed, variant, timestamp, model=MODEL)
+    vlm, _ = build_smolvlm("500M", layers=layers)
+    vlm.load_state_dict(trained.parameters)
+    return vlm.to(device).eval(), trained
 
 
 def _state_dicts(blob: dict[str, Any], path: Path) -> dict[str, dict[str, torch.Tensor]]:

@@ -25,9 +25,9 @@ from torch.utils.data import DataLoader
 
 from ..config import cfg
 from ..data import build_gqa_dataloader
-from ..models import SmolVLM, build_smolvlm
+from ..models import SmolVLM
 from ..types import VLMProcessor
-from .experiment import ARMS, MODEL, SEEDS, Arm, constrained_layer, weights
+from .experiment import ARMS, SEEDS, Arm, constrained_layer, trained_model
 
 __all__ = [
     "jacobian_batches",
@@ -54,14 +54,11 @@ def load_for_jacobian(
 ) -> tuple[SmolVLM, torch.Tensor, str]:
     """One run's trained model, ready to differentiate, and its output layer.
 
-    Evaluation mode, because what is being linearised is the network as it answers rather
-    than as it trains — and because the model turns gradient checkpointing on for CUDA,
-    which the layers apply only while training.
+    The model reads the one layer being differentiated towards, which is what lets
+    `readout_from_site` know which hidden state is the site.
     """
-    trained = weights(arm, seed, model=MODEL)
-    vlm, _ = build_smolvlm("500M", layers=(layer,))
-    vlm.load_state_dict(trained.parameters)
-    return vlm.to(device).eval(), trained.output_weight, trained.output_layer
+    vlm, trained = trained_model(arm, seed, (layer,), device)
+    return vlm, trained.output_weight, trained.output_layer
 
 
 def jacobian_batches(
