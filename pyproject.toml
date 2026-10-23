@@ -12,7 +12,10 @@ dependencies = [
     # errors without it. Nothing here imports it, and the 500M this study runs never
     # does — so grep says unused and it is not.
     "num2words",
-    "pillow",
+    # 10.1 is where `ImageFont.load_default` grew a size and started returning a scalable
+    # font; the overlay perturbations (cotar/analysis/perturbations.py) size their text
+    # to the box with it.
+    "pillow>=10.1",
     "schedulefree",
     "torch",
     # Imported unconditionally by transformers' Idefics3 image processor, which is the

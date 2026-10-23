@@ -240,12 +240,30 @@ class SmolVLM(nn.Module):
         """
         if self.layers is None:
             return
-        depth = self._model.config.get_text_config().num_hidden_layers
+        depth = self.depth
         if out_of_range := [layer for layer in self.layers if not -depth - 1 <= layer <= depth]:
             raise ValueError(
                 f"Layers {out_of_range} are outside this model: it has {depth} blocks, so "
                 f"hidden states run 0 (the embedding) to {depth} (the last block's output)."
             )
+        # Negative indices count from the end, as they do into `hidden_states`, and are
+        # resolved here so that `layers` always names each layer by its block number:
+        # the representation's layer axis is labelled from it, and a label of -1 would
+        # mean a different block in a model of a different depth.
+        self.layers = tuple(layer if layer >= 0 else depth + 1 + layer for layer in self.layers)
+        if len(set(self.layers)) != len(self.layers):
+            raise ValueError(f"`layers` names the same block twice once resolved: {self.layers}.")
+
+    @property
+    def depth(self) -> int:
+        """How many transformer blocks the language model has — 32 for SmolVLM-500M.
+
+        Also the index of the last hidden state: `hidden_states[depth]` is the output of
+        the final block after the final normalisation, which is the vector the output
+        layer reads. Exposed so that a caller who wants that vector can name it by the
+        model's own count rather than by a number that is right for one size only.
+        """
+        return int(self._model.config.get_text_config().num_hidden_layers)
 
     @property
     def device(self) -> torch.device:

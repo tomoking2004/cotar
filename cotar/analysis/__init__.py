@@ -2,10 +2,22 @@
 
 Nothing here trains the model. The nine runs left their representations, predictions
 and weights behind, and every question the study asks of them afterwards is asked
-through this package — from a laptop, except `jacobian`, which rebuilds the model from
-the saved weights to differentiate it and so needs them and a GPU.
+through this package — from a laptop, except `jacobian` and `drift`, which rebuild the
+model from the saved weights (to differentiate it, and to run it on perturbed images) and
+so need them and a GPU.
 """
 
+from .drift import (
+    ANY,
+    CONTROLS,
+    Pass,
+    RunDrift,
+    cosine_distance,
+    family_names,
+    measure_run,
+    run_pass,
+    summarize_run,
+)
 from .experiment import (
     ARMS,
     CHECKPOINT_NAME,
@@ -24,6 +36,7 @@ from .experiment import (
     require_checkpoints,
     run_config,
     run_id,
+    trained_model,
     training_batches,
     training_duration,
     weights,
@@ -33,6 +46,18 @@ from .jacobian import (
     load_for_jacobian,
     site,
     vjp_at_site,
+)
+from .perturbations import (
+    BACKGROUND,
+    DIRECTIVES,
+    FAMILIES,
+    PIXEL_STEPS,
+    ROTATIONS,
+    SCALE,
+    Variant,
+    image_swap,
+    other_item_partners,
+    wani_variants,
 )
 from .probing import (
     FORMAT_FEATURES,
@@ -78,13 +103,21 @@ from .subspaces import (
 )
 
 __all__ = [
+    "ANY",
     "ARMS",
+    "BACKGROUND",
     "CHECKPOINT_NAME",
     "CONFIDENCE",
+    "CONTROLS",
     "CONTROL_DRAWS",
+    "DIRECTIVES",
+    "FAMILIES",
     "FORMAT_FEATURES",
     "MIN_COUNT",
     "MODEL",
+    "PIXEL_STEPS",
+    "ROTATIONS",
+    "SCALE",
     "SEEDS",
     "SPLIT_SEED",
     "TIMESTAMP",
@@ -92,23 +125,31 @@ __all__ = [
     "WHERE",
     "Arm",
     "PairedDifference",
+    "Pass",
+    "RunDrift",
     "Summary",
+    "Variant",
     "Weights",
     "analysis_path",
     "answer_token_rows",
     "checkpoint_path",
     "classify",
     "constrained_layer",
+    "cosine_distance",
     "delta",
     "eval_report",
+    "family_names",
     "fit_linear",
     "format_matrix",
     "gain",
+    "image_swap",
     "inside",
     "jacobian_batches",
     "keep_frequent",
     "load_for_jacobian",
     "majority_floor",
+    "measure_run",
+    "other_item_partners",
     "output_basis",
     "outside",
     "paired_difference",
@@ -123,6 +164,7 @@ __all__ = [
     "residualize",
     "run_config",
     "run_id",
+    "run_pass",
     "scorable",
     "scores",
     "seed_deltas",
@@ -131,11 +173,14 @@ __all__ = [
     "splitter",
     "summarize",
     "summarize_places",
+    "summarize_run",
     "surface_matrices",
     "surface_vocabularies",
     "t_critical",
+    "trained_model",
     "training_batches",
     "training_duration",
     "vjp_at_site",
+    "wani_variants",
     "weights",
 ]

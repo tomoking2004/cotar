@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from collections import Counter, defaultdict
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypedDict
@@ -19,6 +19,7 @@ __all__ = [
     "Batch",
     "GQADataset",
     "GQASample",
+    "ImageTransform",
     "MPerSignatureSampler",
     "build_gqa_dataloader",
     "task_signature",
@@ -42,10 +43,20 @@ class GQASample:
     answer: str
     program: list[dict[str, Any]]
     question_id: str
+    image_id: str
 
     @property
     def signature(self) -> str:
         return task_signature(self.program)
+
+
+# What a sample's image is replaced with before it is encoded. Given the whole sample
+# rather than the image alone because a transform may need to know *which* sample it is
+# handed: one that draws a parameter per question has to draw the same one every time
+# that question comes round, and one that swaps the image for another has to know which
+# image not to pick. The question text is never touched — the loader hands the transform
+# the image's slot and nothing else.
+ImageTransform = Callable[[GQASample], Image.Image]
 
 
 class GQADataset(Dataset[GQASample]):
@@ -58,9 +69,11 @@ class GQADataset(Dataset[GQASample]):
         limit: int | None = None,
         group_by_signature: bool = False,
         min_samples_per_signature: int = 2,
+        transform: ImageTransform | None = None,
         logger: UnifiedLogger | None = None,
     ) -> None:
         self.images_dir = Path(images_dir)
+        self.transform = transform
         raw: dict[str, dict[str, Any]] = load_json(questions_path)
         # Enumerate the image directory once instead of probing each question's
         # image: train_balanced alone asks 943k questions about 72k images, so a
@@ -178,13 +191,17 @@ class GQADataset(Dataset[GQASample]):
 
     def __getitem__(self, idx: int) -> GQASample:
         record = self.samples[idx]
-        return GQASample(
+        sample = GQASample(
             image=Image.open(self.images_dir / f"{record['image_id']}.jpg").convert("RGB"),
             question=record["question"],
             answer=record["answer"],
             program=record["program"],
             question_id=record["question_id"],
+            image_id=record["image_id"],
         )
+        if self.transform is not None:
+            sample.image = self.transform(sample)
+        return sample
 
 
 class MPerSignatureSampler(Sampler[list[int]]):
@@ -298,6 +315,7 @@ def build_gqa_dataloader(
     with_labels: bool = False,
     require_program: bool = False,
     limit: int | None = None,
+    transform: ImageTransform | None = None,
     num_workers: int = 0,
     pin_memory: bool | None = None,
     seed: int | None = 0,
@@ -314,6 +332,7 @@ def build_gqa_dataloader(
         limit=limit,
         group_by_signature=group_by_signature,
         min_samples_per_signature=min_samples_per_signature,
+        transform=transform,
         logger=logger,
     )
     loader_kwargs: dict[str, Any] = {
