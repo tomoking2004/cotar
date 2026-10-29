@@ -13,7 +13,7 @@ GQA の各質問には functional program が付いている．その**演算子
 | [.claude/skills/](.claude/skills/) | 作業の手順（仕上げ・記録・長い実行）を定めた自作のスキル．出どころと使い方は [CLAUDE.md](CLAUDE.md) |
 | [references/](references/) | 依拠する論文の要約．1本につき1ファイル |
 | [papers/](papers/) | 論文の原稿（学会予稿・修士論文）．組版の決め事は [papers/principles.md](papers/principles.md)，予稿の書式検査は `papers/pcsj-imps-2026/check.py` |
-| [presentations/](presentations/) | 発表の成果物（ゼミ・学会）．作った時点の記録であって，最新の結果ではない |
+| [presentations/](presentations/) | 発表の成果物（ゼミ・学会）と，その作り方の原則（`principles.md`）．成果物は作った時点の記録であって，最新の結果ではない |
 | [snapshots/](snapshots/) | 各 run が残した記録．重みを除いた写しなので commit できる |
 | [analyses/](analyses/) | run をまたいで測った結果．研究文書の数値の出どころ |
 
