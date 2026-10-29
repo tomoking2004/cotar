@@ -1,11 +1,10 @@
 """Ask whether alignment made the representation steadier under image perturbation.
 
 context.md §1.1 starts from Wani et al.'s observation that a VLM's hidden state can move far
-while its answer stays put, and §8.1 is the question that observation leaves for this
+while its answer stays put, and §A.6 is the question that observation leaves for this
 study: when the image is perturbed in ways that preserve the answer, does the aligned
-representation move less than the unaligned one, the same, or more? Nothing so far has
-measured it — every analysis before this one read the representations of the unperturbed
-report set.
+representation move less than the unaligned one, the same, or more? Every analysis before
+this one read the representations of the unperturbed report set.
 
 This measures it the way the paper does (see `cotar.analysis.drift` and
 `cotar.analysis.perturbations`): one pass over the report set per perturbed variant and

@@ -1,5 +1,5 @@
 """How far a representation moves when the image is perturbed, read against how far an
-unrelated image would move it — the measurement context.md §8.1 asks for.
+unrelated image would move it — the measurement of context.md §A.6.
 
 Wani et al. (arXiv:2602.06652) measure the cosine distance 1 − cos between the hidden state
 of a base input and that of a perturbed one, and read it against a control: the distances

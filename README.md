@@ -47,10 +47,11 @@ python scripts/stratify_by_frequency.py    # 正解率を署名の頻度で層�
 python scripts/probe_bypass.py             # 整合した構造が出力の読む方向に載っているか（§A.4 第1段）
 python scripts/probe_bypass_pullback.py    # その方向を第16層へ引き戻して問い直す（§A.4 第2段）
 python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼っているか（§A.4 第3段）
-python scripts/probe_drift.py              # 画像を加工したとき表現がどれだけ動くか（§8.1）
+python scripts/probe_drift.py              # 画像を加工したとき表現がどれだけ動くか（§A.6）
+python scripts/normalize_drift.py          # その距離を，対照の分布の形と別の物差しで読み直す（§A.6）
 ```
 
-**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る7本は保存済みのファイルを読み直すだけなので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
+**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る8本は保存済みのファイルを読み直すだけなので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
 
 `train.py` と `sweep.py` は run の建て方を共有する——`cotar/training/run.py` の `Settings` と `run_training` である．既定値が報告した実験の値なので，**sweep は変える設定だけを書き，残りが同じであることが目で見える．** どちらも冒頭の `DEBUG = True` で全分割を切り詰めた短い試走になり，数分で配線を確かめられる．
 
@@ -62,27 +63,23 @@ python scripts/probe_drift.py              # 画像を加工したとき表現�
 
 ## 次の一手を走らせる
 
-**研究文書 §8 の四つのうち，スクリプトが在るのは §8.1 と §8.4 である．** §8.1（表現の頑健性）は `probe_drift.py` で，9 run の重みと GPU を要する——**書いてあるが，まだ走らせていない**（走らせれば `analyses/probe-drift.json` と `analyses/probe-drift.pt` が結果になる）．§8.2（稀な署名を表現の側で）にはまだスクリプトが無く，§8.3（別のラベル）は新しい学習を要する．
+**研究文書 §8 の四つのうち，そのまま回せるのは §8.4 である．** §8.1（表現の頑健性の向きを決める）は，乱数種 45・46 を足した3群の学習と，その重みでの `probe_drift.py` を要する．学習は `train.py` の `SEEDS` を変えれば回るが，分析の側は乱数種3つを前提にしている——`cotar/analysis/experiment.py` の `SEEDS` と，自由度2だけを実装した `analysis/statistics.py` の `t_critical`（自由度4の係数が要る）を先に直す．§8.2（稀な署名を表現の側で）にはまだスクリプトが無く，§8.3（別のラベル）は新しい学習を要する．
+
+**画像を加工したときの表現の動き（研究文書 §A.6）は測ってある．** `probe_drift.py` を研究室機（RTX 5090）で `LIMIT = None` のまま走らせ，`analyses/probe-drift.json`（run ごとの集計と，群間の対にした差）と `analyses/probe-drift.pt`（問ごとの距離・答えの変化・正誤）を書いた．1 run は 25 pass で約32分，9 run で約4時間53分だった．`normalize_drift.py` は `.pt` だけを読むのでノートPCで回る．
 
 **「使われていない」の測定（研究文書 §A.4）は3段とも済んでいる**——`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` が `analyses/` に結果を書いているので，走らせ直す必要はない．
 
 ```bash
-# 0. 重みが在るか（§8.1 はこれを要求する．無ければ即座に落ちて場所を告げる）
-python -c "from cotar.analysis import require_checkpoints; require_checkpoints(); print('9 checkpoints found')"
-
-# 1. §8.1 を測る — まず probe_drift.py 冒頭の LIMIT を 64 にして数分の試走．配線を確かめてから None に戻して本走
-python scripts/probe_drift.py
-
-# 2. §8.4 を振る — sweep.py 末尾の VARIANTS で強さ（LAMBDA_VARIANTS）か層（LAYER_VARIANTS）を選ぶ．
+# §8.4 を振る — sweep.py 末尾の VARIANTS で強さ（LAMBDA_VARIANTS）か層（LAYER_VARIANTS）を選ぶ．
 #    まず DEBUG = True で数分の試走．配線を確かめてから本走
 python scripts/sweep.py
 #    print された timestamp を summarize_sweep.py の SWEEP_TIMESTAMP に，走らせた variant を SWEPT に入れてから
 python scripts/summarize_sweep.py
 ```
 
-**手順1は，1 run につき 25 回 testdev を通す**——加工 23 通り，対照（同じ質問に別の画像）1回，加工前1回．各回は生成を含めて，学習時の testdev 評価と同じ処理である（`log.txt` によれば RTX 5090 で約 91 秒）．したがって 1 run 約 40 分，**9 run で約6時間**．加工の定義は `cotar/analysis/perturbations.py` の冒頭に，Wani らの原文で決まっている部分とこちらで決めた部分を分けて書いてある．
+**`probe_drift.py` を走らせ直すなら**，まず重みが在るかを確かめる（`python -c "from cotar.analysis import require_checkpoints; require_checkpoints()"`．無ければ即座に落ちて場所を告げる）．冒頭の `LIMIT` を 64 にすれば数分の試走になる．1 run につき 25 回 testdev を通す——加工 23 通り，対照（同じ質問に別の画像）1回，加工前1回で，各回は生成を含めて学習時の testdev 評価と同じ処理である．加工の定義は `cotar/analysis/perturbations.py` の冒頭に，Wani らの原文で決まっている部分とこちらで決めた部分を分けて書いてある．
 
-**手順2は重みを要さない．** 層は振ってある——`20260830-223056` の2 run（第8層・第24層，seed 42 の1本ずつ）で，`summarize_sweep.py` はいまこれを読む（研究文書 §A.5）．強さはまだで，`VARIANTS = LAMBDA_VARIANTS` に変えれば $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本ずつ回す（既に測ってある $\lambda = 0$ と 0.1 は走らせ直さない）ので約9時間．**強さと層を同時に振らないこと**——一つの曲線に二つの説明が混ざる．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる．
+**§8.4 は重みを要さない．** 層は振ってある——`20260830-223056` の2 run（第8層・第24層，seed 42 の1本ずつ）で，`summarize_sweep.py` はいまこれを読む（研究文書 §A.5）．強さはまだで，`VARIANTS = LAMBDA_VARIANTS` に変えれば $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本ずつ回す（既に測ってある $\lambda = 0$ と 0.1 は走らせ直さない）ので約9時間．**強さと層を同時に振らないこと**——一つの曲線に二つの説明が混ざる．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる．
 
 ## 結果を読む
 
@@ -155,9 +152,10 @@ scripts/
   probe_bypass_pullback.py  その方向を第16層へ引き戻して同じ判定を掛け直す（要 checkpoints・GPU）
   probe_dependence.py       答えが第16層にどれだけ頼っているかを群間で比べる（要 checkpoints・GPU）
   probe_drift.py            画像を加工したとき表現がどれだけ動くかを群間で比べる（要 checkpoints・GPU）
+  normalize_drift.py        その距離を，対照の分布の形と別の物差しで読み直す
 ```
 
-**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の10本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，残りはノートPCで完結する．
+**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，残りはノートPCで完結する．
 
 **機構は，この研究の中身に依存しない．** 別の研究に持っていくとき差し替わるのは3つだけ——**ファイルがどこにあるか**（`config.py`），**1 run をどう建てるか**（`training/run.py`），**どの実験を報告するか**（`analysis/experiment.py` の `TIMESTAMP`）．残りはすべてパスを引数で受け取り，実験を名指ししない．だから `cotar/` で `cfg` を import するのは後の2つと，済んだ実験の重みを読み直す `analysis/jacobian.py` だけで，機構は一つも import しない——`data`・`models`・`types`・`pairwise` と，`training/` の残り（`trainer.py`・`losses.py`・`metrics.py`・`logit_scale.py`）のどこにも `cfg` は無い．`cotar/__init__.py` が何も再輸出しないのも同じ理由で，`import cotar` がマシン固有のパスを束縛しないためである．
 
@@ -197,7 +195,8 @@ scripts/
 | 「使われていない」の測定・第1段（§A.4） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
 | 「使われていない」の測定・第2段（§A.4） | `probe_bypass_pullback.py`——部分空間 $U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
 | 「使われていない」の測定・第3段（§A.4） | `probe_dependence.py`——同じベクトル–ヤコビ積の**長さ**を，第16層の表現と読み出しの大きさで割って無次元にし（相対感度），3群で比べる．第2段が正規直交化のときに捨てている量である．プロンプト本数の収束も同じ逆伝播から出す |
-| 表現の頑健性の測定（§8.1） | `probe_drift.py`——Wani らの加工（`analysis/perturbations.py`．付録 A.6 の族と値をそのまま，書かれていない部分はこちらで決めて冒頭に明記）を testdev の画像に施し，加工前後の第16層・第32層の表現のコサイン距離を，同じ質問に別の画像を付けた対照の平均に対する比と Cohen's d で出す（`analysis/drift.py`）．答えが変わった対の割合（IFR）・変わった問の割合（IV）・答えが変わらなかった対だけの比も同じ pass から出す．Wani らの形の対照（別の問と別の画像）は加工前の表現だけから出す．**未実行** |
+| 表現の頑健性の測定（§A.6） | `probe_drift.py`——Wani らの加工（`analysis/perturbations.py`．付録 A.6 の族と値をそのまま，書かれていない部分はこちらで決めて冒頭に明記）を testdev の画像に施し，加工前後の第16層・第32層の表現のコサイン距離を，同じ質問に別の画像を付けた対照の平均に対する比と Cohen's d で出す（`analysis/drift.py`）．答えが変わった対の割合（IFR）・変わった問の割合（IV）・答えが変わらなかった対だけの比も同じ pass から出す．Wani らの形の対照（別の問と別の画像）は加工前の表現だけから出す．d の標準偏差は `metrics.cohens_d`（Wani らはプールの仕方を書いていない） |
+| 対照の分布の形，d の分解，別の物差し（§A.6） | `normalize_drift.py`——`probe-drift.pt` の問ごとの距離だけを読む．対照の変動係数・歪度・分位点の比，d の合わせた分散に対照が占める割合，標本数で重みを付けない d と Glass の Δ，順位による重なり，中央値どうしの比・問ごとの比の幾何平均・上位1%を除いた比・同署名の距離に対する比（同署名の類似度は `summarize-runs.json` から読む）．群間は他と同じく `analysis/statistics.py` を通す |
 | 分割の排他性・署名の分布・対を組めない問・含意対との一致・答えの語彙・演算子が自分の名を質問文に置く率（§3.1・§4.1・§7・§A.4） | `audit_dataset.py`——学習も GPU も要らず，質問ファイルだけから全部を一度に出す．含意対は**対の数**（`unordered`）で数える．GQA は同じ関係を両側から並べるので，訪問回数（`ordered`）で数えると往復を二度数えて率が数ポイント動く．研究文書が引くのは前者．**食い違いの中身**（yes/no 型と自由回答型を組にした割合，最も多い署名の組）も同じ関数が出す——率だけでは「署名が誤っている」としか読めないので |
 
 **研究文書の数値には，例外なくそれを出すスクリプトがある．** 手で数えて本文にだけ書いた数値は，書いた時点から誰にも検算できない．出どころは主張の種類で決まっていて，新しく何かを主張するならまずその場所に関数を足す．
@@ -206,7 +205,7 @@ scripts/
 | --- | --- |
 | データについて（分割・署名・演算子・語彙） | `audit_dataset.py` |
 | 9 run の記録について（幾何・損失・正解率・実行時間） | `summarize_runs.py` |
-| 保存済みの表現に新しく問うこと | `probe_signature.py`・`probe_operators.py`・`probe_bypass.py`・`stratify_by_frequency.py` |
+| 保存済みの表現・距離に新しく問うこと | `probe_signature.py`・`probe_operators.py`・`probe_bypass.py`・`stratify_by_frequency.py`・`normalize_drift.py` |
 | 重みを走らせ直して新しく問うこと（引き戻し・相対感度・頑健性） | `probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` |
 | 3 seed のまとめ方（平均・spread・区間） | `analysis/statistics.py`——上のどれもがここを通る |
 
