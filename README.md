@@ -49,7 +49,7 @@ python scripts/probe_bypass.py             # 整合した構造が出力の読�
 python scripts/probe_bypass_pullback.py    # その方向を第16層へ引き戻して問い直す（§A.4 第2段）
 python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼っているか（§A.4 第3段）
 python scripts/probe_drift.py              # 画像を加工したとき表現がどれだけ動くか（§A.6）
-python scripts/normalize_drift.py          # その距離を，対照の分布の形と別の物差しで読み直す（§A.6）
+python scripts/normalize_drift.py          # その距離を，対照の分布の形と別の比の作り方で読み直す（§A.6）
 ```
 
 **モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る8本はモデルを走らせないので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
@@ -153,7 +153,7 @@ scripts/
   probe_bypass_pullback.py  その方向を第16層へ引き戻して同じ判定を掛け直す（要 checkpoints・GPU）
   probe_dependence.py       答えが第16層にどれだけ頼っているかを群間で比べる（要 checkpoints・GPU）
   probe_drift.py            画像を加工したとき表現がどれだけ動くかを群間で比べる（要 checkpoints・GPU）
-  normalize_drift.py        その距離を，対照の分布の形と別の物差しで読み直す
+  normalize_drift.py        その距離を，対照の分布の形と別の比の作り方で読み直す
 ```
 
 **`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．
@@ -197,7 +197,7 @@ scripts/
 | 「使われていない」の測定・第2段（§A.4） | `probe_bypass_pullback.py`——部分空間 $U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
 | 「使われていない」の測定・第3段（§A.4） | `probe_dependence.py`——同じベクトル–ヤコビ積の**長さ**を，第16層の表現と読み出しの大きさで割って無次元にし（相対感度），3群で比べる．第2段が正規直交化のときに捨てている量である．プロンプト本数の収束も同じ逆伝播から出す |
 | 表現の頑健性の測定（§A.6） | `probe_drift.py`——Wani らの加工（`analysis/perturbations.py`．付録 A.6 の族と値をそのまま使う．書かれていない部分はこちらで決め，指示文の選び方だけは逸脱して，どちらも理由とともに冒頭に明記）を testdev の画像に施し，加工前後の第16層・第32層の表現のコサイン距離を，同じ質問に別の画像を付けた対照の平均に対する比と Cohen's d で出す（`analysis/drift.py`）．答えが変わった対の割合（IFR）・変わった問の割合（IV）・答えが変わらなかった対だけの比も同じ pass から出す．Wani らの形の対照（別の問と別の画像）は加工前の表現だけから出す．d の標準偏差は `metrics.cohens_d`（Wani らはプールの仕方を書いていない） |
-| 対照の分布の形，d の分解，別の物差し（§A.6） | `normalize_drift.py`——`probe-drift.pt` の問ごとの距離だけを読む．対照の変動係数・歪度・分位点の比，d の合わせた分散に対照が占める割合，標本数で重みを付けない d と Glass の Δ，分布の形を仮定しない重なり，中央値どうしの比・問ごとの比の幾何平均・上位1%を除いた比・同署名の距離に対する比（同署名の類似度は `summarize-runs.json` から読む）．群間は他と同じく `analysis/statistics.py` を通す |
+| 対照の分布の形，d の分解，別の比の作り方（§A.6） | `normalize_drift.py`——`probe-drift.pt` の問ごとの距離だけを読む．対照の変動係数・歪度・分位点の比，d の合わせた分散に対照が占める割合，標本数で重みを付けない d と Glass の Δ，分布の形を仮定しない重なり，中央値 ÷ 中央値・問ごとに割った比の幾何平均・対照の上位1%を除いた比・同署名の距離に対する比（同署名の類似度は `summarize-runs.json` から読む）．群間は他と同じく `analysis/statistics.py` を通す |
 | 分割の排他性・署名の分布・対を組めない問・含意対との一致・答えの語彙・演算子が自分の名を質問文に置く率（§3.1・§4.1・§7・§A.4） | `audit_dataset.py`——学習も GPU も要らず，質問ファイルだけから全部を一度に出す．含意対は**対の数**（`unordered`）で数える．GQA は同じ関係を両側から並べるので，訪問回数（`ordered`）で数えると往復を二度数えて率が数ポイント動く．研究文書が引くのは前者．**食い違いの中身**（yes/no 型と自由回答型を組にした割合，最も多い署名の組）も同じ関数が出す——率だけでは「署名が誤っている」としか読めないので |
 
 **研究文書の数値には，例外なくそれを出すスクリプトがある．** 手で数えて本文にだけ書いた数値は，書いた時点から誰にも検算できない．出どころは主張の種類で決まっていて，新しく何かを主張するならまずその場所に関数を足す．
