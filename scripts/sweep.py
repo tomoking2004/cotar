@@ -38,8 +38,8 @@ DEBUG = False
 # hours to sharpen intervals nobody reads until the shape says where to look.
 SEEDS = (42,)
 
-# The arm every variant runs. The sweep asks what the alignment weight does, and only the
-# signature-labelled arm has an alignment to weight.
+# The arm every variant runs. The sweep asks what the alignment weight or the aligned layer
+# does, and only the signature-labelled arm has an alignment to vary.
 ARM: Arm = "proposal"
 
 # What each variant changes, against defaults that are the reported experiment's values.

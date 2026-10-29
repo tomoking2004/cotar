@@ -8,8 +8,7 @@ parameter sweeps, and those are reproduced here value for value:
 - translation: horizontal wrap-around (cyclic) shifts by Δx ∈ {−16, −12, …, 16} \\ {0} px;
 - pad/crop: symmetric padding (n > 0) or cropping (n < 0) by n ∈ {−16, −12, …, 16} \\ {0} px;
 - scale: rescaling by α = 0.9, then resizing back to the original resolution;
-- scale+pad: the same rescaling, then padding back to the original size with a uniform
-  background;
+- scale+pad: rescaling, then padding with a uniform background;
 - rotation: in-plane rotation by ±30° with interpolation;
 - three text overlays of identical geometry and different content — a short directive
   phrase (TextOverlay), a random string of comparable length and ink density
@@ -24,9 +23,10 @@ it, before the model's processor resizes it to its 512-pixel input; GQA's images
 **What the paper leaves unstated is chosen here, and said.** The background used for
 padding, rotation and scale+pad is the mid-grey nearest the processor's own padding (it
 normalises with mean 0.5 and std 0.5 and pads with 0; grey 128 becomes 0.004). Resampling
-is bicubic throughout. The overlay box is a white rectangle in the upper left of the image,
-55% of its width and 11% of its height. The random string keeps the directive's length and
-its spaces and replaces every other character with a random letter.
+is bicubic throughout. Scale+pad uses the scale family's α = 0.9 and pads back to the
+original size, one variant per image. The overlay box is a white rectangle in the upper
+left of the image, 55% of its width and 11% of its height. The random string keeps the
+directive's length and its spaces and replaces every other character with a random letter.
 
 **The directive departs from the paper.** Its v2 (appendix A.6, "Overlay letter
 assignment") renders "Answer is L" for up to three options L other than the model's own

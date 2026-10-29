@@ -61,7 +61,7 @@ X_ip = 1/|P(i)|                                        （L_out のとき）
 
 `L_in` では `1/|P(i)|` の正規化が log の内側に入って加法定数となり，勾配に影響しない——"Without any normalization effects, the gradients of L_in^sup are more susceptible to bias in the positives"．
 
-なお値の大小からは判定できない："Because log is a concave function, Jensen's Inequality implies that L_in^sup ≤ L_out^sup"——**決め手は上の勾配の議論と実測**である．
+値の大小も同じ向きを指す："Because log is a concave function, Jensen's Inequality implies that L_in^sup ≤ L_out^sup"，"One would thus expect L_out^sup to be the superior supervised loss function (since it upper-bounds L_in^sup)"——**原論文はこれを上の勾配の議論と実測で裏づける**．
 
 **暗黙の hard mining**：正規化表現と内積を使うと，勾配の寄与は容易な正例で `‖z_p − (z_i·z_p) z_i‖ ≈ 0`，難しい正例で `≈ 1` になる．triplet loss で必須の明示的な hard mining を回避できる．
 
@@ -82,7 +82,7 @@ X_ip = 1/|P(i)|                                        （L_out のとき）
 ## 実験設定
 
 - **増強**：入力1つにつき2通りの無作為増強．AutoAugment・RandAugment・SimAugment・Stacked RandAugment を比較し，AutoAugment が ResNet-50 に，Stacked RandAugment が ResNet-200 に最良
-- **バッチ**："batch sizes of 6144 for ResNet-50 and batch size 4096 for ResNet-200"．ただし "batch sizes of 2048 suffice for most purposes"．メモリバンク版（バッチ 256・バンク 8192）は **79.1%**
+- **バッチ**："batch size 6144 for ResNet-50 and batch size 4096 for ResNet-200"．ただし "batch sizes of 2048 suffice for most purposes"．メモリバンク版（バッチ 256・バンク 8192）は **79.1%**
 - **温度**："All our results used a temperature of τ = 0.1"
 - **エポック**：ResNet-200 で 700，小さいモデルで 350．ResNet-50 は "even 200 epochs is likely sufficient"
 - **最適化器**：事前学習は LARS，線形分類器は RMSProp．交差エントロピーの基準線は SGD+momentum が最良

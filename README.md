@@ -52,7 +52,7 @@ python scripts/probe_drift.py              # 画像を加工したとき表現�
 python scripts/normalize_drift.py          # その距離を，対照の分布の形と別の物差しで読み直す（§A.6）
 ```
 
-**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る8本は保存済みのファイルを読み直すだけなので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
+**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る8本はモデルを走らせないので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
 
 `train.py` と `sweep.py` は run の建て方を共有する——`cotar/training/run.py` の `Settings` と `run_training` である．既定値が報告した実験の値なので，**sweep は変える設定だけを書き，残りが同じであることが目で見える．** どちらも冒頭の `DEBUG = True` で全分割を切り詰めた短い試走になり，数分で配線を確かめられる．
 
@@ -99,13 +99,13 @@ python scripts/summarize_sweep.py
 
 **同じものの写しが，`checkpoints/` だけを抜いて `snapshots/` の同じ run 名の下にも落ちる．** 重みを落とせば1 run は数十MB——上の表のうち `checkpoints/best.pth` 以外は全部こちらに在るので，git がそのまま追跡でき，push すれば結果は GitHub からも読める．エポックごとと最終評価の直後に，変わったファイルだけを原子的に置き換えて更新するので，走っている最中に掴んでも写しは丸ごと揃っている．
 
-**逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．持ってくるなら，実行機の `runs/` の写しを USB（`E:\runs`）に置くか，置き場所を `$COTAR_RUNS_ROOT` で名指しする——重みを読む側は run ごとに，`$COTAR_RUNS_ROOT`・ローカルの `runs/`・`E:\runs` の順に探す（`cotar/config.py` の `run_roots`）．
+**逆に言えば，重みは clone に付いてこない．** 本走9 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．持ってくるなら，実行機の `runs/` の写しを USB（`E:\runs`）に置くか，置き場所を `$COTAR_RUNS_ROOT` で名指しする——重みを読む側は run ごとに，`$COTAR_RUNS_ROOT`・ローカルの `runs/`・`E:\runs` の順に探す（`cotar/config.py` の `run_roots`）．
 
 `snapshots/` には4つのバッチが在る．研究文書が報告するのは `20260829-134859` の9 run（3群 × 3 seed）で，分析スクリプトは `summarize_sweep.py` を除いてこれしか読まない．`20260830-223056` の2 run は層を第8層・第24層に移した試走（研究文書 §A.5）で，`summarize_sweep.py` だけが読む．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) の前期公開（2026-07-24）のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
 
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回り，**この checkout の外が決めるもの**はバナーが引き受ける．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
-**報告する9 run（`20260829-134859`）は，この checkout のコードで走らせた．** だから上の表と，この3箇所の記述は，そのままこの9 run に当てはまる——`config.json` は `Trainer(vlm, processor, **config)` にそのまま通り，extras にはモデルの checkpoint・attention 実装・loader の設定が入り，環境バナーにはライブラリの版が載る．旧版のコードで走った2バッチ（`20260727-002344`・`20260714-033208`）は記録の形がここに書いたものと一部違うが，どれも測定値ではないので，各バッチが当時報告した数値には効かない．
+**報告する9 run（`20260829-134859`）は，この checkout のコードで走らせた．** だから上の表と，この3箇所の記述は，そのままこの9 run に当てはまる——`config.json` は `Trainer(vlm, processor, **config)` にそのまま通り，extras にはモデルの checkpoint・層・attention 実装・loader の設定が入り，環境バナーにはライブラリの版が載る．旧版のコードで走った2バッチ（`20260727-002344`・`20260714-033208`）は記録の形がここに書いたものと一部違うが，どれも測定値ではないので，各バッチが当時報告した数値には効かない．
 
 決定指標は `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが `testdev_balanced` に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群の横並びは `summarize_runs.py`（全 testdev の平均・spread・対にした差と区間）と `stratify_by_frequency.py`（署名の頻度で層別したもの）が出す．**区間は研究文書 §4.3 の式そのままで，実装は `analysis/statistics.py` にしか無い．**
 
@@ -156,11 +156,11 @@ scripts/
   normalize_drift.py        その距離を，対照の分布の形と別の物差しで読み直す
 ```
 
-**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，残りはノートPCで完結する．
+**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．
 
 **機構は，この研究の中身に依存しない．** 別の研究に持っていくとき差し替わるのは3つだけ——**ファイルがどこにあるか**（`config.py`），**1 run をどう建てるか**（`training/run.py`），**どの実験を報告するか**（`analysis/experiment.py` の `TIMESTAMP`）．残りはすべてパスを引数で受け取り，実験を名指ししない．だから `cotar/` で `cfg` を import するのは後の2つと，済んだ実験の重みを読み直す `analysis/jacobian.py` だけで，機構は一つも import しない——`data`・`models`・`types`・`pairwise` と，`training/` の残り（`trainer.py`・`losses.py`・`metrics.py`・`logit_scale.py`）のどこにも `cfg` は無い．`cotar/__init__.py` が何も再輸出しないのも同じ理由で，`import cotar` がマシン固有のパスを束縛しないためである．
 
-`cfg` 自身も2種類を分けて持つ——**マシン固有**（データセット・`runs/`・デバイス）と，**チェックアウト相対**（`snapshots/`・`analyses/`）．**済んだ実験を読む側が触るのは後者だけ**で，マシンのことは一度も訊かない．
+`cfg` 自身も2種類を分けて持つ——**マシン固有**（データセット・`runs/`・デバイス）と，**チェックアウト相対**（`snapshots/`・`analyses/`）．**済んだ実験を読む側が結果を書くのは後者だけ**である．マシン固有の側から読むのは，GQA の質問ファイルと，重みを要するスクリプトの `runs/` とデバイスに限る．
 
 **`scripts/` は走らせるものだけを置く．** 複数のスクリプトが分け合うもの——どの実験を読むか，成果物の在処，プローブの当てはめ——は `cotar/` 側にある．スクリプトが自分で決めてよいのは，自分だけの設定と，出力の並べ方だけである．
 
