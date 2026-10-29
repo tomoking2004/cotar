@@ -16,18 +16,24 @@ parameter sweeps, and those are reproduced here value for value:
   (RandomText), and the same box with nothing written in it (BoxOverlay).
 
 Each family is applied once per parameter value, so every base image has a set of
-perturbed variants, as in the paper. The perturbation is applied to the image as GQA ships
+perturbed variants, as in the paper. The paper's v2 is the version read; its families and
+sweeps are those of v1. The perturbation is applied to the image as GQA ships
 it, before the model's processor resizes it to its 512-pixel input; GQA's images are about
 500 pixels on the long side, so one of these pixels is about one pixel of the model's input.
 
 **What the paper leaves unstated is chosen here, and said.** The background used for
 padding, rotation and scale+pad is the mid-grey nearest the processor's own padding (it
 normalises with mean 0.5 and std 0.5 and pads with 0; grey 128 becomes 0.004). Resampling
-is bicubic throughout. The overlay box is a white rectangle in
-the upper left of the image, 55% of its width and 11% of its height; the directive is
-"Answer is yes" or "Answer is no", chosen per question, because GQA has no options A–D for
-the paper's "Answer is A/B/C/D" to name. The random string keeps the directive's length and
+is bicubic throughout. The overlay box is a white rectangle in the upper left of the image,
+55% of its width and 11% of its height. The random string keeps the directive's length and
 its spaces and replaces every other character with a random letter.
+
+**The directive departs from the paper.** Its v2 (appendix A.6, "Overlay letter
+assignment") renders "Answer is L" for up to three options L other than the model's own
+base prediction. Here each question carries one directive, "Answer is yes" or "Answer is
+no", drawn from its id: a directive chosen from each run's prediction would hand the same
+question a different image in each arm, and the arms are compared on the same images. GQA
+has no options to name in any case.
 
 **Everything random is decided by the question id.** A random string, the choice of
 directive, and the image a control swaps in are drawn from a generator seeded by the
