@@ -21,9 +21,9 @@ it, before the model's processor resizes it to its 512-pixel input; GQA's images
 500 pixels on the long side, so one of these pixels is about one pixel of the model's input.
 
 **What the paper leaves unstated is chosen here, and said.** The background used for
-padding, rotation and scale+pad is the mid-grey that the processor's own padding maps to
-(it normalises with mean 0.5 and std 0.5, so grey 128 becomes 0 — the value the processor
-itself pads with). Resampling is bicubic throughout. The overlay box is a white rectangle in
+padding, rotation and scale+pad is the mid-grey nearest the processor's own padding (it
+normalises with mean 0.5 and std 0.5 and pads with 0; grey 128 becomes 0.004). Resampling
+is bicubic throughout. The overlay box is a white rectangle in
 the upper left of the image, 55% of its width and 11% of its height; the directive is
 "Answer is yes" or "Answer is no", chosen per question, because GQA has no options A–D for
 the paper's "Answer is A/B/C/D" to name. The random string keeps the directive's length and
@@ -91,8 +91,8 @@ FAMILIES = (
     "box_overlay",
 )
 
-# Grey 128 is what the processor's own padding amounts to: it normalises pixels with mean
-# 0.5 and std 0.5, so this value becomes exactly 0, the constant it pads batches with.
+# The grey nearest the processor's own padding: it normalises pixels with mean 0.5 and std
+# 0.5 and pads batches with 0, and grey 128 becomes (128/255 - 0.5) / 0.5 = 0.004.
 BACKGROUND = (128, 128, 128)
 RESAMPLE   = Image.Resampling.BICUBIC
 
