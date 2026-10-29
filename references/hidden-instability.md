@@ -33,7 +33,7 @@ VLM の頑健性は通例**出力レベルの不変性**で測られ，予測が
 
 ### 指標
 
-**drift は元入力と摂動入力の埋め込み間の cosine distance（1 − cos）**（表4．ℓ2 距離は付録 B の表6）．これを単体では読まず **control 分布**と比べる——"For each base image, we compute distances between its embedding across regimes and the embeddings of randomly sampled other images, yielding a control-drift distribution"（§3.3），付録 A.8 では "a control distribution … derived from 1,000 random pairs of unrelated images"．各画像はそれぞれの問を伴うので，無関係な画像の対は問も異なる対である．報告は control の平均に対する比（%，"Drift is expressed as a percentage of mean control drift … values are reported as mean ± std"）と，摂動 drift の分布と control 分布のあいだの Cohen's d の組．control の平均は **μ_ctrl = 0.228**（ans_mcq_free）．**drift の集計を，予測が変わらなかった事例に限ってはいない**（§4.3・§4.4，表3・表4にその限定は無い．"Even with unchanged predictions, representations may no longer reside in neighbourhoods of the original image" は読みであって集計の条件ではない）．
+**drift は元入力と摂動入力の埋め込み間の cosine distance（1 − cos）**（表4．ℓ2 距離は付録 B の表6）．これを単体では読まず **control 分布**と比べる——"For each base image, we compute distances between its embedding across regimes and the embeddings of randomly sampled other images, yielding a control-drift distribution"（§3.3），付録 A.8 では "a control distribution … derived from 1,000 random pairs of unrelated images"．各画像はそれぞれの問を伴うので，無関係な画像の対は問も異なる対である．報告は control の平均に対する比（%，"Drift is expressed as a percentage of mean control drift … values are reported as mean ± std"）と，摂動 drift の分布と control 分布のあいだの Cohen's d の組．付録 A.8 が定めるのは二つの距離の集合（D_pert と D_ctrl）だけで，**d の分母の標準偏差をどう合わせるか（標本数で重みを付けるか）は書かれていない**．表6の列も μ_pert・σ_pert・μ_ctrl・Cohen's d で，control の標準偏差は載っていない．control の平均は **μ_ctrl = 0.228**（ans_mcq_free）．**drift の集計を，予測が変わらなかった事例に限ってはいない**（§4.3・§4.4，表3・表4にその限定は無い．"Even with unchanged predictions, representations may no longer reside in neighbourhoods of the original image" は読みであって集計の条件ではない）．
 
 補助指標として視覚トークン格子上の **Dirichlet energy** を測り，パッチ埋め込みの空間的滑らかさを見る．
 
@@ -132,3 +132,5 @@ VLM の頑健性は通例**出力レベルの不変性**で測られ，予測が
 **確認**：2026-08-09．arXiv abs ページ（書誌・要旨・著者所属）と arXiv HTML 全文 v1 を参照し，本文の数値・逐語引用を一件ずつ原文と照合した．「射程の外」に挙げた不在は，論文が明示する評価対象一覧と著者の限界表明から言えるものに限る．
 
 **再確認**：2026-10-23．本研究で摂動と drift の指標を再現するにあたり，arXiv HTML v1 の §3.2・§3.3・§4.4・付録 A.6〜A.8 を再度読み，摂動の定義・hook 点・control の作り方・集計の条件を逐語で照合し，本文に書かれていない事項を列挙した．
+
+**再確認**：2026-10-24．本研究の d が原典と同じ作り方かを確かめるため，arXiv HTML v1 の §3.3・§4.4・表4の注・付録 A.8・表6の列名を再度読み，d の計算式とプールの仕方が本文に無いこと，control が「1,000 random pairs of unrelated images」であることを照合した．
