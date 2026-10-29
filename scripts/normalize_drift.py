@@ -72,11 +72,14 @@ def control_shape(c: torch.Tensor) -> dict[str, float]:
 
 
 def below_probability(d: torch.Tensor, c: torch.Tensor) -> float:
-    """P(D < C) over every pairing of a drift with a control distance, by ranks."""
-    ranks = torch.empty(d.numel() + c.numel(), dtype=torch.double)
-    ranks[torch.cat([d, c]).argsort()] = torch.arange(1, ranks.numel() + 1, dtype=torch.double)
-    above = ranks[d.numel():].sum().item() - c.numel() * (c.numel() + 1) / 2
-    return above / (c.numel() * d.numel())
+    """P(D < C) over every pairing of a drift with a control distance.
+
+    Counted against the sorted control rather than read off joint ranks: a tie between a
+    drift and a control distance is then never "below", whereas ranks break ties in
+    whatever order the sort happens to leave them — which differs between machines.
+    """
+    above = c.numel() - torch.searchsorted(c.sort().values, d, right=True)
+    return above.sum().item() / (c.numel() * d.numel())
 
 
 def family_measures(
