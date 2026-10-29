@@ -10,6 +10,7 @@ GQA の各質問には functional program が付いている．その**演算子
 | --- | --- |
 | [.claude/context.md](.claude/context.md) | **研究文書**．問い・手法・検証方法・結果・答え・次の一手．これ1本で研究が分かる |
 | [.claude/context-philosophy.md](.claude/context-philosophy.md) | 上を**どう書くか**の原則．研究の中身には依存しない |
+| [.claude/skills/](.claude/skills/) | 作業の手順（仕上げ・記録・長い実行）を定めた自作のスキル．出どころと使い方は [CLAUDE.md](CLAUDE.md) |
 | [references/](references/) | 依拠する論文の要約．1本につき1ファイル |
 | [papers/](papers/) | 論文の原稿（学会予稿・修士論文）．組版の決め事は [papers/principles.md](papers/principles.md)，予稿の書式検査は `papers/pcsj-imps-2026/check.py` |
 | [presentations/](presentations/) | 発表の成果物（ゼミ・学会）．作った時点の記録であって，最新の結果ではない |

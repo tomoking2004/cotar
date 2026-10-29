@@ -43,4 +43,12 @@
 - コードを足したり変えたりしたら，研究文書（[.claude/context.md](.claude/context.md)）・[README.md](README.md) の対応表と構成・文献の要約のうち，前提が変わったものをすべて直す．実装したが走らせていないものは，研究文書と README の両方に「実装してあり，未実行」と書く．
 - 本人の挙げた留意点も疑う．前提が成り立たないか，別の読み方のほうが問いに合うと判断したら，判断と理由を報告に書いたうえで，よりよいと考える形で進める．
 - 手元で確かめられることは確かめてから終える．実行機（重み・データ・GPU）が無くても，スクラッチの仮想環境に CPU 版の依存を入れ，合成した小さな入力で端から端まで通す．lint（`ruff check cotar scripts`）と `py_compile` は必ず通す．
-- 確定版の定義は [.claude/context-philosophy.md](.claude/context-philosophy.md) §11 にある．コミットは頼まれたときだけ行う．
+- 確定版の定義は [.claude/context-philosophy.md](.claude/context-philosophy.md) §11 にある．
+
+## 仕上げ・記録・長い実行は，自作のスキルに従う
+
+- スキルは [.claude/skills/](.claude/skills/) にあり，セッションの開始時に読み込まれる（セッション中に足したり写し直したりしたら /reload-plugins で読み直す）．[tomoking2004/claude-plugins](https://github.com/tomoking2004/claude-plugins) の `plugins/<plugin>/` を，プラグインごと丸ごと写したものである（写した版は `c29a3f7`）．丸ごと写すのは，スキルが相対リンクで BEAUTY.md などを指すからである．定義を直す先は常にあちらで，ここの写しは直さない．あちらを更新したら写し直す．
+- コードと文書の仕上げは /capstone:refine で行う（単一の媒体なら /refine:code・/refine:docs）．美の基準は [.claude/skills/refine/BEAUTY.md](.claude/skills/refine/BEAUTY.md) にある．
+- 記録は /capstone:commit で行う——メッセージを全文で提案し，承認を得てからコミットする．コミットは頼まれたときだけ行う．
+- **承認を得てコミットしたら，続けて push する．** ローカルとリモートを食い違わせないための本人の指示（2026-10-29）で，/capstone:commit の「push しない」に優先する．
+- 数十秒を超えて走るプログラム（学習・評価）は /ops:exec で走らせる．
