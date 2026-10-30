@@ -25,9 +25,9 @@ saved per question, and asks it three ways:
   median of the control; the geometric mean over questions and variants of each drift over
   its own question's control (`per_question`); the mean ratio with the control's top one
   per cent of questions left out (`trimmed`); and the drift over the mean distance between
-  different questions of the same signature, which `summarize_runs.py` measured on the
-  unperturbed report set (`same_signature` — one minus the same-signature similarity, a
-  scale built from no image at all).
+  different questions of the same signature, which each run's final evaluation measured on
+  the unperturbed report set (`same_signature` — one minus the same-signature similarity,
+  a scale built from no image at all).
 
 None of these replaces the decision quantity, which was fixed before the run. They are
 read beside it, and every one is compared across arms exactly as it is: seed-paired, with
@@ -42,12 +42,19 @@ from typing import Any
 
 import torch
 
-from cotar.analysis import ANY, ARMS, SEEDS, analysis_path, paired_difference, summarize
+from cotar.analysis import (
+    ANY,
+    ARMS,
+    analysis_path,
+    eval_report,
+    paired_difference,
+    site,
+    summarize,
+)
 from cotar.training import cohens_d
-from cotar.utils import load_json, save_json
+from cotar.utils import save_json
 
 DRIFT_PATH = analysis_path("probe_drift.py").with_suffix(".pt")
-RUNS_PATH  = analysis_path("summarize_runs.py")
 OUT_PATH   = analysis_path(__file__)
 
 CONTROL = "other_image"
@@ -117,14 +124,16 @@ def family_measures(
     return measures
 
 
-def compared(by_run: Callable[[str, int], dict[str, float]]) -> dict[str, Any]:
+def compared(
+    by_run: Callable[[str, int], dict[str, float]], seeds: list[int]
+) -> dict[str, Any]:
     """Every measure of `by_run` summarised per arm and differenced within each seed."""
-    readings = {(arm, seed): by_run(arm, seed) for arm in ARMS for seed in SEEDS}
+    readings = {(arm, seed): by_run(arm, seed) for arm in ARMS for seed in seeds}
     reference, *aligned = ARMS
     pairs = [(arm, reference) for arm in aligned] + [tuple(aligned)]
     out: dict[str, Any] = {}
-    for measure in readings[ARMS[0], SEEDS[0]]:
-        by_arm = {arm: {seed: readings[arm, seed][measure] for seed in SEEDS} for arm in ARMS}
+    for measure in readings[ARMS[0], seeds[0]]:
+        by_arm = {arm: {seed: readings[arm, seed][measure] for seed in seeds} for arm in ARMS}
         out[measure] = {
             "arms": {arm: summarize(values) for arm, values in by_arm.items()},
             "differences": {
@@ -144,13 +153,14 @@ def main() -> None:
         family: [v for v in samples["variants"] if family == ANY or family_of[v] == family]
         for family in families
     }
+    # Whichever seeds `probe_drift.py` measured: its runs are filed as `arm/seed`.
+    seeds = sorted({int(key.split("/")[1]) for key in samples if "/" in key})
     # The same-signature similarity is measured at the site the loss touched, so this
     # scale exists for that layer only.
-    runs = load_json(RUNS_PATH)
-    site: int = runs["constrained_layer"]
+    site_layer, _ = site(seeds)
     same_signature = {
-        (arm, seed): 1 - runs["arms"][arm]["intra_sim"]["per_seed"][str(seed)]
-        for arm in ARMS for seed in SEEDS
+        (arm, seed): 1 - eval_report(arm, seed)["representation_stability"]["intra_sim"]
+        for arm in ARMS for seed in seeds
     }
 
     def distances(arm: str, seed: int) -> dict[str, torch.Tensor]:
@@ -163,18 +173,18 @@ def main() -> None:
         def by_run(arm: str, seed: int) -> dict[str, float]:
             at = distances(arm, seed)
             stack = torch.stack([at[name][:, i] for name in members[family]])
-            scale = same_signature[arm, seed] if layers[i] == site else None
+            scale = same_signature[arm, seed] if layers[i] == site_layer else None
             return family_measures(stack, at[CONTROL][:, i], scale)
         return by_run
 
     result: dict[str, Any] = {"layers": layers, "controls": {}, "families": {}}
     for i, layer in enumerate(layers):
-        result["controls"][str(layer)] = compared(shape(i))
+        result["controls"][str(layer)] = compared(shape(i), seeds)
         result["families"][str(layer)] = {
-            family: compared(measured(i, family)) for family in families
+            family: compared(measured(i, family), seeds) for family in families
         }
 
-    print_headline(result, site)
+    print_headline(result, site_layer)
     save_json(result, OUT_PATH)
     print(f"\nwritten: {OUT_PATH}")
 

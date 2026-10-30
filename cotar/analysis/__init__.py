@@ -19,14 +19,18 @@ from .drift import (
     summarize_run,
 )
 from .experiment import (
+    ADDED_SEEDS,
+    ADDED_TIMESTAMP,
     ARMS,
     CHECKPOINT_NAME,
     MODEL,
+    ROBUSTNESS_SEEDS,
     SEEDS,
     TIMESTAMP,
     Arm,
     Weights,
     analysis_path,
+    batch_of,
     checkpoint_path,
     constrained_layer,
     eval_report,
@@ -103,6 +107,8 @@ from .subspaces import (
 )
 
 __all__ = [
+    "ADDED_SEEDS",
+    "ADDED_TIMESTAMP",
     "ANY",
     "ARMS",
     "BACKGROUND",
@@ -116,6 +122,7 @@ __all__ = [
     "MIN_COUNT",
     "MODEL",
     "PIXEL_STEPS",
+    "ROBUSTNESS_SEEDS",
     "ROTATIONS",
     "SCALE",
     "SEEDS",
@@ -132,6 +139,7 @@ __all__ = [
     "Weights",
     "analysis_path",
     "answer_token_rows",
+    "batch_of",
     "checkpoint_path",
     "classify",
     "constrained_layer",

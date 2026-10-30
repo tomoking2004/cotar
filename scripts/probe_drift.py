@@ -9,13 +9,21 @@ this one read the representations of the unperturbed report set.
 This measures it the way the paper does (see `cotar.analysis.drift` and
 `cotar.analysis.perturbations`): one pass over the report set per perturbed variant and
 per control, cosine distance to the base pass, read as a percentage of the control's mean
-and as Cohen's d, at the site the loss touched and at the final layer. Three arms at three
-seeds, so the comparison is the document's usual paired one.
+and as Cohen's d, at the site the loss touched and at the final layer. Three arms at the
+five seeds of §8.1, so the comparison is the document's usual paired one.
 
-Set `LIMIT` to a few dozen to prove the wiring before committing the GPU to the full set:
-twenty-three variants, a control and the base pass make twenty-five passes per run, and a
-pass over the full report set takes about a minute and a half on the machine that trained
-the runs.
+**A run already on file is not measured again.** The nine runs of the reported seeds were
+measured first, and §8.1 adds two seeds to them; what this then has to measure is the six
+runs those two seeds trained. A run is taken from `analyses/` when it was measured under
+everything this would measure it under — the same batch, checkpoint, variants, batch size,
+and the whole report set — and measured afresh otherwise. The comparison is always made
+over every seed in `SEEDS`, and both files are written over in full.
+
+Set `LIMIT` to a few dozen to prove the wiring before committing the GPU to the full set.
+A trial measures exactly the runs the full pass would, prints them, and writes nothing,
+so the files on record stay the full set's. Twenty-three variants, a control and the base
+pass make twenty-five passes per run, and a pass over the full report set takes about a
+minute and a half on the machine that trained the runs.
 """
 
 from __future__ import annotations
@@ -33,10 +41,10 @@ from cotar.analysis import (
     CONFIDENCE,
     CONTROLS,
     FAMILIES,
-    SEEDS,
-    TIMESTAMP,
+    ROBUSTNESS_SEEDS,
     Variant,
     analysis_path,
+    batch_of,
     measure_run,
     paired_difference,
     require_checkpoints,
@@ -48,10 +56,13 @@ from cotar.analysis import (
 )
 from cotar.config import cfg
 from cotar.models import build_smolvlm
-from cotar.utils import save_json
+from cotar.utils import load_json, save_json
 
 # `None` is the whole report set; a few dozen proves the wiring in minutes.
 LIMIT: int | None = None
+
+# The seeds compared. context.md §8.1 fixed five before any of the added runs existed.
+SEEDS = ROBUSTNESS_SEEDS
 
 # The evaluation batch the runs themselves used.
 BATCH = 32
@@ -167,56 +178,100 @@ def print_comparison(comparison: dict[str, Any], layer: int) -> None:
     print("* the interval excludes zero\n")
 
 
+def on_file(
+    variants: Sequence[Variant],
+) -> tuple[Results, dict[str, Any], tuple[int, ...] | None]:
+    """The runs already measured under everything this pass would measure them under,
+    and the layers they were read at.
+
+    Both files are needed: the summaries are in the JSON and the per-question distances
+    in the `.pt`, and a run is taken only when it is in both. Nothing is taken from a
+    measurement of a part of the report set, of other variants, with another batch size
+    or checkpoint, or of another batch of the same seed.
+    """
+    results: Results = {arm: {} for arm in ARMS}
+    samples: dict[str, Any] = {}
+    if not (OUT_PATH.exists() and SAMPLES_PATH.exists()):
+        return results, samples, None
+    filed = load_json(OUT_PATH)
+    if (filed["limit"] is not None or filed["batch_size"] != BATCH
+            or filed["checkpoint"] != CHECKPOINT_NAME
+            or filed["variants"] != [{"family": v.family, "name": v.name} for v in variants]):
+        return results, samples, None
+    saved = torch.load(SAMPLES_PATH, weights_only=False)
+    for arm in ARMS:
+        for seed in SEEDS:
+            key = f"{arm}/{seed}"
+            if (str(seed) in filed["runs"][arm] and key in saved
+                    and filed["timestamps"].get(str(seed)) == batch_of(seed)):
+                results[arm][str(seed)] = filed["runs"][arm][str(seed)]
+                samples[key] = saved[key]
+    if not samples:
+        return results, samples, None
+    samples["question_ids"] = saved["question_ids"]
+    samples["image_ids"] = saved["image_ids"]
+    return results, samples, tuple(filed["layers"])
+
+
 def main(variants: Sequence[Variant]) -> None:
-    require_checkpoints()
-    site_layer, _ = site()
+    results, samples, layers = on_file(variants)
+    todo = [(arm, seed) for arm in ARMS for seed in SEEDS if str(seed) not in results[arm]]
+    print(f"{len(ARMS) * len(SEEDS) - len(todo)} runs on file, {len(todo)} to measure: "
+          + (", ".join(f"{arm} seed{seed}" for arm, seed in todo) or "none"))
+    if LIMIT is not None:
+        # What is on file covers the whole report set and a trial only its head, so the
+        # trial's rows are not set beside it; the file still decides what to measure.
+        samples = {}
+    require_checkpoints(sorted({seed for _, seed in todo}))
+    site_layer, _ = site(SEEDS)
     _, processor = build_smolvlm("500M")
     print(f"{len(variants)} perturbed variants in {len(FAMILIES)} families, plus the base "
           f"pass and the image-swap control: {len(variants) + 2} passes per run")
     print(f"report set: {cfg.gqa.testdev_questions}"
           + (f", first {LIMIT} questions" if LIMIT is not None else "") + "\n")
 
-    results: Results = {arm: {} for arm in ARMS}
-    samples: dict[str, Any] = {}
-    layers: tuple[int, ...] | None = None
-    for arm in ARMS:
-        for seed in SEEDS:
-            print(f"[{arm} seed{seed}]")
-            # The site the loss touched, and the final layer: the paper's hook point.
-            vlm, _ = trained_model(arm, seed, (site_layer, -1), cfg.device)
-            if layers is None:
-                layers = vlm.layers
-            elif vlm.layers != layers:
-                raise SystemExit(f"{arm} seed{seed} reads layers {vlm.layers}, others {layers}.")
-            run = measure_run(
-                vlm, processor, cfg.gqa.testdev_questions, cfg.gqa.images, variants,
-                batch_size=BATCH, num_workers=cfg.num_workers, limit=LIMIT, progress=print,
-            )
-            del vlm
-            empty_cuda_cache()
+    for arm, seed in todo:
+        print(f"[{arm} seed{seed}]")
+        # The site the loss touched, and the final layer: the paper's hook point.
+        vlm, _ = trained_model(arm, seed, (site_layer, -1), cfg.device)
+        if layers is None:
+            layers = vlm.layers
+        elif vlm.layers != layers:
+            raise SystemExit(f"{arm} seed{seed} reads layers {vlm.layers}, others {layers}.")
+        run = measure_run(
+            vlm, processor, cfg.gqa.testdev_questions, cfg.gqa.images, variants,
+            batch_size=BATCH, num_workers=cfg.num_workers, limit=LIMIT, progress=print,
+        )
+        del vlm
+        empty_cuda_cache()
 
-            results[arm][str(seed)] = summarize_run(run, variants)
-            samples[f"{arm}/{seed}"] = {
-                "base_correct": run.base_correct,
-                "distances": run.distances,
-                "flipped": run.flipped,
-                "correct": run.correct,
-            }
-            if "question_ids" not in samples:
-                samples["question_ids"] = run.question_ids
-                samples["image_ids"] = run.image_ids
-            elif samples["question_ids"] != run.question_ids:
-                raise SystemExit(f"{arm} seed{seed} measured other questions than the first run.")
-            print()
-            print_run(results[arm][str(seed)])
+        results[arm][str(seed)] = summarize_run(run, variants)
+        samples[f"{arm}/{seed}"] = {
+            "base_correct": run.base_correct,
+            "distances": run.distances,
+            "flipped": run.flipped,
+            "correct": run.correct,
+        }
+        if "question_ids" not in samples:
+            samples["question_ids"] = run.question_ids
+            samples["image_ids"] = run.image_ids
+        elif samples["question_ids"] != run.question_ids:
+            raise SystemExit(f"{arm} seed{seed} measured other questions than the first run.")
+        print()
+        print_run(results[arm][str(seed)])
 
     if layers is None:
         raise SystemExit("no run was measured.")
+    if LIMIT is not None:
+        print(f"trial over the first {LIMIT} questions: nothing written.")
+        return
     comparison = compare(results, layers)
     print_comparison(comparison, site_layer)
 
+    timestamps = {str(seed): batch_of(seed) for seed in SEEDS}
     save_json({
-        "timestamp": TIMESTAMP,
+        "seeds": list(SEEDS),
+        "timestamps": timestamps,
         "checkpoint": CHECKPOINT_NAME,
         "layers": list(layers),
         "site_layer": site_layer,
@@ -230,7 +285,8 @@ def main(variants: Sequence[Variant]) -> None:
     }, OUT_PATH)
     torch.save(
         {
-            "timestamp": TIMESTAMP,
+            "seeds": list(SEEDS),
+            "timestamps": timestamps,
             "layers": list(layers),
             "variants": [v.name for v in variants],
             "families": {v.name: v.family for v in variants},

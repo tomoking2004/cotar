@@ -4,6 +4,12 @@ Every analysis reads the same nine runs — three arms at three seeds, filed und
 timestamp. Naming them here means the scripts cannot drift apart about which experiment
 is being reported, and pointing them all at a later one is a single edit.
 
+One question reads further. The robustness measurement (context.md §8.1) left its
+direction undecided at three seeds, so two more were fixed in advance and trained as a
+batch of their own; it alone reads all five. The two batches are told apart by seed —
+a seed fixes the initialisation and the batch order, not the day the run happened — so
+every reader below finds a run's batch from its seed unless it is told otherwise.
+
 The readers below are the only door onto a run's files. Going through them keeps the
 layout of a snapshot in one place, and lets the check that the runs line up row for row
 happen on every read instead of being remembered by each caller.
@@ -26,14 +32,18 @@ from ..training import ARMS, Arm
 from ..utils import load_json
 
 __all__ = [
+    "ADDED_SEEDS",
+    "ADDED_TIMESTAMP",
     "ARMS",
     "CHECKPOINT_NAME",
     "MODEL",
+    "ROBUSTNESS_SEEDS",
     "SEEDS",
     "TIMESTAMP",
     "Arm",
     "Weights",
     "analysis_path",
+    "batch_of",
     "checkpoint_path",
     "constrained_layer",
     "eval_report",
@@ -49,25 +59,33 @@ __all__ = [
     "weights",
 ]
 
-TIMESTAMP       = "20260829-134859"
-SEEDS           = (42, 43, 44)
+TIMESTAMP        = "20260829-134859"
+SEEDS            = (42, 43, 44)
+# The two seeds §8.1 adds, and the batch they were trained in. The timestamp is the one
+# `train.py` prints when it starts; it stays empty until that batch has run, and reading
+# one of these seeds before then is refused rather than guessed.
+ADDED_TIMESTAMP  = ""
+ADDED_SEEDS      = (45, 46)
+# The five the robustness measurement reports. The main results keep to `SEEDS`.
+ROBUSTNESS_SEEDS = SEEDS + ADDED_SEEDS
 # The base checkpoint the reported runs were trained from. Asserted here rather than read
 # back, so the analyses need no checkpoint on disk to know it — `weights` checks it against
 # whatever a checkpoint *does* record, and stays silent where nothing was recorded.
-MODEL           = "HuggingFaceTB/SmolVLM-500M-Instruct"
+MODEL            = "HuggingFaceTB/SmolVLM-500M-Instruct"
 # `trainer.test(..., use_best=True)` scored the runs with this checkpoint, so this is the
 # one whose weights belong beside the reported numbers.
-CHECKPOINT_NAME = "best.pth"
+CHECKPOINT_NAME  = "best.pth"
 
 
-def run_id(arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP) -> str:
+def run_id(arm: Arm, seed: int, variant: str = "", timestamp: str | None = None) -> str:
     """The directory name one run left behind.
 
     `variant` names a configuration other than the reported one — a sweep's alignment
     weight or layer — and is empty for the nine runs the study reports. `timestamp` says
     which experiment: a sweep is filed under its own, and its runs are still comparable
     to the reported ones because a seed fixes the initialisation and the batch order,
-    not the day the run happened.
+    not the day the run happened. Left out, it is the batch that trained the seed
+    (`batch_of`).
 
     Composed here rather than shared with `training.run`, which spells the same name for
     the directory it is about to write. The two look like one convention duplicated, but
@@ -77,10 +95,29 @@ def run_id(arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP) -
     shared builder would also have to live in the machinery, and the machinery names no
     experiment, while `arm`, `seed` and `variant` are the experiment's own vocabulary.
     """
+    timestamp = timestamp or batch_of(seed)
     return "_".join(part for part in (timestamp, variant, arm, f"seed{seed}") if part)
 
 
-def _snapshot(arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP) -> Path:
+def batch_of(seed: int) -> str:
+    """The timestamp of the batch that trained a seed of the study's own experiment."""
+    if seed in SEEDS:
+        return TIMESTAMP
+    if seed not in ADDED_SEEDS:
+        raise SystemExit(
+            f"seed {seed} is in neither batch ({SEEDS} under {TIMESTAMP}, "
+            f"{ADDED_SEEDS} under ADDED_TIMESTAMP)."
+        )
+    if not ADDED_TIMESTAMP:
+        raise SystemExit(
+            f"seed {seed} belongs to the batch §8.1 adds, and ADDED_TIMESTAMP in "
+            f"cotar/analysis/experiment.py is still empty. Put there the timestamp "
+            f"scripts/train.py printed when it trained seeds {ADDED_SEEDS}."
+        )
+    return ADDED_TIMESTAMP
+
+
+def _snapshot(arm: Arm, seed: int, variant: str = "", timestamp: str | None = None) -> Path:
     return cfg.snapshots_root / run_id(arm, seed, variant, timestamp)
 
 
@@ -88,7 +125,7 @@ _order: tuple[list[str], list[str]] | None = None
 
 
 def representations(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> tuple[torch.Tensor, list[str], list[str]]:
     """A run's saved testdev representations, with the signature and id of each row.
 
@@ -118,7 +155,7 @@ def representations(
 
 
 def constrained_layer(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> tuple[int, int]:
     """Which layer a run constrained, and how wide that layer's vector is.
 
@@ -143,7 +180,7 @@ def constrained_layer(
 
 
 def predictions(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> dict[str, str]:
     """What a run answered, by question id."""
     filed = load_json(_snapshot(arm, seed, variant, timestamp) / "metrics" / "predictions.json")
@@ -151,7 +188,7 @@ def predictions(
 
 
 def eval_report(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> dict[str, Any]:
     """Everything a run's final evaluation recorded: its identity, the batch-averaged
     test metrics, the official GQA scores, and the epoch-level representation geometry.
@@ -160,7 +197,7 @@ def eval_report(
 
 
 def run_config(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> dict[str, Any]:
     """The arguments a run's trainer was constructed with — its `config.json`.
 
@@ -172,13 +209,13 @@ def run_config(
 
 
 def reported_accuracy(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> float:
     """The accuracy the official GQA evaluator gave the run, as a percentage."""
     return eval_report(arm, seed, variant, timestamp)["official_gqa"]["accuracy"]
 
 
-def training_batches(arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP) -> int:
+def training_batches(arm: Arm, seed: int, variant: str = "", timestamp: str | None = None) -> int:
     """How many batches the training phase actually stepped through.
 
     Counted from the recorded steps rather than derived from the dataset size, because
@@ -193,7 +230,7 @@ _DURATION = re.compile(r"Training completed\. Duration: (\d+):(\d\d):(\d\d)")
 
 
 def training_duration(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> timedelta:
     """How long the run's training phase took, as its own log recorded it.
 
@@ -234,7 +271,7 @@ class Weights:
 
 
 def checkpoint_path(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP
+    arm: Arm, seed: int, variant: str = "", timestamp: str | None = None
 ) -> Path:
     """Where a run's weights sit — the first root that actually holds them.
 
@@ -252,21 +289,24 @@ def checkpoint_path(
     return cfg.runs_root / relative
 
 
-def require_checkpoints(variant: str = "", timestamp: str = TIMESTAMP) -> None:
+def require_checkpoints(
+    seeds: Sequence[int] = SEEDS, variant: str = "", timestamp: str | None = None
+) -> None:
     """Fail before the first measurement rather than after the last one.
 
     Every run is needed for the comparison to mean anything, and what follows a missing
     checkpoint takes long enough that finding out at the end would cost the whole pass.
+    `seeds` are the ones about to be measured, every arm of each.
     """
     missing = [
         checkpoint_path(arm, seed, variant, timestamp)
         for arm in ARMS
-        for seed in SEEDS
+        for seed in seeds
         if not checkpoint_path(arm, seed, variant, timestamp).exists()
     ]
     if missing:
         raise SystemExit(
-            f"{len(missing)} of {len(ARMS) * len(SEEDS)} checkpoints are missing:\n"
+            f"{len(missing)} of {len(ARMS) * len(seeds)} checkpoints are missing:\n"
             + "\n".join(f"  {path}" for path in missing)
             + "\n\nThese are excluded from the snapshots by design, so they exist only on "
               "the machine that ran the training. Nothing here can be measured without them."
@@ -274,7 +314,12 @@ def require_checkpoints(variant: str = "", timestamp: str = TIMESTAMP) -> None:
 
 
 def weights(
-    arm: Arm, seed: int, variant: str = "", timestamp: str = TIMESTAMP, *, model: str | None = None
+    arm: Arm,
+    seed: int,
+    variant: str = "",
+    timestamp: str | None = None,
+    *,
+    model: str | None = None,
 ) -> Weights:
     """A run's trained parameters, and the output layer picked out of them.
 
@@ -330,7 +375,7 @@ def trained_model(
     layers: int | Sequence[int],
     device: str,
     variant: str = "",
-    timestamp: str = TIMESTAMP,
+    timestamp: str | None = None,
 ) -> tuple[SmolVLM, Weights]:
     """One run's model, rebuilt from its checkpoint and reading the layers asked for.
 

@@ -18,6 +18,7 @@ on that prompt's rows alone, so each row of the returned gradient is that prompt
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 import torch
@@ -37,13 +38,13 @@ __all__ = [
 ]
 
 
-def site() -> tuple[int, int]:
-    """The layer the nine runs constrained, and the width of its vector.
+def site(seeds: Sequence[int] = SEEDS) -> tuple[int, int]:
+    """The layer the runs at `seeds` constrained, and the width of its vector.
 
-    Refused if they disagree: nine runs constraining different layers are not one
+    Refused if they disagree: runs constraining different layers are not one
     experiment, and there would be no single site to differentiate towards.
     """
-    sites = {constrained_layer(arm, seed) for arm in ARMS for seed in SEEDS}
+    sites = {constrained_layer(arm, seed) for arm in ARMS for seed in seeds}
     if len(sites) != 1:
         raise SystemExit(f"the runs constrained different sites ({sorted(sites)}).")
     return sites.pop()

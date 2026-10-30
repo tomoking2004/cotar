@@ -1,8 +1,9 @@
-"""How the study turns three seeds into a number, defined once.
+"""How the study turns its seeds into a number, defined once.
 
 The research document fixes three decisions: an arm is summarised by the mean over the
 seeds with an unbiased standard deviation beside it, arms are compared as differences
-*within* a seed, and an interval is Student's t on those three differences. They live
+*within* a seed, and an interval is Student's t on those differences — three of them for
+the main results, five for the robustness measurement. They live
 here rather than in each script because two scripts that formed an interval differently
 would put two meanings behind one bracket in the same document.
 """

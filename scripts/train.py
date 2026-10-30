@@ -5,6 +5,11 @@ every one of them. How a run is built is not a setting either: `cotar.training.S
 holds that, so that this and the sweep beside it build runs the same way and their
 numbers land on one axis.
 
+`SEEDS` is the batch this runs next. The reported experiment ran 42, 43 and 44
+(`20260829-134859`); context.md §8.1 adds 45 and 46 to it for the robustness question
+alone, so this now trains those two and nothing it has trained before. Setting it back to
+the first three reruns the reported batch.
+
 Set `DEBUG` to prove the wiring in minutes before committing a day to it.
 """
 
@@ -23,7 +28,7 @@ from cotar.training import ARMS, Settings, run_training
 from cotar.utils import timestamp
 
 DEBUG    = False
-SEEDS    = (42, 43, 44)
+SEEDS    = (45, 46)
 SETTINGS = Settings()
 
 
@@ -31,6 +36,10 @@ if __name__ == "__main__":
     settings = SETTINGS.as_debug() if DEBUG else SETTINGS
     ts = timestamp()
     total = len(SEEDS) * len(ARMS)
+
+    print(f"timestamp: {ts}"
+          f"\n  → the analyses find this batch by it: name it in cotar/analysis/experiment.py "
+          f"(ADDED_TIMESTAMP for seeds 45 and 46)\n")
 
     # Seed-major, so an interrupted experiment leaves whole arm comparisons behind
     # rather than the same arm at every seed and nothing to compare it against.
