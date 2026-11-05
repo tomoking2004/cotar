@@ -37,7 +37,7 @@ has no options to name in any case.
 
 **Everything random is decided by the question id.** A random string, the choice of
 directive, and the image a control swaps in are drawn from a generator seeded by the
-question's id, so the same question meets the same perturbation in every run — the nine
+question's id, so the same question meets the same perturbation in every run — the
 runs are compared pair by pair, and a perturbation that differed between them would put a
 difference of draw where a difference of arm is being read.
 

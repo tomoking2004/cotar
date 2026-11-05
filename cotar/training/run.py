@@ -1,6 +1,6 @@
 """One training run, and the settings that decide it.
 
-Two scripts train: one runs the three arms at three seeds to produce the experiment the
+Two scripts train: one runs every arm at each seed of a batch of the experiment the
 study reports, and one sweeps a setting the study fixed. They must build the run the same
 way or their numbers cannot be put on the same axis, so the building is here and neither
 script has its own copy.

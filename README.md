@@ -53,7 +53,7 @@ python scripts/normalize_drift.py          # その距離を，対照の分布�
 python scripts/update_poster.py            # その結果をポスターの5章へ書く（§8.1 の読み．torch 不要）
 ```
 
-**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る8本はモデルを走らせないので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める（§8.1 で足す乱数種 45・46 のバッチは `ADDED_TIMESTAMP`）．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
+**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る9本はモデルを走らせない．`probe_bypass.py` を除いて重みも要らないので，ノートPCで何度でも回せる．`update_poster.py` を除いて，それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める（§8.1 で足す乱数種 45・46 のバッチは `ADDED_TIMESTAMP`）．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
 
 `train.py` と `sweep.py` は run の建て方を共有する——`cotar/training/run.py` の `Settings` と `run_training` である．既定値が報告した実験の値なので，**sweep は変える設定だけを書き，残りが同じであることが目で見える．** どちらも冒頭の `DEBUG = True` で全分割を切り詰めた短い試走になり，数分で配線を確かめられる．
 
@@ -78,7 +78,8 @@ python scripts/train.py
 python scripts/probe_drift.py
 # 4. 読み直し — 15 run の問ごとの距離を読む（GPU 不要）
 python scripts/normalize_drift.py
-# 5. ポスター — 研究文書 §8.1・§A.6 に読みを書いてから，手元の機で（要るのは lxml だけで，torch は要らない）
+# 5. ポスター — 研究文書 §8.1・§A.6 に読みを書いてから，手元の機で（要るのは lxml だけで，torch は要らない．
+#    cotar 環境には入っていないので，無ければ pip install lxml）
 python scripts/update_poster.py
 ```
 
@@ -175,7 +176,7 @@ scripts/
   update_poster.py          その結果を，§8.1 の読みとともにポスターの5章へ書く（torch 不要）
 ```
 
-**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．
+**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなので，`update_poster.py` はポスターを書くだけなので，どちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．
 
 **機構は，この研究の中身に依存しない．** 別の研究に持っていくとき差し替わるのは3つだけ——**ファイルがどこにあるか**（`config.py`），**1 run をどう建てるか**（`training/run.py`），**どの実験を報告するか**（`analysis/experiment.py` の `TIMESTAMP` と `ADDED_TIMESTAMP`）．残りはすべてパスを引数で受け取り，実験を名指ししない．だから `cotar/` で `cfg` を import するのは後の2つと，済んだ実験の重みを読み直す `analysis/jacobian.py` だけで，機構は一つも import しない——`data`・`models`・`types`・`pairwise` と，`training/` の残り（`trainer.py`・`losses.py`・`metrics.py`・`logit_scale.py`）のどこにも `cfg` は無い．`cotar/__init__.py` が何も再輸出しないのも同じ理由で，`import cotar` がマシン固有のパスを束縛しないためである．
 
@@ -209,7 +210,7 @@ scripts/
 | プローブ（§A.1） | `analysis/probing.py`——sklearn は入れていないので torch の線形層＋AdamW で解く．当てはめ方と打ち切りの根拠はモジュール冒頭．研究文書の**言い回しプローブ**が `surface_matrices`（コードでは一貫して `surface`）で，`words`／`words_and_pairs` の高いほうを採る |
 | **形式の残差化**（§A.1） | `probing.format_matrix` が形式の3特徴を標準化して並べ，`residualize` が ridge の当てはめを引く．**署名ラベルは回帰に入らない**ので，プローブの学習側・評価側を分ける前の全行で当てはめてよい．残差を再正規化しない理由は関数の docstring にある |
 | 表現の幾何・損失・正解率の要約，崩壊値 $\log(B-1)$，1エポックのバッチ数と実行時間（§4.1・§4.4・§5.2） | `summarize_runs.py`——9 run の `eval.json`・`step_metrics.json`・`log.txt` を読み直すだけ．新しく測るものは無く，文書がしている算術をここでする |
-| $\bar{d}$・信頼区間（§4.3） | `analysis/statistics.py`——係数 $t_{n-1, 0.975}$ は表を引かずに求める．自由度2（乱数種3つ）は文書と同じ閉じた式で，それ以外は不完全ベータ関数を数値的に逆に解く．区間が 0 を跨ぐか否かも保存する |
+| $\bar{d}$・信頼区間（§4.3） | `analysis/statistics.py`——係数 $t_{n-1, 0.975}$ は表を引かずに求める．自由度2（乱数種3つ）は文書の 4.303 を与える閉じた式で，それ以外は不完全ベータ関数を数値的に逆に解く．区間が 0 を跨ぐか否かも保存する |
 | 頻度層別と層ごとの区間（§A.3） | `stratify_by_frequency.py` |
 | 整合の強さ・層を振った点（§8.4・§A.5） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.2 の数値を再現することが，両者が同じものを測っている証拠になる |
 | 「使われていない」の測定・第1段（§A.4） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
