@@ -50,6 +50,7 @@ python scripts/probe_bypass_pullback.py    # その方向を第16層へ引き戻
 python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼っているか（§A.4 第3段）
 python scripts/probe_drift.py              # 画像を加工したとき表現がどれだけ動くか（§A.6）
 python scripts/normalize_drift.py          # その距離を，対照の分布の形と別の比の作り方で読み直す（§A.6）
+python scripts/update_poster.py            # その結果をポスターの5章へ書く（§8.1 の読み．torch 不要）
 ```
 
 **モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る8本はモデルを走らせないので，ノートPCで何度でも回せる．それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める（§8.1 で足す乱数種 45・46 のバッチは `ADDED_TIMESTAMP`）．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
@@ -77,6 +78,8 @@ python scripts/train.py
 python scripts/probe_drift.py
 # 4. 読み直し — 15 run の問ごとの距離を読む（GPU 不要）
 python scripts/normalize_drift.py
+# 5. ポスター — 研究文書 §8.1・§A.6 に読みを書いてから，手元の機で（要るのは lxml だけで，torch は要らない）
+python scripts/update_poster.py
 ```
 
 `probe_drift.py` が既に測った run を測り直さないのは，同じ条件で測ったと確かめられるときだけである——学習のバッチ（乱数種ごとの timestamp）・checkpoint・加工の一覧・バッチの大きさが同じで，報告用データの全問を測ってあること（`on_file`）．`LIMIT` を入れた試走は，本走が測るはずの run だけを測って表示し，何も書かない．比べる乱数種は `cotar/analysis/experiment.py` の `ROBUSTNESS_SEEDS`（42–46）で，主結果（§5）を出すほかの分析は `SEEDS`（42–44）のまま読む．区間の係数（`analysis/statistics.py` の `t_critical`）は，乱数種の本数によらず出せる（5本なら 2.776）．
@@ -169,6 +172,7 @@ scripts/
   probe_dependence.py       答えが第16層にどれだけ頼っているかを群間で比べる（要 checkpoints・GPU）
   probe_drift.py            画像を加工したとき表現がどれだけ動くかを，5本の乱数種で群間で比べる（要 checkpoints・GPU）
   normalize_drift.py        その距離を，対照の分布の形と別の比の作り方で読み直す
+  update_poster.py          その結果を，§8.1 の読みとともにポスターの5章へ書く（torch 不要）
 ```
 
 **`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなのでどちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．

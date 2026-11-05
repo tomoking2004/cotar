@@ -28,6 +28,11 @@ dependencies = [
     "ujson",
 ]
 
+[project.optional-dependencies]
+# scripts/update_poster.py edits the poster's XML, which the standard library cannot write
+# back without losing the namespace prefixes PowerPoint's own attributes refer to.
+poster = ["lxml"]
+
 [tool.setuptools.packages.find]
 include = ["cotar*"]
 
