@@ -47,7 +47,7 @@ LAYER   = "16"
 CONTROL = "other_image"
 ARMS    = ("baseline", "proposal", "ablation")
 
-GREEN, RED = "70AD47", "C00000"
+GREEN, RED = "2E6B34", "C00000"
 MATH_FONT  = "Cambria Math"
 
 SLIDE      = "ppt/slides/slide1.xml"
@@ -84,7 +84,7 @@ class Reading(NamedTuple):
     row: str
     meaning: str
     conclusion: str
-    summary: str
+    summary: str                     # follows 「加工による 𝒉 の動き：」, a line of its own
 
 
 def read_drift(path: Path = DRIFT_PATH) -> Drift:
@@ -115,7 +115,7 @@ def reading_of(drift: Drift) -> Reading:
             "区間が 0 を含む",
             "比・距離：そのままでは安定性の差と読めず",
             "整合による 𝒉 の安定化は確認できず",
-            "整合前との差の向きは決められず",
+            "比では差の向きは決められず",
         )
 
     # The row asks that the ablation not shrink too; an ablation whose interval holds zero
@@ -169,11 +169,11 @@ def times(value: float) -> str:
 
 def ratio_line(drift: Drift) -> str:
     gap = drift.ratio_gap
-    lead = "proposal が最小．" if min(drift.ratio, key=drift.ratio.get) == "proposal" else ""
     if gap["excludes_zero"]:
+        lead = "proposal が最小．" if min(drift.ratio, key=drift.ratio.get) == "proposal" else ""
         return f"比：{lead}baseline との差は{signed(gap['mean'])}pt"
     limit = f"脆くなっても{signed(gap['ci_high'])}pt以内"
-    return f"比：{lead}baseline との差の向きは決められず（{limit}）"
+    return f"比：proposal と baseline の差の向きは決められず（{limit}）"
 
 
 def distance_line(drift: Drift) -> str:
@@ -189,17 +189,17 @@ def slots(drift: Drift) -> dict[tuple[str, int], str]:
     """Each paragraph the measurement decides, by shape name and position in the shape."""
     reading = reading_of(drift)
     spread = drift.control["proposal"] / drift.control["baseline"]
-    answers = "群のあいだに差" if drift.answers_differ else "3群で差は見られず"
+    answers = "群のあいだに差" if drift.answers_differ else "群の差の向きは決められず"
     widened = f"proposal：𝒉 の広がり自体が変化（別の画像での動き：{times(spread)}）"
     return {
         ("Drift result", 0): f"{{g:結果}}（3群 × {drift.seeds}乱数種の平均，予稿以後の測定）",
         ("Drift result", 1): ratio_line(drift),
         ("Drift result", 2): distance_line(drift),
-        ("Drift result", 3): f"答えが変わる割合：{answers}",
+        ("Drift result", 3): f"答えが変わる割合（全23通り）：{answers}",
         ("Drift discussion", 1): widened,
         ("Drift discussion", 2): reading.meaning,
         ("Drift discussion", 3): f"{{r:{reading.conclusion}}}",
-        ("Summary", -1): f"加工による 𝒉 の動き：{reading.summary}",
+        ("Summary", -1): reading.summary,
     }
 
 
