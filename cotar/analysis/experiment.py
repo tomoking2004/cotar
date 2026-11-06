@@ -64,7 +64,7 @@ SEEDS            = (42, 43, 44)
 # The two seeds §8.1 adds, and the batch they were trained in. The timestamp is the one
 # `train.py` prints when it starts; it stays empty until that batch has run, and reading
 # one of these seeds before then is refused rather than guessed.
-ADDED_TIMESTAMP  = ""
+ADDED_TIMESTAMP  = "20261105-162351"
 ADDED_SEEDS      = (45, 46)
 # The five the robustness measurement reports. The main results keep to `SEEDS`.
 ROBUSTNESS_SEEDS = SEEDS + ADDED_SEEDS
