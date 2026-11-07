@@ -49,7 +49,7 @@ python scripts/probe_bypass_pullback.py    # その方向を第16層へ引き戻
 python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼っているか（§A.4 第3段）
 python scripts/probe_drift.py              # 画像を加工したとき表現がどれだけ動くか（§A.6）
 python scripts/normalize_drift.py          # その距離を，対照の分布の形と別の比の作り方で読み直す（§A.6）
-python scripts/update_poster.py            # その結果をポスターの5章へ書く（§8.1 の読み．torch 不要）
+python scripts/update_poster.py            # その結果をポスターの3.3節へ書く（§8.1 の読み．torch 不要）
 python scripts/check_tidy.py               # tmp/ の形と __pycache__ を確かめる（Stop フックも走らせる）
 ```
 
@@ -173,7 +173,7 @@ scripts/
   probe_dependence.py       答えが第16層にどれだけ頼っているかを群間で比べる（要 checkpoints・GPU）
   probe_drift.py            画像を加工したとき表現がどれだけ動くかを，5本の乱数種で群間で比べる（要 checkpoints・GPU）
   normalize_drift.py        その距離を，対照の分布の形と別の比の作り方で読み直す
-  update_poster.py          その結果を，§8.1 の読みとともにポスターの5章へ書く（torch 不要）
+  update_poster.py          その結果を，§8.1 の読みとともにポスターの3.3節へ書く（torch 不要）
   check_tidy.py             tmp/ の形と __pycache__ を確かめる（CLAUDE.md の決まりの機械の検査）
 ```
 

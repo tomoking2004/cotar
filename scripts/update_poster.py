@@ -1,16 +1,16 @@
 """Write the robustness measurement into the poster. No GPU, no torch.
 
-Section 5 of the poster reports `probe_drift.py`, and context.md §8.1 reads that result only
+Section 3.3 of the poster reports `probe_drift.py`, and context.md §8.1 reads that result only
 once seeds 45 and 46 are in. Which sentence the poster may say was fixed before those seeds
 ran, as a table of what each outcome means, so choosing it is not a judgement left for the
 day: this reads `analyses/probe-drift.json`, finds the row of §8.1 the numbers fall in, and
 writes that row's wording and the numbers beside it. Run it after pulling the results.
 
-It touches only what the measurement decides — the two charts and the paragraphs `slots`
+It touches only what the measurement decides — the ratio chart and the paragraphs `slots`
 names — and at the level of the parts, as presentations/principles.md §5 asks: the slide,
 the chart and the chart's embedded workbook are edited in place, and nothing else in the
 package is rewritten. Everything else on the poster, including anything edited by hand in
-PowerPoint, stays as it is. Section 4 keeps to the three seeds of the main results (§8.1).
+PowerPoint, stays as it is. Section 3.2 keeps to the three seeds of the main results (§8.1).
 
 A paragraph is left alone when its text already reads as it should, so running this twice
 changes nothing, and "nothing to change" doubles as the check that the poster agrees with
@@ -47,7 +47,8 @@ LAYER   = "16"
 CONTROL = "other_image"
 ARMS    = ("baseline", "proposal", "ablation")
 
-GREEN, RED = "2E6B34", "C00000"
+GREEN = ACCENT = "4A8C45"      # the poster is one hue: conclusions stand out by size, not by colour
+BOLD_FONT  = "游ゴシック"
 MATH_FONT  = "Cambria Math"
 
 SLIDE      = "ppt/slides/slide1.xml"
@@ -70,11 +71,12 @@ class Drift:
 
     seeds: int
     ratio: dict[str, float]          # arm → ratio to the control, %
-    distance: dict[str, float]       # arm → distance under perturbation, × 10⁻³
+    distance: dict[str, float]       # arm → distance under perturbation
     control: dict[str, float]        # arm → distance under the control
     ratio_gap: dict[str, Any]        # proposal − baseline
     ablation_gap: dict[str, Any]     # ablation − baseline
     distance_gap: dict[str, Any]     # proposal − baseline
+    flip_gap: dict[str, Any]         # proposal − baseline, in how often answers flip (a fraction)
     answers_differ: bool             # does any pair of arms differ in how often answers flip?
 
 
@@ -84,7 +86,6 @@ class Reading(NamedTuple):
     row: str
     meaning: str
     conclusion: str
-    summary: str                     # follows 「加工による 𝒉 の動き：」, a line of its own
 
 
 def read_drift(path: Path = DRIFT_PATH) -> Drift:
@@ -98,11 +99,12 @@ def read_drift(path: Path = DRIFT_PATH) -> Drift:
     return Drift(
         seeds=len(report["seeds"]),
         ratio={arm: ratio["arms"][arm]["mean"] for arm in ARMS},
-        distance={arm: distance["arms"][arm]["mean"] * 1e3 for arm in ARMS},
+        distance={arm: distance["arms"][arm]["mean"] for arm in ARMS},
         control=control,
         ratio_gap=ratio["differences"]["proposal - baseline"],
         ablation_gap=ratio["differences"]["ablation - baseline"],
         distance_gap=distance["differences"]["proposal - baseline"],
+        flip_gap=family["flip_rate"]["differences"]["proposal - baseline"],
         answers_differ=any(d["excludes_zero"] for d in family["flip_rate"]["differences"].values()),
     )
 
@@ -113,49 +115,44 @@ def reading_of(drift: Drift) -> Reading:
     if not ratio["excludes_zero"]:
         return Reading(
             "区間が 0 を含む",
-            "比・距離：そのままでは安定性の差と読めず",
+            "そのままでは安定性の差と読めず",
             "整合による 𝒉 の安定化は確認できず",
-            "比では差の向きは決められず",
         )
 
     # The row asks that the ablation not shrink too; an ablation whose interval holds zero
     # has not been shown to, and the row stands.
     falls = ratio["mean"] < 0
     sign = "負" if falls else "正"
-    word, opposite = ("小", "大") if falls else ("大", "小")
+    word = "小" if falls else "大"
+    moved = "小さくなった" if falls else "大きくなった"
     if falls and ablation["excludes_zero"] and ablation["mean"] < 0:
         return Reading(
             "区間が 0 を含まず，負．ただし ablation でも小さくなる",
             "ablation でも比が低下",
             "比の低下：署名ラベルの効果とは言えず",
-            "比は低下，ただし署名ラベルの効果とは言えず",
         )
     if not distance["excludes_zero"]:
         return Reading(
             f"区間が 0 を含まず，{sign}．距離の向きは決められない",
             "距離そのものの向きは決められず",
             f"別の画像に比べ，加工による動きが{word}",
-            f"別の画像に比べて{word}",
         )
     if (distance["mean"] < 0) != falls:
         return Reading(
             f"区間が 0 を含まず，{sign}．距離は逆向き",
-            f"比では{word}，距離では{opposite}",
-            "安定性：比と距離で逆向き",
-            f"比では{word}，距離では{opposite}",
+            "安定性が高まったとまでは言えない",
+            f"別の画像に比べて，加工による 𝒉 の動きは{moved}が，",
         )
     if falls:
         return Reading(
             "区間が 0 を含まず，負．距離も同じ向き",
             "比でも距離でも小",
             "整合による 𝒉 の安定化を確認",
-            "比でも距離でも小",
         )
     return Reading(
         "区間が 0 を含まず，正．距離も同じ向き",
         "比でも距離でも大",
         "分離を強めた副作用による 𝒉 の脆弱化",
-        "比でも距離でも大",
     )
 
 
@@ -168,38 +165,50 @@ def times(value: float) -> str:
 
 
 def ratio_line(drift: Drift) -> str:
-    gap = drift.ratio_gap
-    if gap["excludes_zero"]:
-        lead = "proposal が最小．" if min(drift.ratio, key=drift.ratio.get) == "proposal" else ""
-        return f"比：{lead}baseline との差は{signed(gap['mean'])}pt"
-    limit = f"脆くなっても{signed(gap['ci_high'])}pt以内"
-    return f"比：proposal と baseline の差の向きは決められず（{limit}）"
+    if not drift.ratio_gap["excludes_zero"]:
+        return "群の差の向きは決められず"
+    ranked = min(drift.ratio, key=drift.ratio.get) == "proposal"
+    return "proposal が最小" if ranked else "baseline と差あり"
 
 
-def distance_line(drift: Drift) -> str:
-    gap = drift.distance_gap
-    if not gap["excludes_zero"]:
-        return "距離そのもの：baseline との差の向きは決められず"
-    against = (gap["mean"] < 0) != (drift.ratio_gap["mean"] < 0)
-    word = "小" if gap["mean"] < 0 else "大"
-    return f"距離そのもの：proposal が baseline より{word}" + ("（比と逆向き）" if against else "")
+def difference(gap: dict[str, Any], scale: float = 1) -> str:
+    """The difference to baseline with its interval, as every result on the poster gives it."""
+    low, mean, high = (signed(gap[key] * scale) for key in ("ci_low", "mean", "ci_high"))
+    return f"baseline との差：\t{mean}pt [{low}, {high}]"
+
+
+def moved_more(drift: Drift) -> str:
+    """How far 𝒉 moves at all in proposal, against baseline: under perturbation and the control.
+
+    The ratio divides the one by the other, so the two together say why it fell or rose.
+    """
+    perturbed = drift.distance["proposal"] / drift.distance["baseline"]
+    swapped = drift.control["proposal"] / drift.control["baseline"]
+    larger, smaller = min(perturbed, swapped) > 1, max(perturbed, swapped) < 1
+    both = "大きい" if larger else "小さい" if smaller else "違う"
+    times_each = f"加工：{times(perturbed)}，別の画像：{times(swapped)}"
+    return f"proposal は 𝒉 の動き自体が{both}（{times_each}）"
+
+
+def joined(conclusion: str, meaning: str) -> str:
+    """The 3.3 reading as one sentence, for the summary's discussion."""
+    return conclusion + ("" if conclusion.endswith("，") else "，") + meaning
 
 
 def slots(drift: Drift) -> dict[tuple[str, int], str]:
     """Each paragraph the measurement decides, by shape name and position in the shape."""
     reading = reading_of(drift)
-    spread = drift.control["proposal"] / drift.control["baseline"]
     answers = "群のあいだに差" if drift.answers_differ else "群の差の向きは決められず"
-    widened = f"proposal：𝒉 の広がり自体が変化（別の画像での動き：{times(spread)}）"
     return {
-        ("Drift result", 0): f"{{g:結果}}（3群 × {drift.seeds}乱数種の平均，予稿以後の測定）",
-        ("Drift result", 1): ratio_line(drift),
-        ("Drift result", 2): distance_line(drift),
-        ("Drift result", 3): f"答えが変わる割合（全23通り）：{answers}",
-        ("Drift discussion", 1): widened,
-        ("Drift discussion", 2): reading.meaning,
-        ("Drift discussion", 3): f"{{r:{reading.conclusion}}}",
-        ("Summary", -1): reading.summary,
+        ("Drift result", 0): f"{{g:結果}}\t{ratio_line(drift)}",
+        ("Drift result", 1): difference(drift.ratio_gap),
+        ("Drift answers", 0): f"{{g:結果}}\t{answers}",
+        ("Drift answers", 1): difference(drift.flip_gap, scale=100),
+        ("Drift discussion", 0): f"{{g:考察}}\t{moved_more(drift)}",
+        ("Drift discussion", 1): f"{{r:{reading.conclusion}}}",
+        ("Drift discussion", 2): f"{{r:{reading.meaning}}}",
+        ("Summary", -1): f"比：{ratio_line(drift)}",
+        ("Summary discussion", -1): joined(reading.conclusion, reading.meaning),
     }
 
 
@@ -212,10 +221,11 @@ def paragraph_text(paragraph: etree._Element) -> str:
 
 
 def restyle(style: etree._Element, color: str | None, font: str | None) -> etree._Element:
-    """A copy of a run's properties in another colour (and so bold) or typeface."""
+    """A copy of a run's properties in another colour (and so the real bold) or typeface."""
     style = copy.deepcopy(style)
     if color:
         style.set("b", "1")
+        font = font or BOLD_FONT
         fill = style.find("a:solidFill", NS)
         if fill is None:
             fill = etree.Element(f"{{{NS['a']}}}solidFill")
@@ -237,7 +247,7 @@ def set_paragraph(paragraph: etree._Element, markup: str) -> None:
     runs = paragraph.findall("a:r", NS)
     body = [r for r in runs if not SYMBOL.fullmatch(r.findtext("a:t", "", NS))]
     style = body[-1].find("a:rPr", NS)
-    colors = {"g": GREEN, "r": RED}
+    colors = {"g": GREEN, "r": ACCENT}
 
     pieces, position = [], 0
     for match in MARKUP.finditer(markup):
@@ -342,7 +352,6 @@ def update(poster: Path = POSTER_PATH, drift_path: Path = DRIFT_PATH) -> list[st
     slide = etree.fromstring(parts[SLIDE])
     changes = write_slots(slide, drift)
     changes += write_chart(parts, slide, "Chart ratio", drift.ratio, step=5)
-    changes += write_chart(parts, slide, "Chart distance", drift.distance, step=1)
     if changes:
         parts[SLIDE] = etree.tostring(slide, xml_declaration=True, encoding="UTF-8",
                                       standalone=True)
