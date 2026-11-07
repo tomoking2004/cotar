@@ -51,7 +51,7 @@
 | --- | --- |
 | このファイル（CLAUDE.md） | 作業の進め方の全体：委譲，外部への連絡，原典の確かめ方，確定版で終えること，記録の仕方 |
 | [.claude/context-philosophy.md](.claude/context-philosophy.md) | 研究文書の書き方：何を書き，どう組み，どの強さで言い切るか |
-| [.claude/skills/refine/BEAUTY.md](.claude/skills/refine/BEAUTY.md) | コードと文書の仕上げの基準（美の6条）．写しなので，直す先は tomoking2004/claude-plugins |
+| refine プラグインの BEAUTY.md | コードと文書の仕上げの基準（美の6条）．直す先は tomoking2004/claude-plugins |
 | [papers/principles.md](papers/principles.md) | 論文（予稿・修論）の組版 |
 | [presentations/principles.md](presentations/principles.md) | 発表資料（スライド・ポスター）の作り方と，確定前の走査 |
 | [papers/pcsj-imps-2026/check.py](papers/pcsj-imps-2026/check.py) | 予稿の書式の機械検査（フックで自動実行） |
@@ -74,8 +74,8 @@
 
 ## 仕上げ・記録・長い実行は，自作のスキルに従う
 
-- スキルは [.claude/skills/](.claude/skills/) にあり，セッションの開始時に読み込まれる（セッション中に足したり写し直したりしたら /reload-plugins で読み直す）．[tomoking2004/claude-plugins](https://github.com/tomoking2004/claude-plugins) の `plugins/<plugin>/` を，プラグインごと丸ごと写したものである（写した版は `c29a3f7`）．丸ごと写すのは，スキルが相対リンクで BEAUTY.md などを指すからである．定義を直す先は常にあちらで，ここの写しは直さない．あちらを更新したら写し直す．
-- コードと文書の仕上げは /capstone:refine で行う（単一の媒体なら /refine:code・/refine:docs）．美の基準は [.claude/skills/refine/BEAUTY.md](.claude/skills/refine/BEAUTY.md) にある．
+- スキルは [tomoking2004/claude-plugins](https://github.com/tomoking2004/claude-plugins) のプラグインとして導入してあり，セッションの開始時に読み込まれる（セッション中に更新したら /reload-plugins で読み直す）．リポジトリに写しは置かない．定義を直す先は常にあちらである．
+- コードと文書の仕上げは /capstone:refine で行う（単一の媒体なら /refine:code・/refine:docs）．美の基準は refine プラグインの BEAUTY.md にある．
 - 記録は /capstone:commit で行う——メッセージを全文で提案し，承認を得てからコミットする．コミットは頼まれたときだけ行う．
 - **承認を得てコミットしたら，続けて push する．** ローカルとリモートを食い違わせないための本人の指示（2026-10-29）で，/capstone:commit の「push しない」に優先する．
 - 数十秒を超えて走るプログラム（学習・評価）は /ops:exec で走らせる．
