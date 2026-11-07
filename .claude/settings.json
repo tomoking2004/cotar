@@ -1,5 +1,20 @@
 {
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
   "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/scripts/check_tidy.py\" --hook",
+            "timeout": 30,
+            "statusMessage": "tmp/ と __pycache__ を確かめています"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|Bash",

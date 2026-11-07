@@ -50,6 +50,7 @@ python scripts/probe_dependence.py         # 答えが第16層にどれだけ頼
 python scripts/probe_drift.py              # 画像を加工したとき表現がどれだけ動くか（§A.6）
 python scripts/normalize_drift.py          # その距離を，対照の分布の形と別の比の作り方で読み直す（§A.6）
 python scripts/update_poster.py            # その結果をポスターの5章へ書く（§8.1 の読み．torch 不要）
+python scripts/check_tidy.py               # tmp/ の形と __pycache__ を確かめる（Stop フックも走らせる）
 ```
 
 **モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る9本はモデルを走らせない．`probe_bypass.py` を除いて重みも要らないので，ノートPCで何度でも回せる．`update_poster.py` を除いて，それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める（§8.1 で足した乱数種 45・46 のバッチは `ADDED_TIMESTAMP`）．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
@@ -173,6 +174,7 @@ scripts/
   probe_drift.py            画像を加工したとき表現がどれだけ動くかを，5本の乱数種で群間で比べる（要 checkpoints・GPU）
   normalize_drift.py        その距離を，対照の分布の形と別の比の作り方で読み直す
   update_poster.py          その結果を，§8.1 の読みとともにポスターの5章へ書く（torch 不要）
+  check_tidy.py             tmp/ の形と __pycache__ を確かめる（CLAUDE.md の決まりの機械の検査）
 ```
 
 **`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなので，`update_poster.py` はポスターを書くだけなので，どちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．
