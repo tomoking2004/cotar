@@ -56,7 +56,7 @@ probing classifier の考え方は単純である——"a classifier is trained 
 | ポスターの文 | 原典の箇所 | 原文 | 読み |
 | --- | --- | --- | --- |
 | 読み取り精度 方法：𝒉 から署名を当てる線形分類器の正解率 | 要旨，§4.2 | "a classifier is trained to predict some linguistic property from a model's representations"，"Some studies advocate for using simple probes, such as linear classifiers" | probing の標準の形である．性能の指標としての正解率も §2 に "(e.g., accuracy)" とある．本研究の 𝒉 は長さ1に揃えたもので，10問以上ある署名に限っている（研究文書 §A.1） |
-| 読める情報が使われるとは限らない[5] | §4.3 | "it does not tell us whether this property is involved in predictions of f" | 「とは限らない」は §4.3 全体と整合する．「使われない」と書けば言い過ぎになる——Giulianelli らは使われている例を報告している |
+| （外した文）読める情報が使われるとは限らない | §4.3 | "it does not tell us whether this property is involved in predictions of f" | 「とは限らない」は §4.3 全体と整合する．「使われない」と書けば言い過ぎになる——Giulianelli らは使われている例を報告している |
 
 ## 学会で聞かれたら
 
@@ -67,7 +67,7 @@ probing classifier の考え方は単純である——"a classifier is trained 
 3. **相関と因果の問題とは？**
    プローブと元のモデルは別々に学習されるので，プローブが見つけた情報を元のモデルが使っているかは分かりません．使用を問うには，表現への介入が要ると整理されています．（§4.3，§5）
 4. **読めることと使われることの関係は，もう決着していますか？**
-   決着していません．Giulianelli らは使われている特徴を見つけられると結論し，Elazar らは常にではないと結論しています．ポスターの「とは限らない」は，この範囲の言い方です．（§4.3）
+   決着していません．Giulianelli らは使われている特徴を見つけられると結論し，Elazar らは常にではないと結論しています．「読めても使われるとは限らない」という言い方なら，この範囲に収まります．（§4.3）
 5. **線形プローブでよいのですか？**
    単純なプローブを推す研究があり，線形のほうが selectivity が高い傾向も報告されています．一方で最も複雑なプローブを使うべきという主張もあり，統一された答えはありません．本研究の測定は線形だけです．（§4.1，§4.2，研究文書 §5.1）
 6. **読めることと使われることの区別は既知です．本研究の新しさは何ですか？**

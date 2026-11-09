@@ -73,23 +73,35 @@ accuracy のほか，consistency，validity（答えが質問の範囲に入っ�
 
 ポスターの文ごとに，依る原文を示す．「こちらの定義」「こちらの設定」と書いた部分は，原典の主張ではない．
 
-**「タスク署名：データセット GQA[2] が各質問に付ける手順の記述から，操作の名前だけを並べた列」**
+**1章「一方，人間は画像が加工されても，同じ手順を踏んで答えを導くと考えられる」**
 
-- 前半は §3 の文に戻せる——“Each question is associated with a functional program which lists the series of reasoning steps needed to be performed to arrive at the answer.”
+- 対応する原文は無い．本研究の見方で，検証していない．「考えられる」と書くのはそのためである．
+- 論文は program を人間の手順とは呼ばない．arXiv v3 の PDF 全文で “human” と “people” を引くと（2026-11-09），出てくるのは人間の正解率（89.3%），一貫性（98.4%），回答を集めた Mechanical Turk の実験，“a good proxy for human-like questions”（質問の自然さについて）だけである．教授のコメント（2026-11-09）は program を「人間の視覚的推論手順を計算可能な形で抽象化したもの」と書いたが，ポスターは原典の定義（下）で書いた．
+
+**1章「functional program：答えに至る推論の手順を，操作の列で書き下したもの（データセット GQA[2] の各質問に付属）」**
+
+- §3 の文に戻せる——“Each question is associated with a functional program which lists the series of reasoning steps needed to be performed to arrive at the answer.”（2026-11-09 に arXiv v3 の PDF で再確認）．付録の “a matching logical representation of the sequence of reasoning steps” も同じことを言う．「各質問に付属」は要旨の “22M diverse reasoning questions, which all come with functional programs” にあたる．
+- 本人は「人間が答えに至る推論の手順」とする案を出した（2026-11-09）．上の原文に人間の語は無く（前の項），ポスターは規定（presentations/principles.md の「先行研究から問いへは，段を踏んで導く」の項）どおり原典の定義で書き，人間の話は前の行の「考えられる」に任せた．本人は，原典どおりの定義でよいとした（2026-11-09）．
+- 「操作の列」は論文の “atomic operations”（§3.3）の並びにあたる．
+- 判定：言い過ぎは無い．
+
+**3.1「タスク署名（以下，署名）：program から操作の名前だけを並べた列」**
+
+- program は，上の1章の項と同じく §3 の文に戻せる．
 - 「操作の名前」は配布データの `operation` である（Download ページ：“The reasoning operation.”）．論文の語では “atomic operations”（§3.3）にあたる．名前には `filter color`・`verify rel` のように種類まで含むものがある（`analyses/audit-dataset.json`）．
 - 「並べた列」はこちらの操作で，論文には無い．
 - 判定：言い過ぎは無い．
 
-**「手順の判定：タスク署名（以下，署名）が一致すれば，同じ手順とみなす」**
+**3.1「同じ手順の判定：署名が一致すれば，同じ手順とみなす」**
 
 - 対応する原文は無い．こちらの定義である．論文が program から求めるのは “entailment and equivalence relations between different questions”（§3.3）である．
 - 捨てているのは引数だけではない．`task_signature` は `operation` しか読まないので，依存先も捨てている．列が同じで依存の形が違う program がどれだけあるかは測っていない．
 - 判定：「みなす」と書いているので言い過ぎではない．口頭でも「同じ解き方である」と言い切らない（研究文書 §3.1）．
 
-**「例：select: girl／relate: holding／query: name（縦に一段ずつ）→ select > relate > query（操作の名前だけを並べた列）」**
+**1章の例「select: girl／relate: holding／query: name」（写真ごとに一段）と，3.1 の例「select: girl → relate: holding → query: name → select > relate > query：2章の図の手順 A（B は select > query）」**
 
 - 問 201593903（“What's the girl holding?”，答え racket）の `semantic` は `select: girl (5)` → `relate: _,holding,o (11)` → `query: name` である．公式の `questions1.2.zip` の `testdev_balanced_questions.json` から読んだ（2026-11-08）．
-- ポスターは「操作: 対象」の形を原データのとおりに残し，対象の物体 ID（`(5)`・`(11)`）と関係の向きの記号（`_,…,o`）だけを略している．論文 §3 の例も同じ形（“select: table → filter: white → …”）で書かれている．同じ署名の例に並べた問 201889340（“Who is wearing a helmet?”）は `select: helmet` → `relate: person,wearing,s` → `query: name`，問 20794339（“What is the color of the mustard bottle?”）は `select: mustard bottle` → `query: color` である．
+- ポスターは「操作: 対象」の形を原データのとおりに残し，対象の物体 ID（`(5)`・`(11)`）と関係の向きの記号（`_,…,o`）だけを略している．論文 §3 の例も同じ形（“select: table → filter: white → …”）で書かれている．2章の図で手順 A と並べた問 201889340（“Who is wearing a helmet?”）は `select: helmet` → `relate: person,wearing,s` → `query: name` で，girl の問と署名が同じである．手順 B とした問 20794339（“What is the color of the mustard bottle?”）は `select: mustard bottle` → `query: color` で，署名は `select > query` である．図は署名を出さず「手順 A・B」と呼び，3.1 がそれを署名に結ぶ（2026-11-09）．
 - 判定：略しただけで，操作の名前と順は原データのとおりである．
 
 **「学習：GQA[2] 942,116問から抽出（1バッチは16署名 × 2問）」**
@@ -161,3 +173,7 @@ accuracy のほか，consistency，validity（答えが質問の範囲に入っ�
 **確認**：2026-11-06．arXiv v3 の PDF 全文（本文と付録7–12，18頁）と CVF Open Access の PDF（本文10頁）をテキスト化して読み，この要約の数値・引用・節番号を一つずつ照合した．引用は両版で一致することを機械的に確かめた．テキスト化で崩れた箇所（program の例の矢印，$E_q$ の式，図6，表2）は PDF のページ画像で見た．公式サイトの About・Evaluation・Download・Challenge の各ページも読んだ．2026-08-23 の確認は ar5iv 経由だったので，この確認で置き換える．**読めていないもの**：図5・7・10・11 の細かな値，配布物の質問データそのもの（問数と重なりは `analyses/audit-dataset.json` に依る）．
 
 **追記**：2026-11-08．ポスターの例の3問（201593903・201889340・20794339）の `semantic` を，公式の `questions1.2.zip` から `testdev_balanced_questions.json` を範囲指定で読んで確かめた．読んだのはこの3問の質問・答え・`semantic` だけである．
+
+**追記**：2026-11-09．教授のコメント（program を人間の推論手順の抽象化と書く案）を受けて，arXiv v3 の PDF を取り直してテキスト化し，§3 の program の定義と，“human”・“people” を含む全文を読んだ．program を人間の手順と呼ぶ文は無かった．ポスターの1章と3.1の文を「ポスターとの対応」に足した．
+
+**再確認**：2026-11-09（2回目）．ポスターの program の定義を書き直すため，arXiv の PDF（v3）を取り直して pdftotext の文で，要旨（“which all come with functional programs”），§3 の program の定義，“human” を含む全文を読み直した．program を人間の手順と呼ぶ文は無かった．

@@ -226,15 +226,16 @@ VLM の頑健性は通例**出力レベルの不変性**で測られ，予測が
 - **方法「加工の前後で答えと内部表現を比較」**——§3 "decouple decision instability (output changes) from representation instability (representation drift)"，§4 "how often do predictions change under meaning-preserving transformations"，"what happens internally when predictions do not change"．
 - **結果「答えが同じでも，内部表現は大きく変化」**——要旨 "models frequently preserve predicted answers while undergoing substantial internal representation drift"，§1 "in some cases, the model preserves its predicted answer under perturbation despite a substantial representation drift"．数値は表4で，幾何摂動は "below 10% of inter-image variability"，テキスト重畳は "approaches 78%" である．
 
-**3.3 比（%）**
+**3.3 動きの比（%）**
 
-- **「加工の前後の 𝒉 のコサイン距離」**——表4の題 "measured using cosine distance"，§3.3 の Embedding Stability．𝒉 の層と位置は本研究のもので，原典は LLM の最終層である．
-- **「÷ 同じ質問・別の画像での距離の平均」**——表4の注 "Drift is expressed as a percentage of mean control drift"，§4.4 "a control baseline of distances to randomly sampled other images"．分母は control の分布の平均である．
-- **「Wani ら[1]に倣う」**——倣ったのは，距離を control の平均で割って % で書く形（表4）である．control の作り方は本研究と違う（→ 問19）．
+- **「Wani ら[1]の尺度」**——表4の注 "Drift is expressed as a percentage of mean control drift"．比は原典が使う尺度である．ただし原典は一つのモデルの中で加工の種類どうしを比べるのに使い，本研究は別々に学習した群を比べる（→ 問15）．倣ったのは，距離を control の平均で割って % で書く形である．
+- **「加工の前後の 𝒉 の距離」**——表4の題 "measured using cosine distance"，§3.3 の Embedding Stability．𝒉 の層と位置は本研究のもので，原典は LLM の最終層である．
+- **「÷ 別の画像に替えたときの距離」**——§4.4 "a control baseline of distances to randomly sampled other images"．分母は control の分布の平均である．本研究は同じ質問に別の画像を付ける（→ 問19）．
+- **「加工による動きが別の画像の何%か」**——表4の注の定義による．比が小さいほど，加工による動きは別の画像との距離に比べて小さい．§3.3 の d の読み方 "Large negative values indicate that perturbation-induced drift is substantially smaller than inter-image variability" とも符合する．群どうしでは分母が違うので，比の低下は距離の低下を意味しない（→ 問16）．
 
 **加工の例**
 
-- **「Wani ら[1]に倣う8族23通り」**——付録 A.6 "We define the perturbation families with the following parameter sweeps"．原典の族の数は §3.2 の "six families of natural perturbations" で，8は表1の行の数，23は本研究の数え方である（→ 問9）．
+- **「Wani ら[1]に倣う23通り」**——付録 A.6 "We define the perturbation families with the following parameter sweeps"．原典の族の数は §3.2 の "six families of natural perturbations" である．ポスターは族の数を載せず，23は本研究の数え方である（→ 問9）．
 - **「全問に適用」**——本研究の設計である．原典は "Each perturbation type is applied multiple times per image"（付録 A.6）と書く．
 
 ## 学会で聞かれたら
@@ -256,7 +257,7 @@ VLM の頑健性は通例**出力レベルの不変性**で測られ，予測が
 6. **Cohen's d はどういう意味ですか．** 加工による距離の分布と対照の分布がどれだけ離れているかを，標準偏差を単位に表した値です．大きな負の値なら加工の動きは画像間の違いよりずっと小さく，0 に近ければ二つの分布が重なります．分母の合わせ方は原典には書かれていませんが，表7の値からは二つの分散を等しく合わせたと逆算できます．（§3.3，表4・表7，付録 A.9）
 7. **78% はどのモデルでも出る値ですか．** いいえ．Qwen3-VL-2B の ans_mcq_free の値で，要旨も最も小さいモデルに限っています．Gemma-3 の同じ埋め込みでは，表の値を割ると対照の1〜2割で，著者も ans_mcq_free には生成のばらつきが混ざると書いています．（要旨，§4.3，表4・11・15・24・25）
 8. **答えが変わらなかった事例だけで集計したのですか．** 原典には書かれていません．表3と表4にその限定は無く，答えが変わらなかった事例だけの値はどの表にもありません．本研究はその集計も出していて，比は 14.31／9.62／20.60% でほとんど変わりません．（§4.3，§4.4，研究文書 §A.6）
-9. **加工は何族ですか．23通りは原典と同じですか．** 原典は6族と数え，重ね書きの3種を開いた表1の行が8つなので，ポスターの8はこの行の数です．定められた値は付録 A.6 のとおりで，1枚あたりの件数は違います．原典は縮小と余白が2件，指示文が最大3件で，本研究はどちらも1通りです．（§3.2，付録 A.6，表2，研究文書 §A.6）
+9. **加工は何族ですか．23通りは原典と同じですか．** 原典は6族と数え，重ね書きの3種を開いた表1の行は8つです．ポスターの23通りは本研究の数え方です．定められた値は付録 A.6 のとおりで，1枚あたりの件数は違います．原典は縮小と余白が2件，指示文が最大3件で，本研究はどちらも1通りです．（§3.2，付録 A.6，表2，研究文書 §A.6）
 10. **文字の重ね書きが効くのは，画像が隠れるからではないですか．** 答えが変わる割合は，空の箱 4.3%，無作為な文字列 6.4%，指示文 19.2% で，隠れることだけでは説明できません．原典は指示文を "pixel-space prompt injection" と解釈しています．ただし指示に一様に従うわけではなく，正答していた画像が誤った文字で変わるのは 10.7% です．（§4.1，§4.2，表1）
 11. **加工で正解が変わることはないのですか．** 原典は人が見て内容が分かる範囲の加工だとしますが，空間関係の問は "partial exception" だと認めています．そこで物の位置を動かさない劣化でも答えが変わることを，GQA の100枚で確かめています．本研究の GQA には空間関係の問が多いので，この前提はその分だけ弱いです．（付録 A.4・A.7，研究文書 §A.6）
 12. **大きいモデルほど頑健なのではないですか．** 原典はそうならないと言います．表5で Qwen 2B→4B，LLaVA 0.5B→7B，Gemma 4B→12B は，正解率が上がっても答えの変わる割合が下がりません．内部表現の側の表があるのは Gemma-3 の 4B と 12B だけです．（§5.1，表5，付録 C.4）
@@ -287,3 +288,5 @@ VLM の頑健性は通例**出力レベルの不変性**で測られ，予測が
 **再確認**：2026-11-06．比の使い方を確かめるため，arXiv HTML v2 の §4 冒頭・表4・§5.1・付録 C.4 の該当箇所を読んだ．control に対する比（表4）は Qwen3-VL-2B の1モデルの中で加工の種類どうしを比べるのに使われ，モデルどうしの比較は付録で距離そのもの（Gemma-3 の 4B と 12B．表11・表15など）で行われている．規模についての主張は，表5では正解率と答えが変わる割合により，内部表現については Gemma-3 の 4B と 12B の表による．
 
 **照合**：2026-11-06．学会の前に，arXiv HTML v2 を取得してテキスト化し，要旨，§1〜§8，Limitations，付録 A〜F の本文，表1〜29の全行，図の注を読んで，本要約の数値・引用・節番号・表番号を一件ずつ原文に照らした．abs ページで，版が v2 までであることと v1・v2 の日付を確かめた．直したのは，POPE の節の文を全体の定めとして引いていたこと，`ctx_mcq` の「約0.99」，POPE のマージンの条件，PGD の「79% 超」，SEEDBench の分割，途中を略した引用，問の扱いを確定として書いていたことである．足したのは，§4.3 の ans_mcq_free の但し書き，control の表，規模の根拠の分解，族の数え方，d の分母の逆算，ポスターとの対応，想定問答である．逆算と，Gemma-3 の比は，表の値からの計算で原典の記述ではない．図の中の値は読んでいない（画像なので注だけを読んだ）．PDF 版は照合していない．
+
+**再確認**：2026-11-09．ポスターの 3.3 に「Wani ら[1]の尺度」と書くため，arXiv HTML v2 で表4の注 "Drift is expressed as a percentage of mean control drift"，§4.4 "we compare against a control baseline of distances to randomly sampled other images"，§3.3 "we compute distances between its embedding across regimes and the embeddings of randomly sampled other images" を読み直した．要約の引用と一致した．

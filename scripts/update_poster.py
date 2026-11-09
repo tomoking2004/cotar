@@ -78,6 +78,7 @@ class Drift:
     distance_gap: dict[str, Any]     # proposal − baseline
     flip_gap: dict[str, Any]         # proposal − baseline, in how often answers flip (a fraction)
     answers_differ: bool             # does any pair of arms differ in how often answers flip?
+    answers_close: bool              # do all their intervals stay within ±2pt?
 
 
 class Reading(NamedTuple):
@@ -106,6 +107,8 @@ def read_drift(path: Path = DRIFT_PATH) -> Drift:
         distance_gap=distance["differences"]["proposal - baseline"],
         flip_gap=family["flip_rate"]["differences"]["proposal - baseline"],
         answers_differ=any(d["excludes_zero"] for d in family["flip_rate"]["differences"].values()),
+        answers_close=all(max(-d["ci_low"], d["ci_high"]) * 100 <= 2
+                          for d in family["flip_rate"]["differences"].values()),
     )
 
 
@@ -115,44 +118,43 @@ def reading_of(drift: Drift) -> Reading:
     if not ratio["excludes_zero"]:
         return Reading(
             "区間が 0 を含む",
-            "そのままでは安定性の差と読めず",
-            "整合による 𝒉 の安定化は確認できず",
+            "動きの比の差ははっきりしない",
+            "𝒉 が加工で動きにくくなったとは確認できない",
         )
 
     # The row asks that the ablation not shrink too; an ablation whose interval holds zero
     # has not been shown to, and the row stands.
     falls = ratio["mean"] < 0
     sign = "負" if falls else "正"
-    word = "小" if falls else "大"
     moved = "小さくなった" if falls else "大きくなった"
     if falls and ablation["excludes_zero"] and ablation["mean"] < 0:
         return Reading(
             "区間が 0 を含まず，負．ただし ablation でも小さくなる",
-            "ablation でも比が低下",
-            "比の低下：署名ラベルの効果とは言えず",
+            "ablation でも動きの比が低下",
+            "動きの比の低下は，手順（署名）には帰せない",
         )
     if not distance["excludes_zero"]:
         return Reading(
             f"区間が 0 を含まず，{sign}．距離の向きは決められない",
-            "距離そのものの向きは決められず",
-            f"別の画像に比べ，加工による動きが{word}",
+            "距離そのものの差ははっきりしない",
+            f"別の画像に比べた 𝒉 の動き（比）は{moved}",
         )
     if (distance["mean"] < 0) != falls:
         return Reading(
             f"区間が 0 を含まず，{sign}．距離は逆向き",
-            "安定性が高まったとまでは言えない",
-            f"別の画像に比べて，加工による 𝒉 の動きは{moved}が，",
+            f"𝒉 が動き{'にくく' if falls else 'やすく'}なったとまでは言えない",
+            f"別の画像に比べた 𝒉 の動き（比）は{moved}が，",
         )
     if falls:
         return Reading(
             "区間が 0 を含まず，負．距離も同じ向き",
-            "比でも距離でも小",
-            "整合による 𝒉 の安定化を確認",
+            "動きの比でも距離でも小",
+            "手順（署名）を使った整合により，𝒉 が加工で動きにくくなった",
         )
     return Reading(
         "区間が 0 を含まず，正．距離も同じ向き",
-        "比でも距離でも大",
-        "分離を強めた副作用による 𝒉 の脆弱化",
+        "動きの比でも距離でも大",
+        "違う手順を遠ざけた副作用により，𝒉 が加工で動きやすくなった",
     )
 
 
@@ -164,11 +166,27 @@ def times(value: float) -> str:
     return f"約{round(value)}倍" if value >= 2 else f"約{value:.1f}倍"
 
 
-def ratio_line(drift: Drift) -> str:
-    if not drift.ratio_gap["excludes_zero"]:
-        return "群の差の向きは決められず"
-    ranked = min(drift.ratio, key=drift.ratio.get) == "proposal"
-    return "proposal が最小" if ranked else "baseline と差あり"
+def ratio_line(drift: Drift, named: bool = False) -> str:
+    """What the ratio tells, not where proposal ranks.
+
+    Beside the 3.3 discussion, which says how far 𝒉 moves at all, the result names the ratio
+    (`named`); the summary's line already starts with the measure's name.
+    """
+    gap = drift.ratio_gap
+    if not gap["excludes_zero"]:
+        return "動きの比の差ははっきりしない"
+    change = "縮小" if gap["mean"] < 0 else "拡大"
+    return f"比で見た 𝒉 の動きが{change}" if named else f"別の画像に比べた動きが{change}"
+
+
+def ratio_arms(drift: Drift) -> str:
+    """Which arms moved: proposal alone, or the ablation with it."""
+    gap, ablation = drift.ratio_gap, drift.ablation_gap
+    if not gap["excludes_zero"]:
+        return "proposal と baseline の差は区間が 0 を含む"
+    word = "低下" if gap["mean"] < 0 else "上昇"
+    both = ablation["excludes_zero"] and (ablation["mean"] < 0) == (gap["mean"] < 0)
+    return f"proposal と ablation で{word}" if both else f"proposal だけ{word}"
 
 
 def difference(gap: dict[str, Any], scale: float = 1) -> str:
@@ -191,23 +209,27 @@ def moved_more(drift: Drift) -> str:
 
 
 def joined(conclusion: str, meaning: str) -> str:
-    """The 3.3 reading as one sentence, for the summary's discussion."""
-    return conclusion + ("" if conclusion.endswith("，") else "，") + meaning
+    """The 3.3 reading for the summary: one sentence if the conclusion runs on, else two."""
+    return conclusion + meaning if conclusion.endswith("，") else f"{conclusion}．{meaning}"
 
 
 def slots(drift: Drift) -> dict[tuple[str, int], str]:
     """Each paragraph the measurement decides, by shape name and position in the shape."""
     reading = reading_of(drift)
-    answers = "群のあいだに差" if drift.answers_differ else "群の差の向きは決められず"
+    if drift.answers_differ:
+        answers = "群のあいだに差"
+    else:
+        answers = "3群でほとんど同じ" if drift.answers_close else "差ははっきりしない"
     return {
-        ("Drift result", 0): f"{{g:結果}}\t{ratio_line(drift)}",
-        ("Drift result", 1): difference(drift.ratio_gap),
+        ("Drift result", 0): f"{{g:結果}}\t{ratio_line(drift, named=True)}",
+        ("Drift result", 1): ratio_arms(drift),
+        ("Drift result", 2): difference(drift.ratio_gap),
         ("Drift answers", 0): f"{{g:結果}}\t{answers}",
         ("Drift answers", 1): difference(drift.flip_gap, scale=100),
         ("Drift discussion", 0): f"{{g:考察}}\t{moved_more(drift)}",
         ("Drift discussion", 1): f"{{r:{reading.conclusion}}}",
         ("Drift discussion", 2): f"{{r:{reading.meaning}}}",
-        ("Summary", -1): f"比：{ratio_line(drift)}",
+        ("Summary", -1): f"動きの比：{ratio_line(drift)}",
         ("Summary discussion", -1): joined(reading.conclusion, reading.meaning),
     }
 

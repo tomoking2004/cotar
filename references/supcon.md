@@ -145,9 +145,11 @@ X_ip = 1/|P(i)|                                        （L_out のとき）
 
 | ポスターの文 | 原典の箇所 | 原文 | 読み |
 | --- | --- | --- | --- |
-| キーアイデア：手順が同じ質問どうしの内部表現を近づけ，違う質問どうしを遠ざける | 要旨，§1 | "Clusters of points belonging to the same class are pulled together in embedding space, while simultaneously pushing apart clusters of samples from different classes" | 損失の狙いとしては原文どおりである．**測定の結果としては言えない**——同署名の類似度も下がった（研究文書 §4.4） |
-| 整合損失 ℒalign：同じ署名の 𝒉 を近づけ，違う署名の 𝒉 を遠ざける supervised contrastive loss[3] | §3，§3.2.2，補足 §9 | "The supervised contrastive loss is computed on the outputs of the projection network" | 損失の名と形は [3] による．掛ける先は違う——原典は射影の出力，本研究は 𝒉 を長さ1に揃えたもの．正例が1件なので，原典の階層では N-pairs の形に温度を足したものにあたる |
-| 図：同じ署名：近づける／違う署名：遠ざける | §1，式4 | "Normalized embeddings from the same class are pulled closer together than embeddings from different classes" | 原文は比較の形である．「他より近い」であって，「前より近い」ではない |
+| キーアイデア：答えに至る手順が同じ質問どうしの内部表現を近づけ，手順が違う質問どうしを遠ざける | 要旨，§1 | "Clusters of points belonging to the same class are pulled together in embedding space, while simultaneously pushing apart clusters of samples from different classes" | 損失の狙いとしては原文どおりである．**測定の結果としては言えない**——同署名の類似度も下がった（研究文書 §4.4） |
+| 図の④の右の整合損失 ℒalign：同じ手順の 𝒉 が，違う手順より近くなるように学習（supervised contrastive loss[3]） | §3，§3.2.2，補足 §9 | "The supervised contrastive loss is computed on the outputs of the projection network" | 損失の名と形は [3] による．掛ける先は違う——原典は射影の出力，本研究は 𝒉 を長さ1に揃えたもの．正例が1件なので，原典の階層では N-pairs の形に温度を足したものにあたる |
+| 図：同じ手順：近づける／違う手順：遠ざける（手順の一致は署名の一致．3.1） | §1，式4 | "Normalized embeddings from the same class are pulled closer together than embeddings from different classes" | 原文は比較の形である．「他より近い」であって，「前より近い」ではない |
+| 工夫：画像分類で同じ種類の画像を近づける手法[3]を，答えに至る手順が同じ質問に転用 | 要旨，§1，§4 | "Clusters of points belonging to the same class are pulled together"／"by measuring classification accuracy on a number of common image classification benchmarks" | 元の使われ方（画像分類で，同じクラスを近づける）は原文どおりである．「種類」は class の言い換えである．同じクラスの代わりに署名を当てたのはこちらの選択で，原典にこの使い方は無い．損失の形は原典のとおりである．原典は対照学習の後に線形分類器を別に学習する2段の形だが，本研究は通常の損失に足して1段で学習する——この違いはポスターに載せていない |
+| 工夫：元の手法は表現を小さなネットワークに通してから近づける → 通さず，𝒉（下図③）を直接近づける／通すと，𝒉 が変わらないまま，小さなネットワークの側だけで損失が下がりうるため | §3，§3.1 | "The supervised contrastive loss is computed on the outputs of the projection network"／"we discard Proj(·) at the end of contrastive training" | 「小さなネットワーク」は射影 head（隠れ層1つの MLP か線形層1つ，出力 128 次元．§3.1）の言い換えである．外した理由は原典のものではなく研究文書 §3.3 のもので，原典は生の表現に直接掛ける形を検討していない |
 
 **「近づける」は，損失が指す向きとしては正しい．** 正例が1件のとき，式4の `z_p` の係数は `P_ip − 1 ≤ 0` なので，勾配を下る向きは常に正例へ寄る（こちらの計算）．ただし全員を同時に動かした結果の類似度は，別の量である．
 
@@ -193,3 +195,5 @@ X_ip = 1/|P(i)|                                        （L_out のとき）
 **確認**：2026-08-09．ar5iv による HTML 全文を参照し，本文の数値・逐語引用を一件ずつ原文と照合した．
 
 **照合**：2026-11-06．arXiv の PDF（ヘッダは v5，Change Log は Version 6 まで）の本文と補足の全23頁を，pdftotext の文で読み直した．§3.2.2 の不等号，表1〜3 は頁の画像でも確かめた．NeurIPS 版の本文の PDF と逐語引用を突き合わせ，食い違いは上に書いた．引用の中の数式の記号は，文字へ写したものである．確かめていないのは，図3〜7 の曲線の読み取り（値は使っていない），NeurIPS 版の補足である．研究文書についての答えは，研究文書の 2026-11-06 時点の記述による．
+
+**再確認**：2026-11-09．ポスターの工夫の行を書き直すため，arXiv の PDF（v5）を取り直して pdftotext の文で，要旨（同じクラスを引き寄せること），§3 の冒頭（射影の出力に損失を掛けること），§3.1 の射影ネットワークの定義と学習後に捨てること，§4 の冒頭（画像分類の評価）を読み直した．「ポスターとの対応」の工夫の2行の引用は，この文から写した．

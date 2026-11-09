@@ -82,13 +82,13 @@ probing は「モデルが何を符号化しているか」を測るが，そこ
 
 ## ポスターとの対応
 
-ポスターの [5] がこの文献である．キーアイデアと整合損失の文は，この文献に依らない．
+**ポスターはこの文献を引いていない．** 相対感度の目的にあった「読める情報が使われるとは限らない[5]」は，教授の指摘（「いらない」，2026-11-09）で文ごと外した．下の表のうち，外した文の行は口頭で話すときの対応，ほかの行はポスターの文の背景としての対応である．
 
 | ポスターの文 | 原典の箇所 | 原文 | 読み |
 | --- | --- | --- | --- |
-| 相対感度 目的：読める情報が使われるとは限らない[5] | §1 | "high probing performance does not mean that the probed information is used for predicting the main task" | 原文に戻せる．原典の "main task" は語予測である．ポスターは「答えに」を外して一般の命題として引いており，その範囲で言い過ぎではない |
+| （外した文）読める情報が使われるとは限らない | §1 | "high probing performance does not mean that the probed information is used for predicting the main task" | 原文に戻せる．原典の "main task" は語予測である．口頭では「答えに」を外した一般の命題として言い，その範囲なら言い過ぎではない |
 | 同上 | §4 | "high probing performance does not entail this information is being used at a later part of the network" | 「とは限らない」と同じ強さである |
-| 相対感度 目的：答えが 𝒉 に頼る度合いの確認 | 要旨 | "the utility of a property for a given task can be assessed by measuring the influence of a causal intervention that removes it from the representation" | 問いは同じだが，測り方が違う．原典は除去の介入で，相対感度は第16層のまわりの一次の感度である．[5] はこの文に付いていないので，ポスターの形でよい |
+| 相対感度 目的：答えが 𝒉 に依存する度合いの確認 | 要旨 | "the utility of a property for a given task can be assessed by measuring the influence of a causal intervention that removes it from the representation" | 問いは同じだが，測り方が違う．原典は除去の介入で，相対感度は第16層のまわりの一次の感度である．ポスターはこの文献を引かないので，ポスターの形でよい |
 | 読み取り精度 方法：𝒉 から署名を当てる線形分類器の正解率 | §1，§4 | "to predict some desired information from the latent representations of the pre-trained model" | probing の定義に一致する．§4 の "the probing accuracy using a linear model" も線形である．ポスターのこの文に文献番号は無い |
 
 ## 学会で聞かれたら
