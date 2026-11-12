@@ -73,17 +73,19 @@ accuracy のほか，consistency，validity（答えが質問の範囲に入っ�
 
 ポスターの文ごとに，依る原文を示す．「こちらの定義」「こちらの設定」と書いた部分は，原典の主張ではない．
 
-**1章「一方，人間は画像が加工されても，同じ手順を踏んで答えを導くと考えられる」**
+**1章「人間は画像加工の有無にかかわらず同じ手順を踏んで答えを導くのではないか？」**（2026-11-13 の版．教授の文．その前は「一方，人間は…と考えられる」）
 
-- 対応する原文は無い．本研究の見方で，検証していない．「考えられる」と書くのはそのためである．
+- 対応する原文は無い．本研究の見方で，検証していない．問いの形（その前は「考えられる」）で書くのはそのためである．
 - 論文は program を人間の手順とは呼ばない．arXiv v3 の PDF 全文で “human” と “people” を引くと（2026-11-09），出てくるのは人間の正解率（89.3%），一貫性（98.4%），回答を集めた Mechanical Turk の実験，“a good proxy for human-like questions”（質問の自然さについて）だけである．教授のコメント（2026-11-09）は program を「人間の視覚的推論手順を計算可能な形で抽象化したもの」と書いたが，ポスターは原典の定義（下）で書いた．
 
-**1章「functional program：答えに至る推論の手順を，操作の列で書き下したもの（データセット GQA[2] の各質問に付属）」**
+**1章「人間が行う視覚的推論を計算可能な操作の列で表現したもの：functional program[2]」**（2026-11-13 の版．教授の差し替えの指示による文）
 
-- §3 の文に戻せる——“Each question is associated with a functional program which lists the series of reasoning steps needed to be performed to arrive at the answer.”（2026-11-09 に arXiv v3 の PDF で再確認）．付録の “a matching logical representation of the sequence of reasoning steps” も同じことを言う．「各質問に付属」は要旨の “22M diverse reasoning questions, which all come with functional programs” にあたる．
-- 本人は「人間が答えに至る推論の手順」とする案を出した（2026-11-09）．上の原文に人間の語は無く（前の項），ポスターは規定（presentations/principles.md の「先行研究から問いへは，段を踏んで導く」の項）どおり原典の定義で書き，人間の話は前の行の「考えられる」に任せた．本人は，原典どおりの定義でよいとした（2026-11-09）．
+- **「人間が行う」は原典に戻せない．** 下の §3 の定義は “reasoning steps needed to be performed to arrive at the answer” で，誰の推論かを言わない．教授は 2026-11-09 のコメントでこの読みを書き，2026-11-13 に文ごと差し替えるよう指示した．ポスターは教授の指示を優先し，この句を著者の読みとして置く——前の行を問いの形に保ち，「GQA によれば」のような原典の主張と読ませる語を足さない（presentations/principles.md の「先行研究から問いへは，段を踏んで導く」の項）．
+- 「計算可能な操作の列で表現したもの」は，§3 の program の定義と，“atomic operations”（§3.3）の並びにあたる．
+- 2026-11-12 までの版の文「答えに至る推論の手順を，操作の列で書き下したもの」は §3 の文に戻せる——“Each question is associated with a functional program which lists the series of reasoning steps needed to be performed to arrive at the answer.”（2026-11-09 に arXiv v3 の PDF で再確認）．付録の “a matching logical representation of the sequence of reasoning steps” も同じことを言う．「各質問に付属」は要旨の “22M diverse reasoning questions, which all come with functional programs” にあたる．
+- 本人は「人間が答えに至る推論の手順」とする案を出した（2026-11-09）．上の原文に人間の語は無く（前の項），ポスターは規定（presentations/principles.md の「先行研究から問いへは，段を踏んで導く」の項）どおり原典の定義で書き，人間の話は前の行の「考えられる」に任せた．本人は，原典どおりの定義でよいとした（2026-11-09）．2026-11-13 に教授の指示で差し替えた（上の項）．
 - 「操作の列」は論文の “atomic operations”（§3.3）の並びにあたる．
-- 判定：言い過ぎは無い．
+- 判定：「人間が行う」は原典に無い著者の読みで，前の行の問いの形がそれを支える．ほかに言い過ぎは無い．
 
 **3.1「タスク署名（以下，署名）：program から操作の名前だけを並べた列」**
 
@@ -177,3 +179,5 @@ accuracy のほか，consistency，validity（答えが質問の範囲に入っ�
 **追記**：2026-11-09．教授のコメント（program を人間の推論手順の抽象化と書く案）を受けて，arXiv v3 の PDF を取り直してテキスト化し，§3 の program の定義と，“human”・“people” を含む全文を読んだ．program を人間の手順と呼ぶ文は無かった．ポスターの1章と3.1の文を「ポスターとの対応」に足した．
 
 **再確認**：2026-11-09（2回目）．ポスターの program の定義を書き直すため，arXiv の PDF（v3）を取り直して pdftotext の文で，要旨（“which all come with functional programs”），§3 の program の定義，“human” を含む全文を読み直した．program を人間の手順と呼ぶ文は無かった．
+
+**追記**：2026-11-13．教授の5回目の指摘で，1章の program の文が「人間が行う視覚的推論を計算可能な操作の列で表現したもの」になった．原文の照合はしていない（11/09 の照合の範囲で，program を人間の手順と呼ぶ文が無いことは確かめてある）．「ポスターとの対応」の1章の2項を，著者の読みとして直した．3.1 の見出しの下の一文「select > relate > query のように，操作の名前の並びが同じ質問を同じ手順とみなす」は，下の「同じ手順の判定」の項と同じくこちらの定義である．
