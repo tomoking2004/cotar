@@ -133,25 +133,25 @@ def reading_of(drift: Drift) -> Reading:
         return Reading(
             "区間が 0 を含まず，負．ただし ablation でも小さくなる",
             "ablation でも動きの比が低下",
-            "動きの比の低下は，手順（署名）には帰せない",
+            "動きの比の低下は，署名の表す手順には帰せない",
         )
     if not distance["excludes_zero"]:
         return Reading(
             f"区間が 0 を含まず，{sign}．距離の向きは決められない",
             "距離そのものの差ははっきりしない",
-            f"別の画像に比べた 𝒉 の動き（比）は{moved}",
+            f"𝒉 の動きの比は{moved}",
         )
     if (distance["mean"] < 0) != falls:
         return Reading(
             f"区間が 0 を含まず，{sign}．距離は逆向き",
             f"𝒉 が動き{'にくく' if falls else 'やすく'}なったとまでは言えない",
-            f"別の画像に比べた 𝒉 の動き（比）は{moved}が，",
+            f"𝒉 の動きの比は{moved}が，",
         )
     if falls:
         return Reading(
             "区間が 0 を含まず，負．距離も同じ向き",
             "動きの比でも距離でも小",
-            "手順（署名）を使った整合により，𝒉 が加工で動きにくくなった",
+            "署名の表す手順で整合したことにより，𝒉 が加工で動きにくくなった",
         )
     return Reading(
         "区間が 0 を含まず，正．距離も同じ向き",
@@ -194,9 +194,10 @@ def moved_more(drift: Drift) -> str:
     perturbed = drift.distance["proposal"] / drift.distance["baseline"]
     swapped = drift.control["proposal"] / drift.control["baseline"]
     larger, smaller = min(perturbed, swapped) > 1, max(perturbed, swapped) < 1
-    both = "大きい" if larger else "小さい" if smaller else "違う"
-    times_each = f"加工：{times(perturbed)}，別の画像：{times(swapped)}"
-    return f"proposal は 𝒉 の動き自体が{both}（{times_each}）"
+    both = "より大きい" if larger else "より小さい" if smaller else "と違う"
+    both = f"baseline {both}"
+    times_each = f"加工で{times(perturbed)}，別の画像で{times(swapped)}"
+    return f"proposal は 𝒉 の動き自体が {both}．{times_each}"
 
 
 def slots(drift: Drift) -> dict[tuple[str, int], str]:
@@ -351,6 +352,13 @@ def write_chart(parts: dict[str, bytes], slide: etree._Element, name: str,
     return [f"{name}: {shown(was)} → {shown(now)}, scale up to {was_top} → {top}"]
 
 
+def percent_scale(parts: dict[str, bytes], slide: etree._Element) -> int:
+    """The top of the value axis of 3.2's charts in %, which 3.3's charts take too."""
+    chart_name, _ = chart_parts(parts, slide, "Chart accuracy")
+    top = etree.fromstring(parts[chart_name]).find(".//c:valAx/c:scaling/c:max", NS)
+    return int(top.get("val"))
+
+
 def update(poster: Path = POSTER_PATH, drift_path: Path = DRIFT_PATH) -> list[str]:
     """Bring the poster in line with the measurement, and say what moved."""
     drift = read_drift(drift_path)
@@ -360,10 +368,10 @@ def update(poster: Path = POSTER_PATH, drift_path: Path = DRIFT_PATH) -> list[st
 
     slide = etree.fromstring(parts[SLIDE])
     changes = write_slots(slide, drift)
-    # Both charts are in %, side by side, so they share one scale (principles.md §4), with room
-    # above the tallest bar for its label, which sits outside the bar.
+    # Every chart in % shares one scale across 3.2 and 3.3, whose bars stand on one base line
+    # (principles.md §4): the scale 3.2's charts already carry.
     answers = {arm: 100 * share for arm, share in drift.flips.items()}
-    top = math.ceil(max(*drift.ratio.values(), *answers.values()) * 1.25 / 5) * 5
+    top = percent_scale(parts, slide)
     changes += write_chart(parts, slide, "Chart ratio", drift.ratio, top)
     changes += write_chart(parts, slide, "Chart answers", answers, top)
     if changes:
