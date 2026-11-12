@@ -4,13 +4,15 @@ Section 3.3 of the poster reports `probe_drift.py`, and context.md §8.1 reads t
 once seeds 45 and 46 are in. Which sentence the poster may say was fixed before those seeds
 ran, as a table of what each outcome means, so choosing it is not a judgement left for the
 day: this reads `analyses/probe-drift.json`, finds the row of §8.1 the numbers fall in, and
-writes that row's wording and the numbers beside it. Run it after pulling the results.
+writes that row's wording and the values the two charts of 3.3 show. Run it after pulling
+the results.
 
-It touches only what the measurement decides — the ratio chart and the paragraphs `slots`
-names — and at the level of the parts, as presentations/principles.md §5 asks: the slide,
-the chart and the chart's embedded workbook are edited in place, and nothing else in the
-package is rewritten. Everything else on the poster, including anything edited by hand in
-PowerPoint, stays as it is. Section 3.2 keeps to the three seeds of the main results (§8.1).
+It touches only what the measurement decides — the two charts, the ratio and the share of
+answers that change, and the paragraphs `slots` names — and at the level of the parts, as
+presentations/principles.md §5 asks: the slide, the charts and their embedded workbooks are
+edited in place, and nothing else in the package is rewritten. Everything else on the poster,
+including anything edited by hand in PowerPoint, stays as it is. Section 3.2 keeps to the
+three seeds of the main results (§8.1).
 
 A paragraph is left alone when its text already reads as it should, so running this twice
 changes nothing, and "nothing to change" doubles as the check that the poster agrees with
@@ -76,7 +78,7 @@ class Drift:
     ratio_gap: dict[str, Any]        # proposal − baseline
     ablation_gap: dict[str, Any]     # ablation − baseline
     distance_gap: dict[str, Any]     # proposal − baseline
-    flip_gap: dict[str, Any]         # proposal − baseline, in how often answers flip (a fraction)
+    flips: dict[str, float]          # arm → share of (question, perturbation) pairs that flip
     answers_differ: bool             # does any pair of arms differ in how often answers flip?
     answers_close: bool              # do all their intervals stay within ±2pt?
 
@@ -105,7 +107,7 @@ def read_drift(path: Path = DRIFT_PATH) -> Drift:
         ratio_gap=ratio["differences"]["proposal - baseline"],
         ablation_gap=ratio["differences"]["ablation - baseline"],
         distance_gap=distance["differences"]["proposal - baseline"],
-        flip_gap=family["flip_rate"]["differences"]["proposal - baseline"],
+        flips={arm: family["flip_rate"]["arms"][arm]["mean"] for arm in ARMS},
         answers_differ=any(d["excludes_zero"] for d in family["flip_rate"]["differences"].values()),
         answers_close=all(max(-d["ci_low"], d["ci_high"]) * 100 <= 2
                           for d in family["flip_rate"]["differences"].values()),
@@ -158,25 +160,20 @@ def reading_of(drift: Drift) -> Reading:
     )
 
 
-def signed(value: float) -> str:
-    return f"{value:+.2f}".replace("-", "−")
-
-
 def times(value: float) -> str:
     return f"約{round(value)}倍" if value >= 2 else f"約{value:.1f}倍"
 
 
-def ratio_line(drift: Drift, named: bool = False) -> str:
+def ratio_line(drift: Drift) -> str:
     """What the ratio tells, not where proposal ranks.
 
-    Beside the 3.3 discussion, which says how far 𝒉 moves at all, the result names the ratio
-    (`named`); the summary's line already starts with the measure's name.
+    It names the ratio, beside the discussion that says how far 𝒉 moves at all.
     """
     gap = drift.ratio_gap
     if not gap["excludes_zero"]:
         return "動きの比の差ははっきりしない"
     change = "縮小" if gap["mean"] < 0 else "拡大"
-    return f"比で見た 𝒉 の動きが{change}" if named else f"別の画像に比べた動きが{change}"
+    return f"比で見た 𝒉 の動きが{change}"
 
 
 def ratio_arms(drift: Drift) -> str:
@@ -187,12 +184,6 @@ def ratio_arms(drift: Drift) -> str:
     word = "低下" if gap["mean"] < 0 else "上昇"
     both = ablation["excludes_zero"] and (ablation["mean"] < 0) == (gap["mean"] < 0)
     return f"proposal と ablation で{word}" if both else f"proposal だけ{word}"
-
-
-def difference(gap: dict[str, Any], scale: float = 1) -> str:
-    """The difference to baseline with its interval, as every result on the poster gives it."""
-    low, mean, high = (signed(gap[key] * scale) for key in ("ci_low", "mean", "ci_high"))
-    return f"baseline との差：\t{mean}pt [{low}, {high}]"
 
 
 def moved_more(drift: Drift) -> str:
@@ -208,29 +199,24 @@ def moved_more(drift: Drift) -> str:
     return f"proposal は 𝒉 の動き自体が{both}（{times_each}）"
 
 
-def joined(conclusion: str, meaning: str) -> str:
-    """The 3.3 reading for the summary: one sentence if the conclusion runs on, else two."""
-    return conclusion + meaning if conclusion.endswith("，") else f"{conclusion}．{meaning}"
-
-
 def slots(drift: Drift) -> dict[tuple[str, int], str]:
-    """Each paragraph the measurement decides, by shape name and position in the shape."""
+    """Each paragraph the measurement decides, by shape name and position in the shape.
+
+    How far each arm moved is the charts' to show, so no paragraph gives the differences
+    (presentations/principles.md §2).
+    """
     reading = reading_of(drift)
     if drift.answers_differ:
         answers = "群のあいだに差"
     else:
         answers = "3群でほとんど同じ" if drift.answers_close else "差ははっきりしない"
     return {
-        ("Drift result", 0): f"{{g:結果}}\t{ratio_line(drift, named=True)}",
+        ("Drift result", 0): f"{{g:結果}}\t{ratio_line(drift)}",
         ("Drift result", 1): ratio_arms(drift),
-        ("Drift result", 2): difference(drift.ratio_gap),
         ("Drift answers", 0): f"{{g:結果}}\t{answers}",
-        ("Drift answers", 1): difference(drift.flip_gap, scale=100),
         ("Drift discussion", 0): f"{{g:考察}}\t{moved_more(drift)}",
         ("Drift discussion", 1): f"{{r:{reading.conclusion}}}",
         ("Drift discussion", 2): f"{{r:{reading.meaning}}}",
-        ("Summary", -1): f"動きの比：{ratio_line(drift)}",
-        ("Summary discussion", -1): joined(reading.conclusion, reading.meaning),
     }
 
 
@@ -344,24 +330,25 @@ def shown(values: list[float]) -> str:
 
 
 def write_chart(parts: dict[str, bytes], slide: etree._Element, name: str,
-                values: dict[str, float], step: int) -> list[str]:
+                values: dict[str, float], top: int) -> list[str]:
     chart_name, workbook = chart_parts(parts, slide, name)
     chart = etree.fromstring(parts[chart_name])
     points = chart.findall(".//c:val/c:numRef/c:numCache/c:pt/c:v", NS)
+    scale = chart.find(".//c:valAx/c:scaling/c:max", NS)
     was = [float(p.text) for p in points]
     now = [values[arm] for arm in ARMS]
-    if all(math.isclose(a, b, rel_tol=1e-9) for a, b in zip(was, now, strict=True)):
+    same = all(math.isclose(a, b, rel_tol=1e-9) for a, b in zip(was, now, strict=True))
+    if same and scale.get("val") == str(top):
         return []
 
     for point, value in zip(points, now, strict=True):
         point.text = repr(value)
-    # Room above the tallest bar for its label, which sits outside the bar.
-    top = math.ceil(max(now) * 1.25 / step) * step
-    chart.find(".//c:valAx/c:scaling/c:max", NS).set("val", str(top))
+    was_top = scale.get("val")
+    scale.set("val", str(top))
     parts[chart_name] = etree.tostring(chart, xml_declaration=True, encoding="UTF-8",
                                        standalone=True)
     parts[workbook] = write_workbook(parts[workbook], now)
-    return [f"{name}: {shown(was)} → {shown(now)}"]
+    return [f"{name}: {shown(was)} → {shown(now)}, scale up to {was_top} → {top}"]
 
 
 def update(poster: Path = POSTER_PATH, drift_path: Path = DRIFT_PATH) -> list[str]:
@@ -373,7 +360,12 @@ def update(poster: Path = POSTER_PATH, drift_path: Path = DRIFT_PATH) -> list[st
 
     slide = etree.fromstring(parts[SLIDE])
     changes = write_slots(slide, drift)
-    changes += write_chart(parts, slide, "Chart ratio", drift.ratio, step=5)
+    # Both charts are in %, side by side, so they share one scale (principles.md §4), with room
+    # above the tallest bar for its label, which sits outside the bar.
+    answers = {arm: 100 * share for arm, share in drift.flips.items()}
+    top = math.ceil(max(*drift.ratio.values(), *answers.values()) * 1.25 / 5) * 5
+    changes += write_chart(parts, slide, "Chart ratio", drift.ratio, top)
+    changes += write_chart(parts, slide, "Chart answers", answers, top)
     if changes:
         parts[SLIDE] = etree.tostring(slide, xml_declaration=True, encoding="UTF-8",
                                       standalone=True)
