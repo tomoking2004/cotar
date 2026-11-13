@@ -26,9 +26,9 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu132
 pip install -e .
 ```
 
-`pip install -e .` が `cotar` をパスに通すので，どこからでも `python scripts/train.py` が動く．flash-attn は任意（Linux のみ）——無ければ自動で SDPA に落ちる．学習ループの [train4all](https://github.com/tomoking2004/train4all) は**リリースタグに固定**してある（どのタグかは `pyproject.toml`）——`main` を追うと，指標の並び順のような出力の形が実験の途中で変わりうる．
+`pip install -e .` が `cotar` をパスに通すので，`scripts/` のどれもが作業ディレクトリによらず `cotar` を import できる．flash-attn は任意（Linux のみ）——無ければ自動で SDPA に落ちる．学習ループの [train4all](https://github.com/tomoking2004/train4all) は**リリースタグに固定**してある（どのタグかは `pyproject.toml`）——`main` を追うと，指標の並び順のような出力の形が実験の途中で変わりうる．
 
-データセットは [GQA 公式](https://cs.stanford.edu/people/dorarad/gqa/download.html) から取り，`cfg.datasets_root/gqa/` に置く（`images/`, `questions/`, `eval/`）．`train_balanced_questions.json` は 813MB あるので，これを読むスクリプトは立ち上がりに数分かかる．
+データセットは [GQA 公式](https://cs.stanford.edu/people/dorarad/gqa/download.html) から取り，`cfg.datasets_root/gqa/` に置く（`images/`・`questions/`・`eval/`）．`train_balanced_questions.json` は 813MB あるので，これを読むスクリプトは立ち上がりに数分かかる．
 
 **パスの起点は2つある．** リポジトリが持つのはコード・文書・snapshots・analyses——版管理に載せる物である．`cfg.work_root`（既定は `~/TMU/Master/study/cotar`）が持つのはデータセットと `runs/`——数十GBあって，版管理にも同期フォルダにも置けない物である．どちらがどちらかは `cotar/config.py` が答える．
 
@@ -53,7 +53,7 @@ python scripts/update_poster.py            # その結果をポスターの3.3�
 python scripts/check_tidy.py               # tmp/ の形と __pycache__ を確かめる（Stop フックも走らせる）
 ```
 
-**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る9本はモデルを走らせない．`probe_bypass.py` を除いて重みも要らないので，ノートPCで何度でも回せる．`update_poster.py` を除いて，それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める（§8.1 で足した乱数種 45・46 のバッチは `ADDED_TIMESTAMP`）．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
+**モデルを動かすのは6本**——上の3本と，`probe_bypass_pullback.py`・`probe_dependence.py`（ヤコビ積を取るのでモデルを走らせる），`probe_drift.py`（加工した画像でモデルを走らせ直す）である．残る10本はモデルを走らせない．`probe_bypass.py` を除いて重みも要らないので，GPU の無い機でも回せる．ただし6本（`audit_dataset.py`・`probe_signature.py`・`probe_operators.py`・`stratify_by_frequency.py`・`summarize_sweep.py`・`probe_bypass.py`）は GQA の質問ファイルを読むので，それを置いた機で回す．分析の11本（`train.py`・`sweep.py`・`generate.py`・`update_poster.py`・`check_tidy.py` を除いたもの）は，それぞれ自分と同じ名前の JSON を `analyses/` に書く（`probe_signature.py` → `analyses/probe-signature.json`．`probe_drift.py` は問ごとの距離を同じ名前の `.pt` にも書く）．どの実験を読むかは `cotar/analysis/experiment.py` の `TIMESTAMP` が決める（§8.1 で足した乱数種 45・46 のバッチは `ADDED_TIMESTAMP`）．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` の4本は学習済みの重みを要求する（後述）．
 
 `train.py` と `sweep.py` は run の建て方を共有する——`cotar/training/run.py` の `Settings` と `run_training` である．既定値が報告した実験の値なので，**sweep は変える設定だけを書き，残りが同じであることが目で見える．** どちらも冒頭の `DEBUG = True` で全分割を切り詰めた短い試走になり，数分で配線を確かめられる．
 
@@ -67,7 +67,7 @@ python scripts/check_tidy.py               # tmp/ の形と __pycache__ を確�
 
 **研究文書 §8 の四つのうち，§8.1 は走らせ終え，そのまま回せるのは §8.4 である．** §8.2（稀な署名を表現の側で）にはまだスクリプトが無く，§8.3（別のラベル）は新しい学習を要する．
 
-**§8.1（表現の頑健性の向きを決める）は走らせ終えた（2026-11-06）．** 乱数種 45・46 を足した3群の学習が17時間33分，その重みでの `probe_drift.py` と `normalize_drift.py` が3時間13分だった（どちらも研究室機の RTX 5090 での実時間）．結果は `analyses/` に，6 run は `snapshots/20261105-162351_*` に在る．回し直すなら，次の順に通す．
+**§8.1（表現の頑健性の向きを決める）は走らせ終えた（2026-11-06）．** 乱数種 45・46 を足した3群の学習が17時間18分（評価まで含めて17時間33分），その重みでの `probe_drift.py` が3時間13分だった（どちらも研究室機の RTX 5090 での実時間）．結果は `analyses/` に，6 run は `snapshots/20261105-162351_*` に在る．回し直すなら，次の順に通す．
 
 ```bash
 # 1. 学習 — train.py の SEEDS は既定で 45・46．まず DEBUG = True で数分の試走をして，
@@ -79,15 +79,19 @@ python scripts/probe_drift.py
 # 4. 読み直し — 15 run の問ごとの距離を読む（GPU 不要）
 python scripts/normalize_drift.py
 # 5. ポスター — 研究文書 §8.1・§A.6 に読みを書いてから，手元の機で（要るのは lxml だけで，torch は要らない．
-#    cotar 環境には入っていないので，無ければ pip install lxml）
+#    cotar 環境には入っていないので，無ければ pip install lxml か pip install -e .[poster]）
 python scripts/update_poster.py
 ```
 
 `probe_drift.py` が既に測った run を測り直さないのは，同じ条件で測ったと確かめられるときだけである——学習のバッチ（乱数種ごとの timestamp）・checkpoint・加工の一覧・バッチの大きさが同じで，報告用データの全問を測ってあること（`on_file`）．`LIMIT` を入れた試走は，本走が測るはずの run だけを測って表示し，何も書かない．比べる乱数種は `cotar/analysis/experiment.py` の `ROBUSTNESS_SEEDS`（42–46）で，主結果（§5）を出すほかの分析は `SEEDS`（42–44）のまま読む．区間の係数（`analysis/statistics.py` の `t_critical`）は，乱数種の本数によらず出せる（5本なら 2.776）．
 
+**`probe_drift.py` を走らせる前に**，重みが在るかを確かめる（`python -c "from cotar.analysis import ADDED_SEEDS, require_checkpoints; require_checkpoints(ADDED_SEEDS)"`．無ければ即座に落ちて場所を告げる．引数を省けば 42–44 を確かめる）．冒頭の `LIMIT` を 64 にすれば数分の試走になる．1 run につき 25 回 testdev を通す——加工 23 通り，対照（同じ質問に別の画像）1回，加工前1回で，各回は生成を含めて学習時の testdev 評価と同じ処理である．加工の定義は `cotar/analysis/perturbations.py` の冒頭に，Wani らの原文で決まっている部分とこちらで決めた部分を分けて書いてある．
+
 **画像を加工したときの表現の動き（研究文書 §A.6）は測ってある．** `probe_drift.py` を研究室機（RTX 5090）で `LIMIT = None` のまま走らせ，`analyses/probe-drift.json`（run ごとの集計と，群間の対にした差）と `analyses/probe-drift.pt`（問ごとの距離・答えの変化・正誤）を書いた．1 run は 25 pass で約32分，9 run で約4時間53分だった．§8.1 で足した6 run も同じ条件で測り，いまの2ファイルは 15 run ぶんである．`normalize_drift.py` は `.pt` と snapshots だけを読むのでノートPCで回る．
 
-**「使われていない」の測定（研究文書 §A.4）は3段とも済んでいる**——`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` が `analyses/` に結果を書いているので，走らせ直す必要はない．
+**「利用が伴っていない」の測定（研究文書 §A.4）は3段とも済んでいる**——`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py` が `analyses/` に結果を書いているので，走らせ直す必要はない．
+
+**§8.4 は重みを要さない．** 層は振ってある——`20260830-223056` の2 run（第8層・第24層，seed 42 の1本ずつ）で，`summarize_sweep.py` はいまこれを読む（研究文書 §A.5）．強さはまだで，`VARIANTS = LAMBDA_VARIANTS` に変えれば $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本ずつ回す（既に測ってある $\lambda = 0$ と 0.1 は走らせ直さない）ので約9時間．**強さと層を同時に振らないこと**——一つの曲線に二つの説明が混ざる．`summarize_sweep.py` が読むのは snapshots と GQA の testdev の質問ファイルだけなので，重みも GPU も要らない．
 
 ```bash
 # §8.4 を振る — sweep.py 末尾の VARIANTS で強さ（LAMBDA_VARIANTS）か層（LAYER_VARIANTS）を選ぶ．
@@ -97,13 +101,9 @@ python scripts/sweep.py
 python scripts/summarize_sweep.py
 ```
 
-**`probe_drift.py` を走らせる前に**，重みが在るかを確かめる（`python -c "from cotar.analysis import ADDED_SEEDS, require_checkpoints; require_checkpoints(ADDED_SEEDS)"`．無ければ即座に落ちて場所を告げる．引数を省けば 42–44 を確かめる）．冒頭の `LIMIT` を 64 にすれば数分の試走になる．1 run につき 25 回 testdev を通す——加工 23 通り，対照（同じ質問に別の画像）1回，加工前1回で，各回は生成を含めて学習時の testdev 評価と同じ処理である．加工の定義は `cotar/analysis/perturbations.py` の冒頭に，Wani らの原文で決まっている部分とこちらで決めた部分を分けて書いてある．
-
-**§8.4 は重みを要さない．** 層は振ってある——`20260830-223056` の2 run（第8層・第24層，seed 42 の1本ずつ）で，`summarize_sweep.py` はいまこれを読む（研究文書 §A.5）．強さはまだで，`VARIANTS = LAMBDA_VARIANTS` に変えれば $\lambda = 0.03 / 0.3 / 1.0$ を seed 42 の1本ずつ回す（既に測ってある $\lambda = 0$ と 0.1 は走らせ直さない）ので約9時間．**強さと層を同時に振らないこと**——一つの曲線に二つの説明が混ざる．`summarize_sweep.py` は snapshots だけを読むのでノートPCで回せる．
-
 ## 結果を読む
 
-結果は `cfg.runs_root/<timestamp>_<arm>_seed<seed>/` に落ちる．9 run は同じ timestamp を共有するので，1回の実験がひとまとまりに並ぶ．
+結果は `cfg.runs_root/<timestamp>_<arm>_seed<seed>/` に落ちる．`train.py`・`sweep.py` を1回走らせて回す run は同じ timestamp を共有するので，1回の実験がひとまとまりに並ぶ．
 
 | | |
 | --- | --- |
@@ -113,22 +113,22 @@ python scripts/summarize_sweep.py
 | `metrics/representations.pt` | **testdev の表現そのもの**（`(N, L, H)` float32）＋層番号・署名・質問ID．同署名／異署名の cosine 差は 0.02 程度しかなく，半精度ではそれが丸めに沈むので単精度で置く |
 | `metrics/epoch_metrics.json`・`metrics/step_metrics.json`・`plots/` | 学習中に記録した指標の推移．JSON と，同じものを描いた PNG |
 | `checkpoints/best.pth` | val accuracy が最良のエポックの重み．extras にモデルの checkpoint・層・attention 実装・loader の設定 |
-| `log.txt` | 実行の記録．冒頭が環境バナーで，マシンに続けて結果を決めるライブラリの版が載る（`transformers`・`train4all`・`schedulefree`，そして入っていれば `flash-attn`） |
+| `log.txt` | 実行の記録．冒頭近くに環境バナーがあり，マシンに続けて結果を決めるライブラリの版が載る（`transformers`・`train4all`・`schedulefree`，そして入っていれば `flash-attn`） |
 | `dashboard.html`・`dashboard_data.json` | 学習中のライブ表示と，それが描くデータ．Environment パネルはバナーと同じものを読む |
 
 **同じものの写しが，`checkpoints/` だけを抜いて `snapshots/` の同じ run 名の下にも落ちる．** 重みを落とせば1 run は数十MB——上の表のうち `checkpoints/best.pth` 以外は全部こちらに在るので，git がそのまま追跡でき，push すれば結果は GitHub からも読める．エポックごとと最終評価の直後に，変わったファイルだけを原子的に置き換えて更新するので，走っている最中に掴んでも写しは丸ごと揃っている．
 
 **逆に言えば，重みは clone に付いてこない．** 本走9 run と §8.1 の6 run の `checkpoints/best.pth` は，それを回したマシン（`log.txt` の環境バナーによれば Ubuntu 26.04・RTX 5090）の `runs/` にしかない．`probe_bypass.py`・`probe_bypass_pullback.py`・`probe_dependence.py`・`probe_drift.py` はこれを要求するので，そのマシンで走らせるか，重みを先に持ってくる．持ってくるなら，実行機の `runs/` の写しを USB（`E:\runs`）に置くか，置き場所を `$COTAR_RUNS_ROOT` で名指しする——重みを読む側は run ごとに，`$COTAR_RUNS_ROOT`・ローカルの `runs/`・`E:\runs` の順に探す（`cotar/config.py` の `run_roots`）．
 
-`snapshots/` には5つのバッチが在る．研究文書が報告するのは `20260829-134859` の9 run（3群 × 3 seed）で，分析スクリプトは `summarize_sweep.py` と，§8.1 の乱数種 45・46 も読む `probe_drift.py`・`normalize_drift.py` を除いてこれしか読まない．`20261105-162351` の6 run は §8.1 で足した乱数種 45・46（3群 × 2 seed）で，主結果には入れず，`probe_drift.py`・`normalize_drift.py` だけが読む．`20260830-223056` の2 run は層を第8層・第24層に移した試走（研究文書 §A.5）で，`summarize_sweep.py` だけが読む．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) の前期公開（2026-07-24）のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
+`snapshots/` には5つのバッチが在る．研究文書の主結果（§5）が報告するのは `20260829-134859` の9 run（3群 × 3 seed）で，分析スクリプトは `summarize_sweep.py` と，§8.1 の乱数種 45・46 も読む `probe_drift.py`・`normalize_drift.py` を除いてこれしか読まない．`20261105-162351` の6 run は §8.1 で足した乱数種 45・46（3群 × 2 seed）で，主結果には入れず，`probe_drift.py`・`normalize_drift.py` だけが読む．`20260830-223056` の2 run は層を第8層・第24層に移した試走（研究文書 §A.5）で，`summarize_sweep.py` だけが読む．`20260727-002344` の9 run は同じ実験を旧版のコードで走らせたもので，走り直す前の報告の記録として残してある．`20260714-033208` の3 run は seed を振る前の単一 seed の実験で，[presentations/](presentations/) の前期公開（2026-07-24）のポスターの裏付けとして残してある——**どちらも別の実行なので，数値が研究文書と一致しなくて当然である．**
 
 再現に要る情報は3箇所に分かれる——**実験を決める trainer の引数が `config.json`，モデルと loader の設定が `best.pth` の extras，マシンとライブラリの版が `log.txt` の環境バナー**．`config.json` を引数だけに保つので `Trainer(vlm, processor, **config)` がそのまま通り，trainer が受け取らないもの（`vlm` の引数・loader の設定）は extras に回り，**この checkout の外が決めるもの**はバナーが引き受ける．ソースが決めているもの（重みの fp32・bf16 autocast 等）はどこにも無い．この checkout のコードが答えるからで，二重に持たない．
 
 **報告する9 run（`20260829-134859`）は，この checkout のコードで走らせた．** だから上の表と，この3箇所の記述は，そのままこの9 run に当てはまる——`config.json` は `Trainer(vlm, processor, **config)` にそのまま通り，extras にはモデルの checkpoint・層・attention 実装・loader の設定が入り，環境バナーにはライブラリの版が載る．旧版のコードで走った2バッチ（`20260727-002344`・`20260714-033208`）は記録の形がここに書いたものと一部違うが，どれも測定値ではないので，各バッチが当時報告した数値には効かない．
 
-決定指標は `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが `testdev_balanced` に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群の横並びは `summarize_runs.py`（全 testdev の平均・spread・対にした差と区間）と `stratify_by_frequency.py`（署名の頻度で層別したもの）が出す．**区間は研究文書 §4.3 の式そのままで，実装は `analysis/statistics.py` にしか無い．**
+決定指標は `eval.json` の `official_gqa.accuracy`——GQA 公式評価器そのものが `testdev_balanced` に出した数字で，`binary`／`open`／`distribution` と型別内訳が付く．3群の横並びは `summarize_runs.py`（全 testdev の平均・spread・対にした差と区間）と `stratify_by_frequency.py`（署名の頻度で層別したもの）が出す．区間は研究文書 §4.3 の式そのままである（実装は `analysis/statistics.py`）．
 
-`intra_sim`／`inter_sim`／`separation`／`separation_d` は**操作確認**で，決定指標ではない（理由は研究文書）．複数層を制約したときは，学習中は層をまたぐ平均と `separation_d/L16` のような層別が並び，`eval.json` では `representation_stability` が `L16`／`L24` と入れ子になる（単一層ならどちらも平のまま）．`representation_stability` はseed で決まる4,000件の抜き取りを一度に計算したもの——類似度行列が件数の2乗で膨らむので上限を置いてある（`MAX_STABILITY_SAMPLES`）．同じ4つの名前が `eval.json` の `test_metrics` にも並ぶが，そちらはバッチごとに計算してエポックで平均した別の量である．
+`intra_sim`／`inter_sim`／`separation`／`separation_d` は**操作確認**で，決定指標ではない（理由は研究文書）．複数層を制約したときは，学習中は層をまたぐ平均と `separation_d/L16` のような層別が並び，`eval.json` では `representation_stability` が `L16`／`L24` と入れ子になる（単一層ならどちらも平のまま）．`representation_stability` は seed で決まる4,000件の抜き取りを一度に計算したもの——類似度行列が件数の2乗で膨らむので上限を置いてある（`MAX_STABILITY_SAMPLES`）．同じ4つの名前が `eval.json` の `test_metrics` にも並ぶが，そちらはバッチごとに計算してエポックで平均した別の量である．
 
 損失は3つに分かれる．群間比較に使えるのは `lm_loss` だけで，**`loss` ではない**——`loss` は目的関数で，整合する群ではそこに補助項が乗っている．学習後に `train_eval`（train を eval モードで測ったスライス）と `val` を並べて出すので，その2数字の開きが素の過学習量になる．
 
@@ -177,11 +177,11 @@ scripts/
   check_tidy.py             tmp/ の形と __pycache__ を確かめる（CLAUDE.md の決まりの機械の検査）
 ```
 
-**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけなので，`update_poster.py` はポスターを書くだけなので，どちらも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．
+**`cotar/` は，実験を回す側と，済んだ実験を読む側に分かれる．** `train.py`・`sweep.py` は `training/` を，分析の11本は `analysis/` を使う——だから import がそのスクリプトの立ち位置を語る（`generate.py` はモデルを読むだけ，`update_poster.py` はポスターを書くだけ，`check_tidy.py` は tmp/ を見るだけなので，どれも要らない）．`analysis/` のうち学習済みの重みと GPU を要するのは `jacobian.py` と `drift.py` で，重みだけを読む口は `experiment.py` にある．残りはノートPCで完結する（`normalize_drift.py` は Cohen's d を `training/` の `metrics.cohens_d` から借りる）．
 
 **機構は，この研究の中身に依存しない．** 別の研究に持っていくとき差し替わるのは3つだけ——**ファイルがどこにあるか**（`config.py`），**1 run をどう建てるか**（`training/run.py`），**どの実験を報告するか**（`analysis/experiment.py` の `TIMESTAMP` と `ADDED_TIMESTAMP`）．残りはすべてパスを引数で受け取り，実験を名指ししない．だから `cotar/` で `cfg` を import するのは後の2つと，済んだ実験の重みを読み直す `analysis/jacobian.py` だけで，機構は一つも import しない——`data`・`models`・`types`・`pairwise` と，`training/` の残り（`trainer.py`・`losses.py`・`metrics.py`・`logit_scale.py`）のどこにも `cfg` は無い．`cotar/__init__.py` が何も再輸出しないのも同じ理由で，`import cotar` がマシン固有のパスを束縛しないためである．
 
-`cfg` 自身も2種類を分けて持つ——**マシン固有**（データセット・`runs/`・デバイス）と，**チェックアウト相対**（`snapshots/`・`analyses/`）．**済んだ実験を読む側が結果を書くのは後者だけ**である．マシン固有の側から読むのは，GQA の質問ファイルと，重みを要するスクリプトの `runs/` とデバイスに限る．
+`cfg` 自身も2種類を分けて持つ——**マシン固有**（データセット・`runs/`・デバイス）と，**チェックアウト相対**（`snapshots/`・`analyses/`）．**済んだ実験を読む側が結果を書くのは後者だけ**である．マシン固有の側から読むのは，GQA の質問ファイルと，重みを要するスクリプトが使う `runs/`・GQA の画像・デバイスに限る．
 
 **`scripts/` は走らせるものだけを置く．** 複数のスクリプトが分け合うもの——どの実験を読むか，成果物の在処，プローブの当てはめ——は `cotar/` 側にある．スクリプトが自分で決めてよいのは，自分だけの設定と，出力の並べ方だけである．
 
@@ -214,9 +214,9 @@ scripts/
 | $\bar{d}$・信頼区間（§4.3） | `analysis/statistics.py`——係数 $t_{n-1, 0.975}$ は表を引かずに求める．自由度2（乱数種3つ）は文書の 4.303 を与える閉じた式で，それ以外は不完全ベータ関数を数値的に逆に解く．区間が 0 を跨ぐか否かも保存する |
 | 頻度層別と層ごとの区間（§A.3） | `stratify_by_frequency.py` |
 | 整合の強さ・層を振った点（§8.4・§A.5） | `sweep.py` が点を作り，`summarize_sweep.py` が並べる——読み取り精度は §5.1 と同じ当てはめで測り直すので，既存の2点が §5.1・§5.2 の数値を再現することが，両者が同じものを測っている証拠になる |
-| 「使われていない」の測定・第1段（§A.4） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
-| 「使われていない」の測定・第2段（§A.4） | `probe_bypass_pullback.py`——部分空間 $U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
-| 「使われていない」の測定・第3段（§A.4） | `probe_dependence.py`——同じベクトル–ヤコビ積の**長さ**を，第16層の表現と読み出しの大きさで割って無次元にし（相対感度），3群で比べる．第2段が正規直交化のときに捨てている量である．プロンプト本数の収束も同じ逆伝播から出す |
+| 「利用が伴っていない」の測定・第1段（§A.4） | `probe_bypass.py`——checkpoint の出力層から答えの**先頭トークン**の行を抜き，中心化した主成分 $m$ 本を $U$ とする．表現を $U$ の中と外へ射影して同じプローブを掛け，**中と外の両方**を同次元のランダム直交基底と比べる．部分空間の道具は `analysis/subspaces.py` にあり，第2段と共有する |
+| 「利用が伴っていない」の測定・第2段（§A.4） | `probe_bypass_pullback.py`——部分空間 $U$ の各方向をベクトル–ヤコビ積で第16層へ引き戻し（`SmolVLM.readout_from_site` が site と読み出しを微分可能なまま返す），直交化して $U$ の代わりに使う．引き戻す前後の cos も測る——1 に近ければ第1段の近似は正しかったことになる（実際は 0.2 台だった） |
+| 「利用が伴っていない」の測定・第3段（§A.4） | `probe_dependence.py`——同じベクトル–ヤコビ積の**長さ**を，第16層の表現と読み出しの大きさで割って無次元にし（相対感度），3群で比べる．第2段が正規直交化のときに捨てている量である．プロンプト本数の収束も同じ逆伝播から出す |
 | 表現の頑健性の測定（§A.6） | `probe_drift.py`——Wani らの加工（`analysis/perturbations.py`．付録 A.6 の族と値をそのまま使う．書かれていない部分はこちらで決め，指示文の選び方だけは逸脱して，どちらも理由とともに冒頭に明記）を testdev の画像に施し，加工前後の第16層・第32層の表現のコサイン距離を，同じ質問に別の画像を付けた対照の平均に対する比と Cohen's d で出す（`analysis/drift.py`）．答えが変わった対の割合（IFR）・変わった問の割合（IV）・答えが変わらなかった対だけの比も同じ pass から出す．Wani らの形の対照（別の問と別の画像）は加工前の表現だけから出す．d の標準偏差は `metrics.cohens_d`（Wani らはプールの仕方を書いていない） |
 | 対照の分布の形，d の分解，別の比の作り方（§A.6） | `normalize_drift.py`——`probe-drift.pt` の問ごとの距離を読む（重みは要らない）．対照の変動係数・歪度・分位点の比，d の合わせた分散に対照が占める割合，標本数で重みを付けない d と Glass の Δ，分布の形を仮定しない重なり，中央値 ÷ 中央値・問ごとに割った比の幾何平均・対照の上位1%を除いた比・同署名の距離に対する比（同署名の類似度は各 run の `eval.json` から読む）．群間は他と同じく `analysis/statistics.py` を通す |
 | 分割の排他性・署名の分布・対を組めない問・含意対との一致・答えの語彙・演算子が自分の名を質問文に置く率（§3.1・§4.1・§7・§A.4） | `audit_dataset.py`——学習も GPU も要らず，質問ファイルだけから全部を一度に出す．含意対は**対の数**（`unordered`）で数える．GQA は同じ関係を両側から並べるので，訪問回数（`ordered`）で数えると往復を二度数えて率が数ポイント動く．研究文書が引くのは前者．**食い違いの中身**（yes/no 型と自由回答型を組にした割合，最も多い署名の組）も同じ関数が出す——率だけでは「署名が誤っている」としか読めないので |
