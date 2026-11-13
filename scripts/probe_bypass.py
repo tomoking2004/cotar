@@ -72,8 +72,9 @@ from cotar.analysis import (
 from cotar.config import cfg
 from cotar.utils import load_json, save_json
 
-# Widths to sweep. Bounded above by the answer vocabulary's own rank, which is one less
-# than the number of distinct first tokens, so 128 stays comfortably inside it.
+# Widths to sweep. Bounded above by the rank of the centred answer rows, which is at most
+# the smaller of one less than their number (1,085 rows) and the hidden width (960), so
+# 128 stays comfortably inside it.
 DIMS = (8, 32, 128)
 
 OUT_PATH = analysis_path(__file__)

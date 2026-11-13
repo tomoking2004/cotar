@@ -7,8 +7,9 @@ readability is bought cheaply or the cost simply had not started yet.
 
 This puts the two quantities side by side at every setting that has been run — a weight
 or a layer: what the representation carries, measured the way §5.1 measures it, against
-what the official evaluator scores. Weight 0 and weight 0.1 come from the reported nine
-runs; the rest come from `sweep.py`, under its own timestamp.
+what the official evaluator scores. Weight 0 and weight 0.1 come from the reported
+experiment's baseline and proposal runs; the rest come from `sweep.py`, under its own
+timestamp.
 
 Runs at one seed carry no interval, and none is printed for them — the shape of the curve
 is what one seed is for, and an interval drawn through single points would suggest a
@@ -163,10 +164,10 @@ if __name__ == "__main__":
 
     if zero is not None and len(points) > 2:
         best = max(points, key=lambda p: p["probe_accuracy"]["mean"])
-        print(f"\nprobe accuracy peaks at weight {best['align_weight']} "
-              f"({best['probe_accuracy']['mean']:.1%}), "
-              f"{best['probe_accuracy']['mean'] - zero['probe_accuracy']['mean']:+.1%} "
-              f"over no alignment")
+        print(f"\nprobe accuracy peaks at {best['variant'] or best['arm']}, weight "
+              f"{best['align_weight']} ({best['probe_accuracy']['mean']:.1%}), "
+              f"{100 * (best['probe_accuracy']['mean'] - zero['probe_accuracy']['mean']):+.1f} "
+              f"pt over no alignment")
     print("\n* interval excludes 0. Points with one seed carry no interval.")
 
     save_json({

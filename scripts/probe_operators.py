@@ -45,7 +45,7 @@ from cotar.analysis import (
 from cotar.config import cfg
 from cotar.utils import load_json, save_json
 
-MIN_POSITIVE = 50      # an operator needs enough questions on both sides to be scored
+MIN_POSITIVE = 50      # an operator becomes a target only when it occurs this many times
 OUT_PATH     = analysis_path(__file__)
 
 
@@ -116,6 +116,8 @@ if __name__ == "__main__":
     unique = sorted(set(signatures))
     side = dict(zip(unique, split_mask(len(unique), splitter()).tolist(), strict=True))
     train = torch.tensor([side[s] for s in signatures])
+    train_signatures = sum(side.values())
+    test_questions = int((~train).sum())
 
     # How much of the test half is new *as a target*. Two signatures with the same
     # operators in a different order, or differing only in an operator below
@@ -127,7 +129,7 @@ if __name__ == "__main__":
     target_unseen = {
         "signatures": len(unseen_signatures),
         "questions": unseen_rows,
-        "share_of_test_questions": unseen_rows / int((~train).sum()),
+        "share_of_test_questions": unseen_rows / test_questions,
     }
 
     # How many operators can be scored is settled by the split alone — an operator needs
@@ -140,13 +142,13 @@ if __name__ == "__main__":
     surface = surface_matrices([testdev[qid]["question"].lower().split() for qid in question_ids])
 
     print(f"{len(signatures):,} testdev questions, {len(unique)} signatures"
-          f" ({int(train.sum()):,} questions from {sum(side.values())} signatures for training,"
-          f" the rest from {len(unique) - sum(side.values())} unseen ones)")
-    print(f"{len(operators)} operators with {MIN_POSITIVE}+ questions,"
+          f" ({int(train.sum()):,} questions from {train_signatures} signatures for training,"
+          f" the rest from {len(unique) - train_signatures} unseen ones)")
+    print(f"{len(operators)} operators occurring {MIN_POSITIVE}+ times,"
           f" {operators_scored} of them scorable on the unseen half")
-    print(f"target vector unseen for {target_unseen['questions']:,} of {int((~train).sum()):,}"
+    print(f"target vector unseen for {target_unseen['questions']:,} of {test_questions:,}"
           f" test questions ({target_unseen['share_of_test_questions']:.1%}),"
-          f" {target_unseen['signatures']} of {len(unique) - sum(side.values())} signatures\n")
+          f" {target_unseen['signatures']} of {len(unique) - train_signatures} signatures\n")
 
     results: dict[str, dict[str, float]] = {}
     for form, matrix in surface.items():
@@ -175,7 +177,7 @@ if __name__ == "__main__":
         "operators": len(operators),
         "operators_scored": operators_scored,
         "signatures": len(unique),
-        "train_signatures": sum(side.values()),
+        "train_signatures": train_signatures,
         "split": "signature-disjoint",
         "target_unseen": target_unseen,
         "results": results,

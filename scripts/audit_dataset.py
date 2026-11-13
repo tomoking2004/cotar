@@ -148,8 +148,8 @@ def entailment_agreement(questions_path: Path) -> dict[str, Any]:
     def mixes_answer_kind(pair: frozenset[str]) -> bool:
         return len({entries[qid]["answer"] in ("yes", "no") for qid in pair}) > 1
 
-    split = {True: [p for p in pairs if differs(p)], False: [p for p in pairs if not differs(p)]}
-    mismatched_pairs = split[True]
+    mismatched_pairs = [p for p in pairs if differs(p)]
+    matched_pairs = [p for p in pairs if not differs(p)]
 
     return {
         "unordered": tally(pairs, differs),
@@ -165,7 +165,7 @@ def entailment_agreement(questions_path: Path) -> dict[str, Any]:
                     sum(mixes_answer_kind(p) for p in group) / len(group) if group else 0.0
                 ),
             }
-            for name, group in (("mismatched", mismatched_pairs), ("matched", split[False]))
+            for name, group in (("mismatched", mismatched_pairs), ("matched", matched_pairs))
         },
         "most_common_mismatches": [
             {"signatures": list(sigs), "pairs": n}
@@ -191,7 +191,7 @@ def operator_names_in_questions(questions_path: Path) -> dict[str, Any]:
     leak is all-or-nothing per operator and an average would describe no operator.
 
     Measured on the reported split alone: it is the split every probe number comes from,
-    and the cost is quadratic in operators times questions.
+    and the cost is the number of operators times the number of questions.
     """
     entries: dict[str, dict[str, Any]] = load_json(questions_path)
     questions = [

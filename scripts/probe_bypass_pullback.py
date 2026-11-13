@@ -19,8 +19,7 @@ et al. average over both, because they are after a general layer-to-layer map. H
 site is one position: the last prompt token, the one the alignment loss touched and the
 one the first answer token is chosen from. The image and question positions carry hidden
 states the alignment never constrained, and averaging them in would blur the map with
-directions belonging to vectors that are not under study. §A.4 records this departure from
-Gurnee et al., who average on both axes.
+directions belonging to vectors that are not under study. §A.4 records this choice.
 
 Everything downstream is the first stage's, unchanged: the same rows §5.1 probes, the same
 four places, the same random twin at each width, and the same verdict — not the level
@@ -71,14 +70,14 @@ from cotar.models import SmolVLM, build_smolvlm
 from cotar.utils import load_json, save_json
 
 # The same widths the first stage swept, so the two are read on one axis.
-DIMS       = (8, 32, 128)
+DIMS = (8, 32, 128)
 
 # How much of testdev the Jacobian is averaged over, and in how many pieces. The same
 # prompts are used for every run, so a difference between two pullbacks is a difference of
 # weights. One backward per direction per batch, and a backward costs ~11ms here, so the
 # whole nine runs spend about two minutes inside autograd.
-PROMPTS    = 64
-BATCH      = 8
+PROMPTS = 64
+BATCH   = 8
 
 OUT_PATH = analysis_path(__file__)
 
@@ -141,12 +140,13 @@ if __name__ == "__main__":
 
     _, processor = build_smolvlm("500M")
     batches = jacobian_batches(processor, PROMPTS, BATCH)
+    counted = sum(len(b["prompt_lens"]) for b in batches)
 
     print(f"{int(rows.sum()):,} questions, {n_classes} signatures, "
           f"floor {majority_floor(sub_labels, sub_train):.1%}")
     print(f"{len(answer_rows):,} output-layer rows from the answer vocabulary")
     print(f"site: layer {layer}, {hidden_width} dimensions wide")
-    print(f"Jacobian averaged over {sum(len(b['prompt_lens']) for b in batches)} prompts "
+    print(f"Jacobian averaged over {counted} prompts "
           f"in {len(batches)} batches, at the last prompt token\n")
 
     results: dict[str, Any] = {}
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         "site_layer": layer,
         "dims": list(DIMS),
         "answer_rows": len(answer_rows),
-        "jacobian_prompts": sum(len(b["prompt_lens"]) for b in batches),
+        "jacobian_prompts": counted,
         "questions": int(rows.sum()),
         "classes": n_classes,
         "floor": majority_floor(sub_labels, sub_train),

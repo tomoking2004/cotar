@@ -165,11 +165,11 @@ if __name__ == "__main__":
     print(f"{len(runs)} runs under {TIMESTAMP}: {', '.join(ARMS)} × seeds "
           f"{', '.join(map(str, SEEDS))}\n")
 
-    width = max(len(m) for by in measurements.values() for m in by)
+    column = max(len(m) for by in measurements.values() for m in by)
     for arm in ARMS:
         print(arm)
         for metric, summary in summaries[arm].items():
-            print(f"  {metric:>{width}}  {summary['mean']:9.4f} ± {summary['sd']:.4f}"
+            print(f"  {metric:>{column}}  {summary['mean']:9.4f} ± {summary['sd']:.4f}"
                   f"  (range {summary['range']:.4f})"
                   f"   {' / '.join(f'{v:.4f}' for v in summary['per_seed'].values())}")
         print()
@@ -182,7 +182,7 @@ if __name__ == "__main__":
             print(f"  {arm:>9}  reached {reached:.4f}"
                   f"   ({collapse - reached:+.4f} against collapse)")
 
-    print(f"\npaired differences, {CONFIDENCE:.0%} interval on three seeds")
+    print(f"\npaired differences, {CONFIDENCE:.0%} interval on {len(SEEDS)} seeds")
     for pair, metrics in comparisons.items():
         for metric, d in metrics.items():
             mark = "excludes 0" if d["excludes_zero"] else "includes 0"

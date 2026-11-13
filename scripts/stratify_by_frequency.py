@@ -27,6 +27,7 @@ from pathlib import Path
 
 from cotar.analysis import (
     ARMS,
+    CONFIDENCE,
     SEEDS,
     TIMESTAMP,
     analysis_path,
@@ -56,6 +57,7 @@ def label_of(lo: int, hi: int | None) -> str:
 
 
 def bucket_of(count: int) -> str:
+    """The label of the bucket a training count falls in."""
     for lo, hi in BUCKETS:
         if count >= lo and (hi is None or count <= hi):
             return label_of(lo, hi)
@@ -139,10 +141,11 @@ if __name__ == "__main__":
         if sizes[label]
     }
 
-    print("accuracy by how often the signature was seen in training (mean over 3 seeds, ± sd)")
+    print("accuracy by how often the signature was seen in training"
+          f" (mean over {len(SEEDS)} seeds, ± sd)")
     print(f"{'train freq':>10} {'questions':>10} {'yes/no':>7}  "
           + "  ".join(f"{arm:>14}" for arm in ARMS)
-          + "   proposal−baseline  95% interval  (* excludes 0)")
+          + f"   proposal−baseline  {CONFIDENCE:.0%} interval  (* excludes 0)")
     for label, in_stratum in strata_arms.items():
         print(row(label, sizes[label], binary_share[label], in_stratum))
     all_binary = statistics.mean(q["answer"] in {"yes", "no"} for q in testdev.values())

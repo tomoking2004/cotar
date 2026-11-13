@@ -4,7 +4,7 @@
 Cohen's d, and context.md §A.6 decides on the first at layer 16. Both rest on the control
 being a fair scale in every arm, and the arms do not share one: the alignment loss
 reshaped the space the vector sits in, so the proposal's control is about five times the
-baseline's and its spread relative to its own mean is nearly twice as wide. Whether the
+baseline's and its spread relative to its own mean is about 1.7 times as wide. Whether the
 decision survives that is a question the per-run summaries cannot answer, because they
 keep only means and standard deviations. This re-reads the distances `probe_drift.py`
 saved per question, and asks it three ways:
@@ -15,12 +15,14 @@ saved per question, and asks it three ways:
 - **What Cohen's d is made of.** d is (mu_D - mu_C) / sigma_p, so in units of the control's
   mean it is -(1 - R) / (sigma_p / mu_C), with R the ratio over 100. The pooled variance of
   `cohens_d` weights each side by its count less one, and a family of k variants has k
-  drift pairs per control distance, so the pooled variance is split into the control's
-  share. Beside it are two forms that drop the count weighting — the two variances averaged
-  with equal weight, and the control's standard deviation alone (Glass's delta) — and two
-  overlaps that assume no shape at all: the probability that a drift falls below a control
-  distance over every pairing of the two samples (`auc`), and the share of drift pairs that
-  fall below their own question's control distance (`below_own`).
+  drift pairs per control distance, so the drift side can outweigh the control in it; the
+  control's share of that variance says which side sets the denominator
+  (`control_share_of_pooled`). Beside d are two forms that drop the count weighting — the
+  two variances averaged with equal weight, and the control's standard deviation alone
+  (Glass's delta) — and two overlaps that assume no shape at all: the probability that a
+  drift falls below a control distance over every pairing of the two samples (`auc`), and
+  the share of drift pairs that fall below their own question's control distance
+  (`below_own`).
 - **Whether the ratio's direction depends on the scale.** The median of the drift over the
   median of the control; the geometric mean over questions and variants of each drift over
   its own question's control (`per_question`); the mean ratio with the control's top one
@@ -45,6 +47,7 @@ import torch
 from cotar.analysis import (
     ANY,
     ARMS,
+    CONFIDENCE,
     analysis_path,
     eval_report,
     paired_difference,
@@ -54,8 +57,8 @@ from cotar.analysis import (
 from cotar.training import cohens_d
 from cotar.utils import save_json
 
-DRIFT_PATH = analysis_path("probe_drift.py").with_suffix(".pt")
-OUT_PATH   = analysis_path(__file__)
+SAMPLES_PATH = analysis_path("probe_drift.py").with_suffix(".pt")
+OUT_PATH     = analysis_path(__file__)
 
 CONTROL = "other_image"
 
@@ -144,8 +147,23 @@ def compared(
     return out
 
 
+def print_headline(result: dict[str, Any], layer: int) -> None:
+    """The union of every family at one layer: each measure per arm, and the paired
+    differences with their intervals."""
+    print(f"every family pooled ({ANY}) at layer {layer}: mean over seeds, and the paired "
+          f"difference with its {CONFIDENCE:.0%} interval (* excludes 0)")
+    for measure, entry in result["families"][str(layer)][ANY].items():
+        row = f"{measure:>28}" + "".join(
+            f" {entry['arms'][arm]['mean']:9.3f}" for arm in ARMS
+        )
+        for key, d in entry["differences"].items():
+            row += (f" │ {key}: {d['mean']:+8.3f} [{d['ci_low']:+8.3f}, {d['ci_high']:+8.3f}]"
+                    + ("*" if d["excludes_zero"] else " "))
+        print(row)
+
+
 def main() -> None:
-    samples = torch.load(DRIFT_PATH, weights_only=False)
+    samples = torch.load(SAMPLES_PATH, weights_only=False)
     layers: list[int] = samples["layers"]
     family_of: dict[str, str] = samples["families"]
     families = [*dict.fromkeys(family_of.values()), ANY]
@@ -187,21 +205,6 @@ def main() -> None:
     print_headline(result, site_layer)
     save_json(result, OUT_PATH)
     print(f"\nwritten: {OUT_PATH}")
-
-
-def print_headline(result: dict[str, Any], layer: int) -> None:
-    """The union of every family at one layer: each measure per arm, and the paired
-    differences with their intervals."""
-    print(f"every family pooled ({ANY}) at layer {layer}: mean over seeds, and the paired "
-          f"difference with its 95% interval (* excludes 0)")
-    for measure, entry in result["families"][str(layer)][ANY].items():
-        row = f"{measure:>28}" + "".join(
-            f" {entry['arms'][arm]['mean']:9.3f}" for arm in ARMS
-        )
-        for key, d in entry["differences"].items():
-            row += (f" │ {key}: {d['mean']:+8.3f} [{d['ci_low']:+8.3f}, {d['ci_high']:+8.3f}]"
-                    + ("*" if d["excludes_zero"] else " "))
-        print(row)
 
 
 if __name__ == "__main__":

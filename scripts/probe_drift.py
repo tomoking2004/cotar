@@ -22,8 +22,8 @@ over every seed in `SEEDS`, and both files are written over in full.
 Set `LIMIT` to a few dozen to prove the wiring before committing the GPU to the full set.
 A trial measures exactly the runs the full pass would, prints them, and writes nothing,
 so the files on record stay the full set's. Twenty-three variants, a control and the base
-pass make twenty-five passes per run, and a pass over the full report set takes about a
-minute and a half on the machine that trained the runs.
+pass make twenty-five passes per run, and the twenty-five over the full report set take
+about half an hour on the machine that trained the runs (§8.1).
 """
 
 from __future__ import annotations
@@ -87,6 +87,7 @@ Results = dict[str, dict[str, dict[str, Any]]]
 
 
 def _value(entry: dict[str, Any], path: Sequence[str]) -> float:
+    """The number one of `COMPARED` names, read down its keys."""
     for key in path:
         entry = entry[key]
     return float(entry)  # type: ignore[arg-type]
@@ -164,7 +165,7 @@ def print_comparison(comparison: dict[str, Any], layer: int) -> None:
     with the paired differences against baseline."""
     reference, *aligned = ARMS
     print(f"drift as % of the image-swap control at layer {layer}, mean over seeds, and the "
-          f"paired difference with its {round(100 * CONFIDENCE)}% interval")
+          f"paired difference with its {CONFIDENCE:.0%} interval")
     print(f"{'family':>14}" + "".join(f" {arm:>10}" for arm in ARMS)
           + "".join(f" │ {f'{arm} − {reference}':>28}" for arm in aligned))
     for family, by_layer in comparison.items():

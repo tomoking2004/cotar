@@ -32,7 +32,7 @@ def caches(folder: Path) -> list[Path]:
 
 
 def problems() -> list[str]:
-    found = [f"{path.relative_to(ROOT)}: bytecode cache" for path in caches(ROOT)]
+    found = [f"{path.relative_to(ROOT).as_posix()}: bytecode cache" for path in caches(ROOT)]
     if TMP.is_dir():
         for path in sorted(TMP.iterdir()):
             if path.is_file() and not FILES.fullmatch(path.name):
@@ -52,7 +52,7 @@ def main() -> int:
     if not found:
         return 0
     if hook:
-        reason = "CLAUDE.md の「tmp/ は置くものを決めて保つ」から外れている：" + "／".join(found)
+        reason = "CLAUDE.md の「tmp/ は，置くものを決めて保つ」から外れている：" + "／".join(found)
         print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
         return 0
     print("\n".join(found))

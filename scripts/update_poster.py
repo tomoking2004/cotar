@@ -17,7 +17,7 @@ three seeds of the main results (§8.1).
 A paragraph is left alone when its text already reads as it should, so running this twice
 changes nothing, and "nothing to change" doubles as the check that the poster agrees with
 `analyses/`. The research document comes first: this writes what §8.1 says the row means,
-and the row still has to be written into §8.1 and §A.6 before the poster is final.
+so the poster agrees with the document only while §8.1 and §A.6 record the same row.
 
 Needs `lxml` (the `poster` extra) and nothing from the package, so `pip install lxml` is
 enough on a machine without torch, where the poster is opened.
@@ -49,13 +49,15 @@ LAYER   = "16"
 CONTROL = "other_image"
 ARMS    = ("baseline", "proposal", "ablation")
 
-GREEN = ACCENT = "4A8C45"      # the poster is one hue: conclusions stand out by size, not by colour
-BOLD_FONT  = "游ゴシック"
-MATH_FONT  = "Cambria Math"
+# The poster is one hue: conclusions stand out by size, not by colour.
+GREEN     = "4A8C45"
+ACCENT    = GREEN
+BOLD_FONT = "游ゴシック"
+MATH_FONT = "Cambria Math"
 
 SLIDE      = "ppt/slides/slide1.xml"
 SLIDE_RELS = "ppt/slides/_rels/slide1.xml.rels"
-NS = {
+NS         = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
@@ -92,6 +94,7 @@ class Reading(NamedTuple):
 
 
 def read_drift(path: Path = DRIFT_PATH) -> Drift:
+    """The numbers of 3.3, read from `probe_drift.py`'s report."""
     report = json.loads(path.read_text(encoding="utf-8"))
     family = report["comparison"][FAMILY]
     ratio, distance = family[LAYER][f"{CONTROL}/ratio_mean"], family[LAYER]["drift_mean"]
@@ -161,6 +164,7 @@ def reading_of(drift: Drift) -> Reading:
 
 
 def times(value: float) -> str:
+    """A ratio in the poster's words: whole times from two up, one decimal below."""
     return f"約{round(value)}倍" if value >= 2 else f"約{value:.1f}倍"
 
 
@@ -194,10 +198,9 @@ def moved_more(drift: Drift) -> str:
     perturbed = drift.distance["proposal"] / drift.distance["baseline"]
     swapped = drift.control["proposal"] / drift.control["baseline"]
     larger, smaller = min(perturbed, swapped) > 1, max(perturbed, swapped) < 1
-    both = "より大きい" if larger else "より小さい" if smaller else "と違う"
-    both = f"baseline {both}"
+    relation = "より大きい" if larger else "より小さい" if smaller else "と違う"
     times_each = f"加工で{times(perturbed)}，別の画像で{times(swapped)}"
-    return f"proposal は 𝒉 の動き自体が {both}．{times_each}"
+    return f"proposal は 𝒉 の動き自体が baseline {relation}．{times_each}"
 
 
 def slots(drift: Drift) -> dict[tuple[str, int], str]:
@@ -222,10 +225,12 @@ def slots(drift: Drift) -> dict[tuple[str, int], str]:
 
 
 def plain(markup: str) -> str:
+    """The text of a slot's markup, with its colour marks taken out."""
     return MARKUP.sub(r"\2", markup)
 
 
 def paragraph_text(paragraph: etree._Element) -> str:
+    """What a paragraph reads, across all its runs."""
     return "".join(t.text or "" for t in paragraph.findall(".//a:t", NS))
 
 
@@ -279,6 +284,7 @@ def set_paragraph(paragraph: etree._Element, markup: str) -> None:
 
 
 def shape_named(slide: etree._Element, name: str) -> etree._Element:
+    """The shape PowerPoint's selection pane lists under `name`."""
     for found in slide.iter(f"{{{NS['p']}}}cNvPr"):
         if found.get("name") == name:
             return found.getparent().getparent()
@@ -286,6 +292,7 @@ def shape_named(slide: etree._Element, name: str) -> etree._Element:
 
 
 def write_slots(slide: etree._Element, drift: Drift) -> list[str]:
+    """Rewrite each paragraph of `slots` that does not already read as it should."""
     changes = []
     for (name, index), markup in slots(drift).items():
         paragraph = shape_named(slide, name).findall("p:txBody/a:p", NS)[index]
@@ -327,11 +334,13 @@ def write_workbook(data: bytes, values: list[float]) -> bytes:
 
 
 def shown(values: list[float]) -> str:
+    """A chart's values as the change report prints them."""
     return "／".join(f"{value:.2f}" for value in values)
 
 
 def write_chart(parts: dict[str, bytes], slide: etree._Element, name: str,
                 values: dict[str, float], top: int) -> list[str]:
+    """Put the arms' values and the axis top into a chart and its workbook, if either differs."""
     chart_name, workbook = chart_parts(parts, slide, name)
     chart = etree.fromstring(parts[chart_name])
     points = chart.findall(".//c:val/c:numRef/c:numCache/c:pt/c:v", NS)

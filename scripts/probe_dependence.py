@@ -7,17 +7,19 @@ neutrality means it did not. The second stage already computes the quantity that
 them and throws it away, because orthonormalising a pulled-back direction keeps its bearing
 and discards its length.
 
-The length is what this keeps. For one prompt and one answer direction `u`, the
-vector-Jacobian product gives how far the readout moves along `u` per unit of movement at
-the site. That number carries units from both ends, and alignment is free to have changed
-either — a run whose site vectors are simply shorter would look less depended-upon
-without anything about the computation having changed. So it is reported as a
-**relative sensitivity**,
+The length is what this keeps. For one prompt and one answer direction `u`, the length of
+the vector-Jacobian product `J^T u` is how far the readout moves along `u` per unit of
+movement at the site, when the site moves along `J^T u` itself — the way that moves the
+readout along `u` most. That number carries units from both ends, and alignment is free to
+have changed either — a run whose site vectors are simply shorter would look less
+depended-upon without anything about the computation having changed. So it is reported as
+a **relative sensitivity**,
 
     e = |J^T u| * |h| / |r|
 
 — the relative movement of the readout along `u` produced by a relative movement of the
-site. A one percent nudge at the site moves the readout `e` percent along `u`.
+site. A one percent nudge at the site, along `J^T u`, moves the readout along `u` by `e`
+percent of the readout's length.
 
 **The lengths are averaged, not the vectors.** The second stage averages the gradient
 vectors over prompts because it wants one subspace; the mean of vectors that disagree in
@@ -69,7 +71,7 @@ PROMPTS = 64
 BATCH   = 8
 
 # Prefixes the running values are reported at, to show whether PROMPTS was enough.
-CHECKPOINTS = (8, 16, 32, 48, 64)
+PREFIXES = (8, 16, 32, 48, 64)
 
 OUT_PATH = analysis_path(__file__)
 
@@ -77,10 +79,11 @@ OUT_PATH = analysis_path(__file__)
 def sensitivities(
     vlm: SmolVLM, batches: list[dict[str, Any]], directions: torch.Tensor
 ) -> tuple[torch.Tensor, dict[int, torch.Tensor]]:
-    """Per-prompt relative sensitivities `(P, m)`, and the mean pulled direction after each prompt.
+    """Per-prompt relative sensitivities `(P, m)`, and the mean pulled direction at each prefix.
 
-    The second return is the second stage's own quantity accumulated prompt by prompt, kept so its
-    convergence can be read from the same backward passes rather than assumed.
+    The second return is the second stage's own quantity accumulated prompt by prompt and kept
+    at every prefix in `PREFIXES`, so its convergence can be read from the same backward passes
+    rather than assumed.
     """
     per_prompt: list[torch.Tensor] = []
     running: dict[int, torch.Tensor] = {}
@@ -94,17 +97,17 @@ def sensitivities(
         for row in range(grads.size(0)):
             total += grads[row].T
             seen += 1
-            if seen in CHECKPOINTS:
+            if seen in PREFIXES:
                 running[seen] = (total / seen).clone()
     return torch.cat(per_prompt), running
 
 
 def settled(running: dict[int, torch.Tensor]) -> list[float]:
-    """How close the mean direction was to its final value, at each checkpoint prefix."""
-    final = running[max(CHECKPOINTS)]
+    """How close the mean direction was to its final value, at each prefix."""
+    final = running[max(PREFIXES)]
     return [
         F.cosine_similarity(running[n], final, dim=0).abs().mean().item()
-        for n in CHECKPOINTS
+        for n in PREFIXES
     ]
 
 
@@ -137,7 +140,7 @@ if __name__ == "__main__":
                 "by_dim": {
                     str(m): {
                         "sensitivity": per_prompt[:, :m].mean().item(),
-                        "running": [per_prompt[:n, :m].mean().item() for n in CHECKPOINTS],
+                        "running": [per_prompt[:n, :m].mean().item() for n in PREFIXES],
                     }
                     for m in DIMS
                 },
@@ -151,7 +154,7 @@ if __name__ == "__main__":
                       f"   prefixes " + " ".join(f"{v:6.4f}" for v in by["running"]))
             print(f"{'direction settled':>26}  "
                   + " ".join(f"{v:5.3f}" for v in entry["direction_settled"])
-                  + f"   ← prefixes {CHECKPOINTS}\n")
+                  + f"   ← prefixes {PREFIXES}\n")
 
     # ── the comparison the verdict rests on ──────────────────────────────────
     # Shorter for proposal than for baseline means the answer came to lean on the site
@@ -192,7 +195,7 @@ if __name__ == "__main__":
         "dims": list(DIMS),
         "answer_rows": len(answer_rows),
         "jacobian_prompts": counted,
-        "prefixes": list(CHECKPOINTS),
+        "prefixes": list(PREFIXES),
         "runs": results,
         "means": summary,
     }, OUT_PATH)
