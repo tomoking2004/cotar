@@ -5,10 +5,11 @@
 # script refuses to run, and whether an optional metric is computed at all.
 #
 # The original is `datasets/gqa/eval/eval.py`. It ships in GQA's eval.zip
-# alongside val_choices.json, so it is present on any machine that can run
-# cotar -- which is why no copy is kept in this tree. (One used to live under
-# `ref/`, and a patch leaked into the copy itself, silently voiding the very
-# baseline it existed to provide.) The whole of the difference is one command:
+# alongside val_choices.json, so it is present on any machine that trains or
+# evaluates with cotar -- which is why no copy is kept in this tree. (One used
+# to live under `ref/`, and a patch leaked into the copy itself, silently
+# voiding the very baseline it existed to provide.) The whole of the
+# difference is one command:
 #
 #     git diff --no-index datasets/gqa/eval/eval.py cotar/data/_gqa_eval.py
 #

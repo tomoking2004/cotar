@@ -1,3 +1,5 @@
+"""The study's trainer: the three arms, and the objective that tells them apart."""
+
 from __future__ import annotations
 
 import random
@@ -77,8 +79,8 @@ class Trainer(BaseTrainer):
         # `Arm` is a type-only Literal, so a misspelt arm would otherwise fall through
         # to the proposal settings and be *recorded* under the misspelling — the arm is
         # this study's independent variable, and it may not be assigned by accident.
-        if arm not in get_args(Arm):
-            raise ValueError(f"arm must be one of {get_args(Arm)}, got {arm!r}.")
+        if arm not in ARMS:
+            raise ValueError(f"arm must be one of {ARMS}, got {arm!r}.")
 
         self.vlm            = vlm
         self.processor      = processor
@@ -124,12 +126,14 @@ class Trainer(BaseTrainer):
     # ── train4all interface ───────────────────────────────────────────────────
 
     def setup(self) -> None:
+        """Register the model and the learned temperature, and the optimizer for both."""
         self.set_models({"vlm": self.vlm, "logit_scale": self.logit_scale})
         # The class, not an instance: the parameters and the rate are both things
         # `BaseTrainer` already holds, and it supplies them itself.
         self.set_optimizer(RAdamScheduleFree)
 
     def compute_loss(self, batch: Batch) -> torch.Tensor:
+        """The language-model loss, plus the weighted alignment term in the aligned arms."""
         output = self.vlm(**batch)
         loss, representation = output["loss"], output["representation"]
         if loss is None:
@@ -160,6 +164,7 @@ class Trainer(BaseTrainer):
         return loss + self.align_weight * align_loss
 
     def compute_metrics(self, batch: Batch) -> dict[str, float]:
+        """The objective's terms, the temperature, and what the evaluator measures."""
         # `BaseTrainer` puts its own `loss` first and insertion order is what the tables
         # and exports are read in, so the terms it decomposes into follow it directly:
         # `lm_loss` exists to be told apart from `loss`, and cannot be from a distance.
@@ -169,6 +174,7 @@ class Trainer(BaseTrainer):
         return self._losses() | self._temperature() | metrics
 
     def get_batch_weight(self, batch: Batch) -> int:
+        """A batch's weight in a metric average: its count of supervised tokens."""
         # The model's loss is a mean over the supervised tokens, so metric averaging (and
         # gradient accumulation) must weight each batch by that same denominator — not by
         # its sample count, which the prompt and image tokens are absent from.
@@ -177,12 +183,14 @@ class Trainer(BaseTrainer):
     # ── lifecycle hooks ───────────────────────────────────────────────────────
 
     def on_set_training_mode(self, training: bool) -> None:
+        """Switch the optimizer's parameter view along with the mode."""
         # RAdamScheduleFree keeps separate train/eval parameter views; evaluation
         # must read the averaged weights, so the two switch in lockstep.
         if isinstance(self._optimizer, RAdamScheduleFree):
             (self._optimizer.train if training else self._optimizer.eval)()
 
     def on_phase_start(self, epoch: int | None, phase: Phase) -> None:
+        """Clear what the evaluator has accumulated."""
         # Every phase scores itself from a clean slate — the evaluator accumulates
         # predictions and representations for `report`, and one phase's must never be
         # weighed into the next's.
@@ -191,6 +199,7 @@ class Trainer(BaseTrainer):
     def on_phase_end(
         self, epoch: int | None, phase: Phase, metrics: dict[str, float]
     ) -> None:
+        """After the final evaluation: save its outputs and report, and snapshot the run."""
         # What marks the final evaluation is that it belongs to no epoch: `test()` runs
         # its phase outside the loop and hands this hook `None`, where every pass
         # `train()` makes carries the epoch it ran in. Keying on the *name* instead

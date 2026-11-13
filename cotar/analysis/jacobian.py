@@ -46,7 +46,7 @@ def site(seeds: Sequence[int] = SEEDS) -> tuple[int, int]:
     """
     sites = {constrained_layer(arm, seed) for arm in ARMS for seed in seeds}
     if len(sites) != 1:
-        raise SystemExit(f"the runs constrained different sites ({sorted(sites)}).")
+        raise SystemExit(f"The runs constrained different sites ({sorted(sites)}).")
     return sites.pop()
 
 

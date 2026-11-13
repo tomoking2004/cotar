@@ -1,3 +1,5 @@
+"""GQA as the study reads it: samples, task signatures, and the batches built from them."""
+
 from __future__ import annotations
 
 import random
@@ -38,6 +40,8 @@ def task_signature(program: list[dict[str, Any]]) -> str:
 
 @dataclass(slots=True)
 class GQASample:
+    """One question about one image, with its answer and functional program."""
+
     image: Image.Image
     question: str
     answer: str
@@ -47,6 +51,7 @@ class GQASample:
 
     @property
     def signature(self) -> str:
+        """The task signature of the sample's program."""
         return task_signature(self.program)
 
 
@@ -54,12 +59,14 @@ class GQASample:
 # rather than the image alone because a transform may need to know *which* sample it is
 # handed: one that draws a parameter per question has to draw the same one every time
 # that question comes round, and one that swaps the image for another has to know which
-# image not to pick. The question text is never touched — the loader hands the transform
-# the image's slot and nothing else.
+# image not to pick. The question text is never touched — what the transform returns
+# replaces the sample's image and nothing else.
 ImageTransform = Callable[[GQASample], Image.Image]
 
 
 class GQADataset(Dataset[GQASample]):
+    """The questions of a GQA file whose images are on disk, in file order or by signature."""
+
     def __init__(
         self,
         questions_path: str | Path,
@@ -240,7 +247,7 @@ class MPerSignatureSampler(Sampler[list[int]]):
         ]
         if len(self.pools) < signatures_per_batch:
             raise ValueError(
-                f"need >= signatures_per_batch={signatures_per_batch} signatures with "
+                f"Need >= signatures_per_batch={signatures_per_batch} signatures with "
                 f"{min_samples_per_signature}+ samples, got {len(self.pools)}."
             )
 
@@ -275,7 +282,7 @@ class _SampleMeta(TypedDict):
 
 
 class Batch(Encoding, _SampleMeta):
-    pass
+    """A collated batch: the encoding, plus each sample's answer, id and signature."""
 
 
 class _GQACollator:
@@ -321,6 +328,7 @@ def build_gqa_dataloader(
     seed: int | None = 0,
     logger: UnifiedLogger | None = None,
 ) -> DataLoader[GQASample]:
+    """A loader over a GQA file: in order, shuffled, or by signature (`group_by_signature`)."""
     if group_by_signature and (shuffle or drop_last):
         raise ValueError(
             "group_by_signature forms batches via a custom batch_sampler, which "

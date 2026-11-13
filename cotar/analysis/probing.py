@@ -17,6 +17,11 @@ shuffled arm's are still climbing. Cut everyone off together and the arms that f
 are reported below what they carry — a difference in fitting speed reads as a difference
 in content.
 
+Early stopping does not rescue a fit that never leaves the majority-class rate. On the
+shuffled arm's narrow subspaces (most fits at 8 dimensions, a few at 32) the fit stays at
+that floor, so its score there measures the fit, not the content; analyses/probe-bypass*.json
+show it, and the research document leaves those cells out of the reading.
+
 **The stopping score is the metric the probe reports, not the training loss.** Held-out
 cross-entropy turns upward as soon as a fit grows confident, which happens far earlier for
 a wide sparse vocabulary than for a 960-dimensional representation while both are still
@@ -65,17 +70,17 @@ __all__ = [
     "surface_vocabularies",
 ]
 
-TRAIN_FRAC   = 0.5
-SPLIT_SEED   = 0
-MIN_COUNT    = 10     # a signature needs enough rows to land on both sides of a split
-VOCAB_SIZE   = 8_000
-MAX_STEPS    = 8_000
-PATIENCE     = 1_000  # steps without a better validation score before stopping
-EVAL_EVERY   = 50
-VAL_FRAC     = 0.2    # held out of the fitting half to choose the stopping point
-LR           = 0.05
-WEIGHT_DECAY = 1e-4
-RIDGE_ALPHA  = 1.0    # penalty for the format→representation fit that is then subtracted
+TRAIN_FRAC    = 0.5
+SPLIT_SEED    = 0
+MIN_COUNT     = 10     # a signature needs enough rows to land on both sides of a split
+_VOCAB_SIZE   = 8_000
+_MAX_STEPS    = 8_000
+_PATIENCE     = 1_000  # steps without a better validation score before stopping
+_EVAL_EVERY   = 50
+_VAL_FRAC     = 0.2    # held out of the fitting half to choose the stopping point
+_LR           = 0.05
+_WEIGHT_DECAY = 1e-4
+_RIDGE_ALPHA  = 1.0    # penalty for the format→representation fit that is then subtracted
 
 # What "format" is taken to be here. Source identity and option count — two of the three
 # features Sahoo et al. regress out — cannot vary in this study: every question comes from
@@ -102,26 +107,26 @@ def fit_linear(
     rows = train.nonzero(as_tuple=True)[0]
     generator = torch.Generator().manual_seed(SPLIT_SEED)
     shuffled = rows[torch.randperm(len(rows), generator=generator)]
-    cut = max(1, int(len(shuffled) * VAL_FRAC))
+    cut = max(1, int(len(shuffled) * _VAL_FRAC))
     val, fit_rows = shuffled[:cut], shuffled[cut:]
 
     w = torch.zeros(features.size(1), n_out, requires_grad=True)
     b = torch.zeros(n_out, requires_grad=True)
-    opt = torch.optim.AdamW([w, b], lr=LR, weight_decay=WEIGHT_DECAY)
+    opt = torch.optim.AdamW([w, b], lr=_LR, weight_decay=_WEIGHT_DECAY)
     best, best_step = -float("inf"), 0
     best_w, best_b = w.detach().clone(), b.detach().clone()
-    for step in range(1, MAX_STEPS + 1):
+    for step in range(1, _MAX_STEPS + 1):
         opt.zero_grad()
         loss_fn(features[fit_rows] @ w + b, targets[fit_rows]).backward()
         opt.step()
-        if step % EVAL_EVERY:
+        if step % _EVAL_EVERY:
             continue
         with torch.no_grad():
             score = score_fn(features[val] @ w + b, targets[val])
         if score > best:
             best, best_step = score, step
             best_w, best_b = w.detach().clone(), b.detach().clone()
-        elif step - best_step >= PATIENCE:
+        elif step - best_step >= _PATIENCE:
             break
     return best_w, best_b, best_step
 
@@ -243,7 +248,7 @@ def residualize(features: torch.Tensor, formats: torch.Tensor) -> torch.Tensor:
     """
     ones = torch.ones(len(formats), 1, dtype=formats.dtype)
     design = torch.cat([formats, ones], dim=1)
-    penalty = torch.eye(design.size(1), dtype=design.dtype) * RIDGE_ALPHA
+    penalty = torch.eye(design.size(1), dtype=design.dtype) * _RIDGE_ALPHA
     penalty[-1, -1] = 0.0  # the intercept carries no format information to penalise
     weights = torch.linalg.solve(design.T @ design + penalty, design.T @ features)
     return features - design @ weights
@@ -264,7 +269,7 @@ def surface_matrices(words: list[list[str]]) -> dict[str, torch.Tensor]:
 
 
 def surface_vocabularies(words: list[list[str]]) -> dict[str, int]:
-    """How many distinct grams each surface form has *before* `VOCAB_SIZE` truncates it.
+    """How many distinct grams each surface form has *before* `_VOCAB_SIZE` truncates it.
 
     Reported beside the matrices because the cap bites for only one of the two forms, and
     a column count alone cannot say which: a form under the cap keeps every gram, while
@@ -278,7 +283,7 @@ def surface_vocabularies(words: list[list[str]]) -> dict[str, int]:
 
 def _encode(words: list[list[str]], grams: Callable[[list[str]], list[str]]) -> torch.Tensor:
     counts = Counter(gram for ws in words for gram in grams(ws))
-    column = {gram: c for c, (gram, _) in enumerate(counts.most_common(VOCAB_SIZE))}
+    column = {gram: c for c, (gram, _) in enumerate(counts.most_common(_VOCAB_SIZE))}
     matrix = torch.zeros(len(words), len(column))
     for row, ws in enumerate(words):
         for gram in grams(ws):

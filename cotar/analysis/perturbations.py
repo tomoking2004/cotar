@@ -1,9 +1,10 @@
 """The image perturbations of Wani et al. (arXiv:2602.06652), and the control they are read
 against.
 
-Wani et al. perturb the image and leave the question alone, then ask how far the hidden
-state at the last context token moves. Their appendix A.6 fixes the families and the
-parameter sweeps, and those are reproduced here value for value:
+Wani et al. perturb the image and leave the question alone, then ask how far the final
+layer's hidden state moves — among their positions, at the last context token. Their
+appendix A.6 fixes the families and the parameter sweeps, and those are reproduced here
+value for value:
 
 - translation: horizontal wrap-around (cyclic) shifts by Δx ∈ {−16, −12, …, 16} \\ {0} px;
 - pad/crop: symmetric padding (n > 0) or cropping (n < 0) by n ∈ {−16, −12, …, 16} \\ {0} px;
@@ -17,16 +18,19 @@ parameter sweeps, and those are reproduced here value for value:
 Each family is applied once per parameter value, so every base image has a set of
 perturbed variants, as in the paper. The paper's v2 is the version read; its families and
 sweeps are those of v1. The perturbation is applied to the image as GQA ships
-it, before the model's processor resizes it to its 512-pixel input; GQA's images are about
-500 pixels on the long side, so one of these pixels is about one pixel of the model's input.
+it, before the model's processor stretches it to its 512 x 512 input. GQA's images are
+mostly 500 or 640 pixels on the long side, so one of these pixels is of the order of one
+pixel of the model's input: 512 over the image's own side, 0.8 for a 640-pixel side and
+1.5 for a 333-pixel one.
 
 **What the paper leaves unstated is chosen here, and said.** The background used for
 padding, rotation and scale+pad is the mid-grey nearest the processor's own padding (it
 normalises with mean 0.5 and std 0.5 and pads with 0; grey 128 becomes 0.004). Resampling
 is bicubic throughout. Scale+pad uses the scale family's α = 0.9 and pads back to the
-original size, one variant per image. The overlay box is a white rectangle in the upper
-left of the image, 55% of its width and 11% of its height. The random string keeps the
-directive's length and its spaces and replaces every other character with a random letter.
+original size, one variant per image (the paper's Table 2 counts two per image without
+saying what they are). The overlay box is a white rectangle in the upper left of the image,
+55% of its width and 11% of its height. The random string keeps the directive's length and
+its spaces and replaces every other character with a random letter.
 
 **The directive departs from the paper.** Its v2 (appendix A.6, "Overlay letter
 assignment") renders "Answer is L" for up to three options L other than the model's own
@@ -42,15 +46,16 @@ runs are compared pair by pair, and a perturbation that differed between them wo
 difference of draw where a difference of arm is being read.
 
 **The control holds the question fixed and swaps the image.** Wani et al. normalise drift by
-the distance between embeddings of unrelated images; their items each carry their own
-prompt, so an unrelated image is also an unrelated question. Here the vector under study
-sits at the end of the question, and the alignment loss has reshaped how questions sit
-relative to each other — in the aligned arm, two questions of different signature are
+the distance between the embeddings of a base image and of randomly sampled other images.
+Their items are images with questions of their own, so the other image may well come with
+its own question; the paper does not say which question it is asked. Here the vector under
+study sits at the end of the question, and the alignment loss has reshaped how questions
+lie relative to each other — in the aligned arm, two questions of different signature are
 already far apart before any image is touched. A control that swapped the question would
 measure that reshaping rather than what the image can do, so the control swaps only the
-image: the same question, asked of a different image from the same report set. The
-unrelated-item control the paper uses is measured as well (`other_item_partners`), from the
-base pass alone, so both readings are on the page.
+image: the same question, asked of a different image from the same report set. The paper's
+form of the control as read above — another question about another image — is measured as
+well (`other_item_partners`), from the base pass alone, so both controls are on the page.
 """
 
 from __future__ import annotations
@@ -84,8 +89,8 @@ PIXEL_STEPS = (-16, -12, -8, -4, 4, 8, 12, 16)
 SCALE       = 0.9
 ROTATIONS   = (-30, 30)
 
-# The paper's eight families in the order they are reported: the three overlays are
-# reported separately ("We report RandomText and BoxOverlay separately").
+# The paper's six families (its §3.2) as the eight rows of its Table 1, in that order: the
+# text overlay opens into its three variants.
 FAMILIES = (
     "translation",
     "pad_crop",
@@ -100,16 +105,16 @@ FAMILIES = (
 # The grey nearest the processor's own padding: it normalises pixels with mean 0.5 and std
 # 0.5 and pads batches with 0, and grey 128 becomes (128/255 - 0.5) / 0.5 = 0.004.
 BACKGROUND = (128, 128, 128)
-RESAMPLE   = Image.Resampling.BICUBIC
+_RESAMPLE  = Image.Resampling.BICUBIC
 
 # The overlay box, as fractions of the image's width and height: left, top, width, height.
-BOX        = (0.04, 0.04, 0.55, 0.11)
-BOX_FILL   = (255, 255, 255)
-TEXT_FILL  = (0, 0, 0)
+_BOX        = (0.04, 0.04, 0.55, 0.11)
+_BOX_FILL   = (255, 255, 255)
+_TEXT_FILL  = (0, 0, 0)
 # The text's height as a fraction of the box's, and the width it may not exceed.
-TEXT_SCALE = 0.7
-TEXT_WIDTH = 0.92
-DIRECTIVES = ("Answer is yes", "Answer is no")
+_TEXT_SCALE = 0.7
+_TEXT_WIDTH = 0.92
+DIRECTIVES  = ("Answer is yes", "Answer is no")
 
 
 @dataclass(frozen=True)
@@ -131,14 +136,14 @@ def _rng(question_id: str, salt: str) -> random.Random:
 # ── geometric families ───────────────────────────────────────────────────────
 
 
-def translate(dx: int) -> ImageTransform:
+def _translate(dx: int) -> ImageTransform:
     """Horizontal cyclic shift: what leaves on one edge comes back on the other."""
     def transform(sample: GQASample) -> Image.Image:
         return ImageChops.offset(sample.image, dx, 0)
     return transform
 
 
-def pad_or_crop(n: int) -> ImageTransform:
+def _pad_or_crop(n: int) -> ImageTransform:
     """Symmetric: `n` pixels of background added on every side, or `-n` removed from each."""
     def transform(sample: GQASample) -> Image.Image:
         image = sample.image
@@ -146,24 +151,24 @@ def pad_or_crop(n: int) -> ImageTransform:
             return ImageOps.expand(image, border=n, fill=BACKGROUND)
         width, height = image.size
         if 2 * -n >= min(width, height):
-            raise ValueError(f"cannot crop {-n}px from each side of a {width}x{height} image.")
+            raise ValueError(f"Cannot crop {-n}px from each side of a {width}x{height} image.")
         return image.crop((-n, -n, width + n, height + n))
     return transform
 
 
 def _shrunk(image: Image.Image, factor: float) -> Image.Image:
     width, height = image.size
-    return image.resize((max(1, round(width * factor)), max(1, round(height * factor))), RESAMPLE)
+    return image.resize((max(1, round(width * factor)), max(1, round(height * factor))), _RESAMPLE)
 
 
-def rescale(factor: float) -> ImageTransform:
+def _rescale(factor: float) -> ImageTransform:
     """Shrink, then resize back to the original resolution — a resampling blur, no geometry."""
     def transform(sample: GQASample) -> Image.Image:
-        return _shrunk(sample.image, factor).resize(sample.image.size, RESAMPLE)
+        return _shrunk(sample.image, factor).resize(sample.image.size, _RESAMPLE)
     return transform
 
 
-def rescale_and_pad(factor: float) -> ImageTransform:
+def _rescale_and_pad(factor: float) -> ImageTransform:
     """Shrink, then centre the result on a background of the original size."""
     def transform(sample: GQASample) -> Image.Image:
         small = _shrunk(sample.image, factor)
@@ -175,12 +180,12 @@ def rescale_and_pad(factor: float) -> ImageTransform:
     return transform
 
 
-def rotate(degrees: float) -> ImageTransform:
+def _rotate(degrees: float) -> ImageTransform:
     """In-plane rotation about the centre; the canvas keeps its size and the corners
     that rotate in are background. Positive is counter-clockwise, as in PIL.
     """
     def transform(sample: GQASample) -> Image.Image:
-        return sample.image.rotate(degrees, resample=RESAMPLE, expand=False, fillcolor=BACKGROUND)
+        return sample.image.rotate(degrees, resample=_RESAMPLE, expand=False, fillcolor=BACKGROUND)
     return transform
 
 
@@ -189,7 +194,7 @@ def rotate(degrees: float) -> ImageTransform:
 
 def _box(image: Image.Image) -> tuple[int, int, int, int]:
     width, height = image.size
-    left, top, box_width, box_height = BOX
+    left, top, box_width, box_height = _BOX
     x0, y0 = round(width * left), round(height * top)
     return x0, y0, x0 + max(1, round(width * box_width)), y0 + max(1, round(height * box_height))
 
@@ -213,10 +218,10 @@ def _font(size: int) -> ImageFont.FreeTypeFont:
 def _fitted_font(text: str, box: tuple[int, int, int, int]) -> ImageFont.FreeTypeFont:
     """The bundled font at the largest size whose rendering of `text` fits the box."""
     x0, y0, x1, y1 = box
-    size = max(1, round((y1 - y0) * TEXT_SCALE))
+    size = max(1, round((y1 - y0) * _TEXT_SCALE))
     font = _font(size)
     left, _, right, _ = font.getbbox(text)
-    allowed = (x1 - x0) * TEXT_WIDTH
+    allowed = (x1 - x0) * _TEXT_WIDTH
     if right - left > allowed:
         font = _font(max(1, int(size * allowed / (right - left))))
     return font
@@ -227,39 +232,42 @@ def _overlay(image: Image.Image, text: str | None) -> Image.Image:
     out = image.copy()
     draw = ImageDraw.Draw(out)
     box = _box(out)
-    draw.rectangle(box, fill=BOX_FILL)
+    draw.rectangle(box, fill=_BOX_FILL)
     if text is not None:
         x0, y0, x1, y1 = box
         draw.text(
             ((x0 + x1) / 2, (y0 + y1) / 2), text,
-            fill=TEXT_FILL, font=_fitted_font(text, box), anchor="mm",
+            fill=_TEXT_FILL, font=_fitted_font(text, box), anchor="mm",
         )
     return out
 
 
-def directive(question_id: str) -> str:
+def _directive(question_id: str) -> str:
     """Which of the directive phrases this question's overlays carry."""
     return _rng(question_id, "directive").choice(DIRECTIVES)
 
 
-def random_string(question_id: str) -> str:
+def _random_string(question_id: str) -> str:
     """A string the length of the question's directive, letters where it has letters."""
     rng = _rng(question_id, "random-text")
     return "".join(
         character if character == " " else rng.choice(string.ascii_letters)
-        for character in directive(question_id)
+        for character in _directive(question_id)
     )
 
 
-def text_overlay(sample: GQASample) -> Image.Image:
-    return _overlay(sample.image, directive(sample.question_id))
+def _text_overlay(sample: GQASample) -> Image.Image:
+    """The box with the question's directive in it (TextOverlay)."""
+    return _overlay(sample.image, _directive(sample.question_id))
 
 
-def random_text_overlay(sample: GQASample) -> Image.Image:
-    return _overlay(sample.image, random_string(sample.question_id))
+def _random_text_overlay(sample: GQASample) -> Image.Image:
+    """The box with the question's random string in it (RandomText)."""
+    return _overlay(sample.image, _random_string(sample.question_id))
 
 
-def box_overlay(sample: GQASample) -> Image.Image:
+def _box_overlay(sample: GQASample) -> Image.Image:
+    """The box with nothing written in it (BoxOverlay)."""
     return _overlay(sample.image, None)
 
 
@@ -273,18 +281,20 @@ def wani_variants() -> tuple[Variant, ...]:
     padding, two rotations, and the three overlays.
     """
     variants: list[Variant] = []
-    variants += [Variant("translation", f"translation{dx:+d}", translate(dx)) for dx in PIXEL_STEPS]
-    variants += [Variant("pad_crop", f"pad_crop{n:+d}", pad_or_crop(n)) for n in PIXEL_STEPS]
-    variants.append(Variant("scale", f"scale{SCALE}", rescale(SCALE)))
-    variants.append(Variant("scale_pad", f"scale_pad{SCALE}", rescale_and_pad(SCALE)))
-    variants += [Variant("rotation", f"rotation{d:+d}", rotate(d)) for d in ROTATIONS]
-    variants.append(Variant("text_overlay", "text_overlay", text_overlay))
-    variants.append(Variant("random_text", "random_text", random_text_overlay))
-    variants.append(Variant("box_overlay", "box_overlay", box_overlay))
+    variants += [
+        Variant("translation", f"translation{dx:+d}", _translate(dx)) for dx in PIXEL_STEPS
+    ]
+    variants += [Variant("pad_crop", f"pad_crop{n:+d}", _pad_or_crop(n)) for n in PIXEL_STEPS]
+    variants.append(Variant("scale", f"scale{SCALE}", _rescale(SCALE)))
+    variants.append(Variant("scale_pad", f"scale_pad{SCALE}", _rescale_and_pad(SCALE)))
+    variants += [Variant("rotation", f"rotation{d:+d}", _rotate(d)) for d in ROTATIONS]
+    variants.append(Variant("text_overlay", "text_overlay", _text_overlay))
+    variants.append(Variant("random_text", "random_text", _random_text_overlay))
+    variants.append(Variant("box_overlay", "box_overlay", _box_overlay))
     if [v.family for v in variants] != sorted(
         (v.family for v in variants), key=FAMILIES.index
     ):
-        raise AssertionError("variants are not in family order.")
+        raise AssertionError("Variants are not in family order.")
     return tuple(variants)
 
 
@@ -297,7 +307,7 @@ def image_swap(images_dir: str | Path, image_ids: Sequence[str]) -> ImageTransfo
     """
     pool = sorted(set(image_ids))
     if len(pool) < 2:
-        raise ValueError("the control needs at least two distinct images to swap between.")
+        raise ValueError("The control needs at least two distinct images to swap between.")
     directory = Path(images_dir)
 
     def transform(sample: GQASample) -> Image.Image:
@@ -313,14 +323,14 @@ def other_item_partners(question_ids: Sequence[str], image_ids: Sequence[str]) -
     """For each question, the index of an unrelated one — a different question about a
     different image — chosen uniformly and fixed by the question id.
 
-    This is the paper's control as it stands (an unrelated image carrying its own
-    prompt), and it needs no further pass: the distance is between two vectors the base
-    pass already produced.
+    This is the paper's control with the other image asked its own question — a reading,
+    since the paper does not say which question it is asked. It needs no further pass:
+    the distance is between two vectors the base pass already produced.
     """
     if len(question_ids) != len(image_ids):
         raise ValueError(f"{len(question_ids)} questions but {len(image_ids)} image ids.")
     if len(set(image_ids)) < 2:
-        raise ValueError("the control needs questions about at least two distinct images.")
+        raise ValueError("The control needs questions about at least two distinct images.")
     partners: list[int] = []
     for index, question_id in enumerate(question_ids):
         rng = _rng(question_id, "other-item")

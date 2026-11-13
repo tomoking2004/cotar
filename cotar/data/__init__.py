@@ -1,3 +1,5 @@
+"""Reading GQA: its samples, their task signatures, and the loaders over them."""
+
 from .gqa import (
     Batch,
     GQADataset,

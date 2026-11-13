@@ -12,18 +12,25 @@ the share of base samples with at least one such change across a family's varian
 vulnerability — here per question, since the base sample of this study is a question about
 an image).
 
-**Two hook points, from one forward pass.** The paper reads the final layer at the last
-context token. This study's question is about the site the alignment loss touched, so that
-layer is read at the same position, and the final layer is read beside it as the point of
-contact with the paper. Both come out of a single pass, because the model pools every
-layer it is built to read.
+**Two hook points, from one forward pass.** The paper reads the final layer, at five
+positions of which two are the last context token. This study's question is about the site
+the alignment loss touched, so that layer is read at the last context token, and the final
+layer is read beside it at the same position as the point of contact with the paper. Both
+come out of a single pass, because the model pools every layer it is built to read.
 
-**One pass per condition, and the base pass is the anchor.** Every variant and the control
-is one pass over the report set, in file order, with the image transformed before the
-processor sees it. Distances are taken row by row against the base pass, so the rows are
-checked to be the same questions in the same order before any are compared.
+**One pass per condition, and the base pass is the anchor.** Every variant, and the
+image-swap control, is one pass over the report set, in file order, with the image
+transformed before the processor sees it; the other-item control is read off the base
+pass. Distances are taken row by row against the base pass, so the rows are checked to be
+the same questions in the same order before any are compared.
 
-**Generation is greedy and the answers are matched exactly.** Flips compare the perturbed
+**Cohen's d pools the two variances by their degrees of freedom.** The paper does not say how
+the denominator is formed. `cohens_d` weights each side's unbiased variance by its count
+less one, the form context.md §4.4's separation already uses, so the study has one d.
+
+**Generation is greedy and the answers are matched exactly.** Wani et al. take as the answer
+the listed option with the highest log-likelihood (their §3.1); GQA lists no options, so
+here the answer is the one the model generates greedily. Flips compare the perturbed
 prediction with the base prediction after the same normalisation the training-time
 evaluator applies; the accuracy beside them is exact match against the gold answer, not the
 official GQA evaluator's score, which the base pass of each run already has on record.
@@ -102,7 +109,7 @@ class RunDrift:
 def cosine_distance(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """`1 − cos` between matching rows of two `(N, L, H)` stacks, as `(N, L)`."""
     if a.shape != b.shape:
-        raise ValueError(f"shapes differ: {tuple(a.shape)} against {tuple(b.shape)}.")
+        raise ValueError(f"Shapes differ: {tuple(a.shape)} against {tuple(b.shape)}.")
     return 1 - F.cosine_similarity(a.float(), b.float(), dim=-1)
 
 
@@ -152,7 +159,7 @@ def run_pass(
                 prompt_lens=batch["prompt_lens"],
             )
             if out["representation"] is None:
-                raise RuntimeError("the model produced no representation: build it with layers.")
+                raise RuntimeError("The model produced no representation: build it with layers.")
             representations.append(out["representation"].float().cpu())
             if generate:
                 answered = decode_answers(vlm, processor, on_device)
@@ -164,7 +171,7 @@ def run_pass(
     # read from it because a batch carries only what the trainer needs.
     records = loader.dataset.samples  # type: ignore[attr-defined]
     if [r["question_id"] for r in records] != question_ids:
-        raise RuntimeError("the loader did not yield the dataset's questions in order.")
+        raise RuntimeError("The loader did not yield the dataset's questions in order.")
     return Pass(
         question_ids=question_ids,
         image_ids=[r["image_id"] for r in records],
@@ -193,7 +200,7 @@ def measure_run(
     between two base vectors.
     """
     if vlm.layers is None:
-        raise ValueError("the model reads no layer: build it with the layers to measure.")
+        raise ValueError("The model reads no layer: build it with the layers to measure.")
 
     def passed(name: str, transform: ImageTransform | None, generate: bool) -> Pass:
         started = time.perf_counter()
@@ -209,7 +216,7 @@ def measure_run(
 
     base = passed("base", None, generate=True)
     if base.predictions is None:
-        raise AssertionError("the base pass generates.")
+        raise AssertionError("The base pass generates.")
     gold = base.answers
     base_predictions = base.predictions
     base_correct = torch.tensor([p == g for p, g in zip(base_predictions, gold, strict=True)])
@@ -222,7 +229,7 @@ def measure_run(
         if perturbed.question_ids != base.question_ids:
             raise RuntimeError(f"{variant.name}: the pass saw different questions from the base.")
         if perturbed.predictions is None:
-            raise AssertionError("a variant pass generates.")
+            raise AssertionError("A variant pass generates.")
         distances[variant.name] = cosine_distance(perturbed.representations, base.representations)
         flipped[variant.name] = torch.tensor(
             [p != b for p, b in zip(perturbed.predictions, base_predictions, strict=True)]

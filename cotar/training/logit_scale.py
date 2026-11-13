@@ -1,3 +1,5 @@
+"""The learned temperature of the contrastive term."""
+
 from __future__ import annotations
 
 import math
@@ -30,8 +32,10 @@ class LogitScale(nn.Module):
         self.logit_scale = nn.Parameter(torch.tensor(math.log(init_scale)))
 
     def forward(self) -> torch.Tensor:
+        """The current scale: the exponential of the log scale, clamped at `max_scale`."""
         return self.logit_scale.clamp(max=self._max_log_scale).exp()
 
     @property
     def temperature(self) -> torch.Tensor:
+        """The reciprocal of the scale."""
         return self().reciprocal()

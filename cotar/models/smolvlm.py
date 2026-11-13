@@ -1,3 +1,5 @@
+"""SmolVLM behind the study's contract, pooling a representation where it is told to."""
+
 from __future__ import annotations
 
 import logging
@@ -65,6 +67,8 @@ def _attn_implementation() -> str:
 
 
 class SmolVLMProcessor:
+    """Encodes questions and images into SmolVLM's chat prompt, and decodes its answers."""
+
     def __init__(self, size: Size = "500M") -> None:
         # Without splitting, each image is squared to 512x512 and encoded as a
         # single fixed-length token sequence — one image, one fixed prompt prefix
@@ -78,6 +82,7 @@ class SmolVLMProcessor:
 
     @property
     def pad_token_id(self) -> int:
+        """The tokenizer's padding id, or 0 where it declares none."""
         return self._processor.tokenizer.pad_token_id or 0
 
     def encode(
@@ -88,6 +93,7 @@ class SmolVLMProcessor:
         *,
         padding_side: PaddingSide = "left",
     ) -> Encoding:
+        """Encode questions with their images; `targets` adds labels and prompt lengths."""
         if targets is not None and padding_side != "right":
             raise ValueError(
                 "Right padding is required with targets: labels and prompt lengths "
@@ -121,6 +127,7 @@ class SmolVLMProcessor:
         return encoding
 
     def decode(self, token_ids: torch.Tensor) -> list[str]:
+        """Token ids back to text, without the special tokens."""
         return self._processor.batch_decode(token_ids, skip_special_tokens=True)
 
     def _build_prompt(self, text: str, target: str | None) -> str:
@@ -267,6 +274,7 @@ class SmolVLM(nn.Module):
 
     @property
     def device(self) -> torch.device:
+        """The device the parameters are on."""
         return next(self._model.parameters()).device
 
     def _autocast(self) -> torch.autocast:
@@ -293,6 +301,7 @@ class SmolVLM(nn.Module):
         prompt_lens: list[int] | None = None,
         **_: Any,
     ) -> VLMOutput:
+        """The loss, and the pooled representation when `layers` and `prompt_lens` are set."""
         with self._autocast():
             out = self._model(
                 input_ids=input_ids,
@@ -367,6 +376,7 @@ class SmolVLM(nn.Module):
         pixel_attention_mask: torch.Tensor | None = None,
         **kwargs: Any,
     ) -> torch.Tensor:
+        """Greedy continuations of the prompts, as token ids that begin with the prompt."""
         with self._autocast():
             output_ids = self._model.generate(
                 input_ids=input_ids,
@@ -411,4 +421,5 @@ def build_smolvlm(
     size: Size = "500M",
     layers: int | Sequence[int] | None = None,
 ) -> tuple[SmolVLM, SmolVLMProcessor]:
+    """A SmolVLM of `size` reading `layers`, and the processor that goes with it."""
     return SmolVLM(size, layers=layers), SmolVLMProcessor(size)

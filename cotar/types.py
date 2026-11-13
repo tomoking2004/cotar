@@ -31,6 +31,8 @@ PaddingSide = Literal["left", "right"]
 
 
 class Encoding(TypedDict):
+    """What `encode` returns: the model inputs, and labels and prompt lengths for targets."""
+
     input_ids: torch.Tensor
     attention_mask: torch.Tensor
     pixel_values: torch.Tensor
@@ -54,6 +56,8 @@ class VLMOutput(TypedDict):
 
 @runtime_checkable
 class VLMProcessor(Protocol):
+    """What the study needs of a processor: encode prompts with images, decode ids."""
+
     def encode(
         self,
         texts: list[str],
@@ -62,20 +66,26 @@ class VLMProcessor(Protocol):
         *,
         padding_side: PaddingSide = "left",
     ) -> Encoding:
+        """Encode questions with their images; `targets` adds labels and prompt lengths."""
         ...
 
     def decode(self, token_ids: torch.Tensor) -> list[str]:
+        """Token ids back to text."""
         ...
 
     @property
     def pad_token_id(self) -> int:
+        """The id that pads a batch."""
         ...
 
 
 @runtime_checkable
 class VLM(Protocol):
+    """What the study needs of a model: a forward, generation, and the layers it reads."""
+
     @property
     def device(self) -> torch.device:
+        """The device the parameters are on."""
         ...
 
     @property
@@ -105,4 +115,5 @@ class VLM(Protocol):
         pixel_values: torch.Tensor,
         **kwargs: Any,
     ) -> torch.Tensor:
+        """Continuations of the prompts, as token ids."""
         ...

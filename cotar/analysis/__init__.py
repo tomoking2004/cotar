@@ -1,10 +1,11 @@
 """Reading a finished experiment: which runs it is, and what can be measured on them.
 
-Nothing here trains the model. The nine runs left their representations, predictions
-and weights behind, and every question the study asks of them afterwards is asked
-through this package — from a laptop, except `jacobian` and `drift`, which rebuild the
-model from the saved weights (to differentiate it, and to run it on perturbed images) and
-so need them and a GPU.
+Nothing here trains the model. The runs left their representations, predictions and
+weights behind, and every question the study asks of them afterwards is asked through
+this package. What reads the snapshots runs on a laptop. What reads the weights needs the
+machine that holds them: in `experiment`, `weights`, `trained_model` and
+`require_checkpoints`; and `jacobian` and `drift`, which run the rebuilt model (to
+differentiate it, and on perturbed images) and so need a GPU as well.
 """
 
 from .drift import (

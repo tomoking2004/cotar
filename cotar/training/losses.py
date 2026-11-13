@@ -1,3 +1,5 @@
+"""The alignment objective: a supervised contrastive loss over one batch."""
+
 from __future__ import annotations
 
 from collections.abc import Hashable, Sequence

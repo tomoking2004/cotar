@@ -1,3 +1,5 @@
+"""The names runs are filed under: a timestamp, and the directory name built on it."""
+
 from __future__ import annotations
 
 from datetime import datetime

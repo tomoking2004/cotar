@@ -1,6 +1,6 @@
 """The experiment the study reports, and how to read back what it left behind.
 
-Every analysis reads the same nine runs — three arms at three seeds, filed under one
+The main results rest on nine runs — three arms at three seeds, filed under one
 timestamp. Naming them here means the scripts cannot drift apart about which experiment
 is being reported, and pointing them all at a later one is a single edit.
 
@@ -62,8 +62,8 @@ __all__ = [
 TIMESTAMP        = "20260829-134859"
 SEEDS            = (42, 43, 44)
 # The two seeds §8.1 adds, and the batch they were trained in. The timestamp is the one
-# `train.py` prints when it starts; it stays empty until that batch has run, and reading
-# one of these seeds before then is refused rather than guessed.
+# `train.py` prints when it starts. Left empty, it means the batch has not been trained,
+# and reading one of these seeds is then refused rather than guessed.
 ADDED_TIMESTAMP  = "20261105-162351"
 ADDED_SEEDS      = (45, 46)
 # The five the robustness measurement reports. The main results keep to `SEEDS`.
@@ -81,7 +81,7 @@ def run_id(arm: Arm, seed: int, variant: str = "", timestamp: str | None = None)
     """The directory name one run left behind.
 
     `variant` names a configuration other than the reported one — a sweep's alignment
-    weight or layer — and is empty for the nine runs the study reports. `timestamp` says
+    weight or layer — and is empty for the runs the study reports. `timestamp` says
     which experiment: a sweep is filed under its own, and its runs are still comparable
     to the reported ones because a seed fixes the initialisation and the batch order,
     not the day the run happened. Left out, it is the batch that trained the seed
@@ -105,12 +105,12 @@ def batch_of(seed: int) -> str:
         return TIMESTAMP
     if seed not in ADDED_SEEDS:
         raise SystemExit(
-            f"seed {seed} is in neither batch ({SEEDS} under {TIMESTAMP}, "
+            f"Seed {seed} is in neither batch ({SEEDS} under {TIMESTAMP}, "
             f"{ADDED_SEEDS} under ADDED_TIMESTAMP)."
         )
     if not ADDED_TIMESTAMP:
         raise SystemExit(
-            f"seed {seed} belongs to the batch §8.1 adds, and ADDED_TIMESTAMP in "
+            f"Seed {seed} belongs to the batch §8.1 adds, and ADDED_TIMESTAMP in "
             f"cotar/analysis/experiment.py is still empty. Put there the timestamp "
             f"scripts/train.py printed when it trained seeds {ADDED_SEEDS}."
         )
@@ -130,7 +130,7 @@ def representations(
     """A run's saved testdev representations, with the signature and id of each row.
 
     Every run evaluated testdev in the same order, so a row means the same question in
-    all nine. That is checked here rather than assumed: the arms are compared row by row,
+    all of them. That is checked here rather than assumed: the arms are compared row by row,
     and an order that differed would compare different questions without saying so. The
     check spans variants too, which is what lets a sweep's runs be read beside the
     reported ones.
@@ -421,8 +421,9 @@ def _state_dicts(blob: dict[str, Any], path: Path) -> dict[str, dict[str, torch.
 def _recorded_model(blob: dict[str, Any]) -> str | None:
     """The base checkpoint a run was trained from, if the trainer filed it under `extras`.
 
-    The reported nine and the layer sweep did; the two earlier batches were trained
-    before the trainer recorded it, so for them this is `None`.
+    Every batch from the reported nine on did — the layer sweep and the added seeds
+    with them; the two earlier batches were trained before the trainer recorded it, so
+    for them this is `None`.
     """
     extras = blob.get("extras")
     recorded = extras.get("checkpoint") if isinstance(extras, dict) else None

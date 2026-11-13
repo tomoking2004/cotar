@@ -65,6 +65,7 @@ def normalize_answer(answer: str) -> str:
 def exact_match_accuracy(
     predictions: Sequence[str], references: Sequence[str]
 ) -> dict[str, float]:
+    """The share of predictions equal to their reference once normalised; NaN if none."""
     if len(predictions) != len(references):
         raise ValueError(f"{len(predictions)} predictions but {len(references)} references.")
     if not references:
@@ -84,7 +85,7 @@ def decode_answers(vlm: VLM, processor: VLMProcessor, batch: Batch) -> list[str]
     questions are repacked left-padded to a common width.
     """
     input_ids   = batch["input_ids"]    # (B, T) right-padded question + answer
-    prompt_lens = batch["prompt_lens"]  # (B,) question token count per sample
+    prompt_lens = batch["prompt_lens"]  # (B,) prompt length per sample, image tokens included
 
     width = max(prompt_lens)
     q_ids  = input_ids.new_full((len(prompt_lens), width), processor.pad_token_id)
@@ -311,7 +312,8 @@ class Evaluator:
 
     `measure` returns all of a batch's metrics. On an evaluation pass it also keeps
     the predictions and representations that `report` turns into the epoch-level
-    numbers; `reset` clears that accumulation between epochs.
+    numbers; `reset` clears that accumulation, so one pass's is never weighed into the
+    next's.
 
     Without `gqa_questions_path` there is nothing to score the predictions against
     and `report` omits the official scores — but `save_predictions` still writes
@@ -421,8 +423,9 @@ class Evaluator:
         them answerable without it short of taking the GPU back.
 
         They are float32 on purpose: the raw separation between same- and
-        different-signature cosines is around 0.02, which is the scale of float16's
-        rounding error, and half precision would put the noise floor above the effect.
+        different-signature cosines is 0.026 in the baseline and 0.0008 in the ablation
+        (context.md §4.4), and float16's unit roundoff is 2^-11, about 0.0005 — half
+        precision would round the vectors at the scale of the smallest effect.
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -440,6 +443,7 @@ class Evaluator:
         )
 
     def reset(self) -> None:
+        """Drop everything accumulated for `report` so far."""
         self._predictions.clear()
         self._representations.clear()
         self._signatures.clear()
