@@ -1,18 +1,21 @@
 """PCSJ/IMPS 予稿の書式検査——組版して，そのまま提出できる形かを機械的に確かめる．
 
     python check.py          組版し，全項目を検査して結果を出す（manuscript.pdf を更新する）
-    python check.py --hook   Claude Code の PostToolUse フックから呼ぶ．tex と sty が前回合格時から
-                             変わっていなければ何もしない．不合格なら報告を stderr に出して
-                             終了コード 2
+    python check.py --hook   Claude Code の PostToolUse フックから呼ぶ．組版はしない．
+                             manuscript.tex・pcsjimps-j.sty・manuscript.pdf が提出版の
+                             コミットと同一なら何も出さずに終了コード 0，違えば，どれが
+                             違うかと戻し方を stderr に出して終了コード 2
 
 検査項目の出どころは三つ——公式サンプル（template/）の定め，アップロード画面の定め，
-../principles.md §3・§6 の記法と走査．合格すると .check-ok に tex と sty のハッシュを書く
-（git には載せない）．
+../principles.md §3・§6 の記法と走査．
+
+フックが組版しないのは，締切を過ぎた原稿を変えないためである．組み直せば，アップロードした
+PDF と同じ tex からでも manuscript.pdf が書き換わりうる．フックは提出版との一致だけを見て，
+誤って触ったときに知らせる．
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import shutil
@@ -26,8 +29,10 @@ STY = HERE / "pcsjimps-j.sty"
 DVI = HERE / "manuscript.dvi"
 PDF = HERE / "manuscript.pdf"
 TEMPLATE_STY = HERE / "template" / "samplefile2015" / "pcsjimps-j.sty"
-STAMP = HERE / ".check-ok"
 TOOLS = ("platex", "dvipdfmx", "pdfinfo", "pdffonts")
+# 提出版：教授の了承を得て 2026-10-16 にアップロードしたコミット．フックはこれと比べる
+SUBMITTED = "70fb342"
+SUBMITTED_FILES = (TEX, STY, PDF)
 
 # 公式サンプルの定め
 MAX_PAGES = 2                       # 1件2ページ以内（図表を含む）
@@ -50,12 +55,27 @@ def run(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def fingerprint() -> str:
-    """tex と sty の内容のハッシュ．合格の印（.check-ok）に書く．"""
-    h = hashlib.sha256()
-    for p in (TEX, STY):
-        h.update(p.read_bytes())
-    return h.hexdigest()
+def drifted_from_submission() -> list[Path] | None:
+    """提出版（SUBMITTED）と中身が違うファイル．比べられないときは None．
+
+    git の blob の名で比べる（作業ツリーの git hash-object と git rev-parse SUBMITTED:<path>）．
+    git が載せる形に直してから名を付けるので，作業ツリーの改行が CRLF でも同じ名になる．
+    """
+    if shutil.which("git") is None:
+        return None
+    # 提出版のコミットが無い（浅い clone など）と，ここが失敗する
+    wanted = run("git", "rev-parse", *(f"{SUBMITTED}:./{p.name}" for p in SUBMITTED_FILES))
+    if wanted.returncode != 0:
+        return None
+    present = [p for p in SUBMITTED_FILES if p.exists()]
+    hashed = run("git", "hash-object", "--", *(p.name for p in present))
+    if hashed.returncode != 0:
+        return None
+    have = dict(zip(present, hashed.stdout.split(), strict=True))
+    return [
+        p for p, want in zip(SUBMITTED_FILES, wanted.stdout.split(), strict=True)
+        if have.get(p) != want
+    ]
 
 
 def typeset() -> list[str]:
@@ -179,27 +199,44 @@ def report(fails: list[str], warns: list[str]) -> str:
     return "\n".join([head, *(f"  x {f}" for f in fails), *(f"  ! {w}" for w in warns)])
 
 
+def hook() -> int:
+    """フックの入口．提出版と違うファイルがあれば，理由を stderr に出して 2 を返す．
+
+    PostToolUse で終了コード 2 を返すと，Claude Code は stderr を Claude に差し戻す（道具は
+    既に走った後なので，止めるのでなく知らせる）．比べられないとき（git が無い，浅い clone で
+    提出版のコミットが無い）は黙って 0 を返す——フックは道具を使うたびに走るので，判定できない
+    ことを毎回言えば本物の知らせが埋もれる．提出版を守るのは CLAUDE.md の決まりで，フックは
+    その見張りにすぎない．
+    """
+    try:
+        json.load(sys.stdin)              # フックの入力は読み捨てる（変わったかは中身で見る）
+    except ValueError:
+        pass
+    if not (drifted := drifted_from_submission()):
+        return 0
+    root = HERE.parent.parent
+    paths = [p.relative_to(root).as_posix() for p in drifted]
+    print("\n".join([
+        f"予稿が提出版（{SUBMITTED}）と違う: {', '.join(paths)}",
+        "締切を過ぎた原稿は変えない（CLAUDE.md）．提出版に戻すには:",
+        *(f"  git checkout {SUBMITTED} -- {path}" for path in paths),
+    ]), file=sys.stderr)
+    return 2
+
+
 def main() -> int:
-    """終了コード：合格 0，不合格 1（フックからは 2——Claude Code が報告を差し戻す）．"""
+    """終了コード：合格 0，不合格 1．--hook は hook() の定めに従う．"""
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
-    hook = "--hook" in sys.argv
-    if hook:
-        try:
-            json.load(sys.stdin)          # フックの入力は読み捨てる（変更の有無は指紋で見る）
-        except ValueError:
-            pass
-        if STAMP.exists() and STAMP.read_text().strip() == fingerprint():
-            return 0
+    if "--hook" in sys.argv:
+        return hook()
     if missing := [t for t in TOOLS if shutil.which(t) is None]:
         print("PATH に無い: " + ", ".join(missing), file=sys.stderr)
-        return 2 if hook else 1
+        return 1
     fails, warns = check()
     if fails:
-        STAMP.unlink(missing_ok=True)
         print(report(fails, warns), file=sys.stderr)
-        return 2 if hook else 1
-    STAMP.write_text(fingerprint())
+        return 1
     print(report(fails, warns))
     return 0
 
